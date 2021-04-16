@@ -1,7 +1,8 @@
-saflow
+SAflow (Sustained Attention and Flow)
 ==============================
 
-A short description of the project.
+This research project aims to investigate with MEG the neural correlates of attentional fluctuations during a modified version of a classical sustained attention task, namely the [GradCPT (Esterman et al., 2013)](https://academic.oup.com/cercor/article/23/11/2712/303412?login=true).
+In this repository, you can find the experiment's source code, the related preprocessing and analysis scripts as well as the scripts generating the figures for the research article (WiP).
 
 Project Organization
 ------------
@@ -31,7 +32,8 @@ Project Organization
     │   ├── __init__.py    <- Makes src a Python module
     │   │
     │   ├── data           <- Scripts to download or generate data
-    │   │   └── make_dataset.py
+    │   │   └── generate_bids.py
+    │   │   └── preprocessing.py    
     │   │
     │   ├── features       <- Scripts to turn raw data into features for modeling
     │   │   └── build_features.py
