@@ -33,7 +33,8 @@ Project Organization
     │   │
     │   ├── data           <- Scripts to download or generate data
     │   │   └── generate_bids.py
-    │   │   └── preprocessing.py    
+    │   │   └── preprocessing.py
+    │   │   └── segmentation.py    
     │   │
     │   ├── features       <- Scripts to turn raw data into features for modeling
     │   │   └── build_features.py
