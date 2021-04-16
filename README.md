@@ -9,7 +9,7 @@ How to use :
 - Create and activate a new Python environment if needed (via [venv](https://docs.python.org/3/library/venv.html) or [conda](https://uoa-eresearch.github.io/eresearch-cookbook/recipe/2014/11/20/conda/))
 - Download the original data acquisition folder, store it in ./data, or anywhere else you'd like
 - Open src/saflow_params.py and change the various paths to fit your file structure
--   python setup.py install
+-     python setup.py install
 
 
 Project Organization
