@@ -16,6 +16,7 @@ if __name__ == "__main__":
 			filepath, filename = find_rawfile(subj, bloc, FOLDERPATH)
 			save_pattern = get_SAflow_bids(FOLDERPATH, subj=subj, run=bloc, stage='preproc_raw')[1]
 			#save_pattern =  op.join(FOLDERPATH + filepath, filename[:-3] + '_preproc_raw.fif.gz')
-			report_pattern = op.join(REPORTS_PATH, filename[:-3] + '_preproc_report.html')
+			report_pattern = get_SAflow_bids(FOLDERPATH, subj=subj, run=bloc, stage='_preproc_report.html')[1]
+			#report_pattern = op.join(REPORTS_PATH, filename[:-3] + '_preproc_report.html')
 			full_filepath = FOLDERPATH + filepath + filename
 			saflow_preproc(full_filepath, save_pattern, report_pattern)
