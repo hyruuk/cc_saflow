@@ -3,7 +3,7 @@ import mne
 import os
 import os.path as op
 import numpy as np
-from mne_bids import make_bids_basename, write_raw_bids
+from mne_bids import write_raw_bids, BIDSPath
 from src.saflow_params import BIDS_PATH, ACQ_PATH
 
 # Define constants
@@ -15,6 +15,7 @@ if not os.path.isdir(BIDS_PATH):
     print('BIDS folder created at : {}'.format(BIDS_PATH))
 else:
     print('{} already exists.'.format(BIDS_PATH))
+
 
 # list folders in acquisition folder
 recording_folders = os.listdir(ACQ_PATH)
@@ -29,10 +30,10 @@ for rec_date in recording_folders: # folders are named by date in format YYYYMMD
             for sub in subjects_in_folder:
                 noise_basename = 'sub-{}_ses-recording_NOISE'.format(sub)
                 if not op.isdir(op.join(BIDS_PATH, 'sub-{}'.format(sub), 'ses-recording', 'meg', noise_basename)):
-                    er_bids_basename = make_bids_basename(subject='emptyroom', session=rec_date)
                     er_raw_fname = op.join(ACQ_PATH, rec_date, file)
                     er_raw = mne.io.read_raw_ctf(er_raw_fname)
-                    write_raw_bids(er_raw, noise_basename, BIDS_PATH)
+                    bidspath = BIDSPath(subject=sub, session='NOISE', suffix='meg', root=BIDS_PATH)
+                    write_raw_bids(er_raw, bidspath, overwrite=True)
         # Rewrite in BIDS format if doesn't exist yet
         if 'SA' in file and '.ds' in file and not 'procedure' in file:
             subject = file[2:4]
@@ -42,12 +43,13 @@ for rec_date in recording_folders: # folders are named by date in format YYYYMMD
                 task = 'RS'
             else:
                 task = 'gradCPT'
-            bids_basename = make_bids_basename(subject=subject, session=session, task=task, run=run)
+            bids_basename = 'sub-{}_ses-{}_task-{}_run-{}'.format(subject, session, task, run)
             if not op.isdir(op.join(BIDS_PATH, 'sub-{}'.format(subject), 'ses-{}'.format(session), 'meg', bids_basename + '_meg.ds')):
                 raw_fname = op.join(ACQ_PATH, rec_date, file)
                 raw = mne.io.read_raw_ctf(raw_fname, preload=False)
-                try:
+                bidspath = BIDSPath(subject=sub, session=session, task=task, run=run, suffix='meg', root=BIDS_PATH)
+                if task == 'gradCPT':
                     events = mne.find_events(raw)
-                    write_raw_bids(raw, bids_basename, BIDS_PATH, events_data=events, event_id=EVENT_ID, overwrite=True)
-                except:
-                    write_raw_bids(raw, bids_basename, BIDS_PATH, overwrite=True)
+                    write_raw_bids(raw, bidspath, events_data=events, event_id=EVENT_ID, overwrite=True)
+                else:
+                    write_raw_bids(raw, bidspath, overwrite=True)
