@@ -3,7 +3,7 @@ import mne
 import os
 import os.path as op
 import numpy as np
-from mne_bids import make_bids_folders, make_bids_basename, write_raw_bids
+from mne_bids import make_bids_basename, write_raw_bids
 from src.saflow_params import BIDS_PATH, ACQ_PATH
 
 # Define constants

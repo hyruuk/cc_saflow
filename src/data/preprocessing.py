@@ -2,7 +2,7 @@ import os
 import os.path as op
 from src.utils import get_SAflow_bids
 from src.neuro import saflow_preproc, find_rawfile
-from saflow_params import FOLDERPATH, SUBJ_LIST, BLOCS_LIST, REPORTS_PATH
+from src.saflow_params import FOLDERPATH, SUBJ_LIST, BLOCS_LIST, REPORTS_PATH
 
 
 if __name__ == "__main__":
