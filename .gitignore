@@ -1,5 +1,23 @@
 # Data
-./data
+data/
 
 # Params file
-./src/saflow_params.py
+src/saflow_params.py
+
+# Distribution / packaging
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
