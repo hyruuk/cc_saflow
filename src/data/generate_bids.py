@@ -23,7 +23,7 @@ recording_folders = os.listdir(ACQ_PATH)
 # loop across recording folders (folder containing the recordings of the day)
 for rec_date in recording_folders: # folders are named by date in format YYYYMMDD
     filelist = os.listdir(op.join(ACQ_PATH, rec_date))
-    subjects_in_folder = np.unique([filename[2:4] for filename in filelist if 'SA' in filename])
+    subjects_in_folder = np.unique([filename[2:4] for filename in filelist if 'SA' in filename and not '._SA' in filename])
     for file in filelist:
         # Create emptyroom BIDS if doesn't exist already
         if 'NOISE_noise' in file:
