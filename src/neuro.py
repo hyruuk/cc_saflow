@@ -5,10 +5,10 @@ import mne
 from mne.preprocessing import ICA, create_ecg_epochs, create_eog_epochs
 from autoreject import AutoReject
 from scipy.io import loadmat, savemat
-from brainpipe import feature
+#from brainpipe import feature
 from src.saflow_params import FOLDERPATH, LOGS_DIR
 from mne.io import read_raw_fif, read_raw_ctf
-from hytools.meg_utils import get_ch_pos
+#from hytools.meg_utils import get_ch_pos
 from src.utils import get_SAflow_bids
 from src.behav import find_logfile, get_VTC_from_file
 import random
@@ -240,6 +240,7 @@ def get_VTC_epochs(LOGS_DIR, subj, bloc, stage='epo', lobound=None, hibound=None
 
     return INidx, OUTidx, VTC_epo, idx_trimmed
 
+'''
 def compute_PSD(epochs, sf, epochs_length, f=None):
     if f == None:
         f = [ [4, 8], [8, 12], [12, 20], [20, 30], [30, 60], [60, 90], [90, 120] ]
@@ -251,6 +252,7 @@ def compute_PSD(epochs, sf, epochs_length, f=None):
     #print(data.shape)
     psds = objet_PSD.get(data)[0] # Ici on calcule la PSD !
     return psds
+'''
 
 def compute_TFR(epochs, baseline=False):
     decim = 3
