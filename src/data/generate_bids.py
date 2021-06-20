@@ -28,10 +28,7 @@ for rec_date in recording_folders: # folders are named by date in format YYYYMMD
         # Create emptyroom BIDS if doesn't exist already
         if 'NOISE_noise' in file:
             for sub in subjects_in_folder:
-                if sub == 'SA':
-                    print(rec_date)
-                    print(subjects_in_folder)
-                    0/0
+
                 noise_bidspath = BIDSPath(subject=sub, session='NOISE', suffix='meg', extension='.ds', root=BIDS_PATH)
                 if not op.isdir(noise_bidspath):
                     er_raw_fname = op.join(ACQ_PATH, rec_date, file)
@@ -53,7 +50,7 @@ for rec_date in recording_folders: # folders are named by date in format YYYYMMD
                 raw_fname = op.join(ACQ_PATH, rec_date, file)
                 raw = mne.io.read_raw_ctf(raw_fname, preload=False)
                 if task == 'gradCPT':
-                    events = mne.find_events(raw)
+                    events = mne.find_events(raw, min_duration=2/raw.info['sfreq'])
                     write_raw_bids(raw, bidspath, events_data=events, event_id=EVENT_ID, overwrite=True)
                 else:
                     write_raw_bids(raw, bidspath, overwrite=True)
