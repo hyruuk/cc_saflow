@@ -23,6 +23,8 @@ def get_SAflow_bids(FOLDERPATH, subj, run, stage, cond=None):
         extension = '.tsv'
     elif 'ARlog' in stage:
         extension = '.hdf5'
+    elif 'preproc_report' in stage:
+        extension = '.html'
 
     if 'events' in stage:
         SAflow_bidsname = 'sub-{}_ses-recording_task-{}_run-0{}_{}{}'.format(subj, task, run, stage, extension)

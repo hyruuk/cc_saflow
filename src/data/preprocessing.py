@@ -15,6 +15,6 @@ if __name__ == "__main__":
 		for bloc in BLOCS_LIST:
 			filepath, filename = find_rawfile(subj, bloc, BIDS_PATH)
 			save_path = get_SAflow_bids(BIDS_PATH, subj=subj, run=bloc, stage='preproc_raw')[1]
-			report_path = get_SAflow_bids(BIDS_PATH, subj=subj, run=bloc, stage='_preproc_report.html')[1]
+			report_path = get_SAflow_bids(BIDS_PATH, subj=subj, run=bloc, stage='preproc_report')[1]
 			full_filepath = BIDS_PATH + filepath + filename
 			saflow_preproc(full_filepath, save_path, report_path)
