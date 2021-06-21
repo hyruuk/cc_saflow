@@ -93,7 +93,6 @@ def saflow_preproc(filepath, savepath, reportpath):
     report.save(reportpath, open_browser=False, overwrite=True);
     raw_data.save(savepath, overwrite=True)
     del raw
-    del raw_data
     del ica
     return raw_data
 
