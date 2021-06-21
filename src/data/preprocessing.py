@@ -4,7 +4,6 @@ from src.utils import get_SAflow_bids
 from src.neuro import saflow_preproc, find_rawfile
 from src.saflow_params import BIDS_PATH, SUBJ_LIST, BLOCS_LIST
 
-
 if __name__ == "__main__":
 	# create report path
 	try:
