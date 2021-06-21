@@ -92,6 +92,9 @@ def saflow_preproc(filepath, savepath, reportpath):
     ## SAVE PREPROCESSED FILE
     report.save(reportpath, open_browser=False, overwrite=True);
     raw_data.save(savepath, overwrite=True)
+    del raw
+    del raw_data
+    del ica
     return raw_data
 
 def segment_files(bids_filepath, tmin=0, tmax=0.8):
