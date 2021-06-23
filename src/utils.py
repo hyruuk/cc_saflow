@@ -34,7 +34,7 @@ def get_SAflow_bids(BIDS_PATH, subj, run, stage, cond=None):
         else:
             SAflow_bidsname = 'sub-{}_ses-recording_task-{}_run-0{}_meg_{}_{}{}'.format(subj, task, run, cond, stage, extension)
 
-    SAflow_bidspath = os.path.join(FOLDERPATH, 'sub-{}'.format(subj), 'ses-recording', 'meg', SAflow_bidsname)
+    SAflow_bidspath = os.path.join(BIDS_PATH, 'sub-{}'.format(subj), 'ses-recording', 'meg', SAflow_bidsname)
     return SAflow_bidsname, SAflow_bidspath
 
 
