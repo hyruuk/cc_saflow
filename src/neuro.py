@@ -69,6 +69,7 @@ def saflow_preproc(filepath, savepath, reportpath):
     eog_threshold = 4
     eog_epochs = create_eog_epochs(raw_data, ch_name='EEG057')
     eog_inds, eog_scores = ica.find_bads_eog(eog_epochs, ch_name='EEG057', threshold=eog_threshold)
+    #TODO : if eog_inds == [] then eog_inds = [index(max(abs(eog_scores)))]
     fig = ica.plot_scores(eog_scores, eog_inds, show=False);
     report.add_figs_to_section(fig, captions='Correlation with EOG (EEG057)', section='ICA - EOG')
     close(fig)
@@ -241,12 +242,24 @@ def get_VTC_epochs(LOGS_DIR, subj, bloc, stage='epo', lobound=None, hibound=None
 
     return INidx, OUTidx, VTC_epo, idx_trimmed
 
-'''
-def compute_PSD(epochs, sf, epochs_length, f=None):
+
+def compute_PSD(epochs, f=None, method='hilbert'):
+    epochs_envelopes = []
     if f == None:
         f = [ [4, 8], [8, 12], [12, 20], [20, 30], [30, 60], [60, 90], [90, 120] ]
-    # Choose MEG channels
-    data = epochs.get_data() # On sort les data de l'objet MNE pour les avoir dans une matrice (un numpy array pour être précis)
+    if method == 'hilbert':
+        for low, high in f:
+            data = epochs.copy().filter(low, high)
+            hilbert = data.apply_hilbert(envelope=True)
+            hilbert_pow = hilbert.copy()
+            hilbert_pow._data = hilbert._data**2
+            epochs_envelopes.append(hilbert_pow)
+            del hilbert_pow
+            del hilbert
+            del data
+    return epochs_envelopes
+
+'''
     data = data.swapaxes(0,1).swapaxes(1,2) # On réarange l'ordre des dimensions pour que ça correspond à ce qui est requis par Brainpipe
     objet_PSD = feature.power(sf=int(sf), npts=int(sf*epochs_length), width=int((sf*epochs_length)/2), step=int((sf*epochs_length)/4), f=f, method='hilbert1') # La fonction Brainpipe pour créer un objet de calcul des PSD
     data = data[:,0:int(sf*epochs_length),:] # weird trick pour corriger un pb de segmentation jpense

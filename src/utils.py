@@ -4,7 +4,7 @@ import mne
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-def get_SAflow_bids(FOLDERPATH, subj, run, stage, cond=None):
+def get_SAflow_bids(BIDS_PATH, subj, run, stage, cond=None):
     '''
     Constructs BIDS basename and filepath in the SAflow database format.
     '''
