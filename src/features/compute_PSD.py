@@ -16,3 +16,5 @@ if __name__ == "__main__":
                 PSD_bidsname, PSD_bidspath = get_SAflow_bids(BIDS_PATH, subj, bloc, stage='PSD{}'.format(freqname), cond=None)
                 print(PSD_bidspath)
                 psd.save(PSD_bidspath, overwrite=True)
+            del psds
+            del data
