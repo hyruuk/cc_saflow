@@ -242,31 +242,53 @@ def get_VTC_epochs(LOGS_DIR, subj, bloc, stage='epo', lobound=None, hibound=None
 
     return INidx, OUTidx, VTC_epo, idx_trimmed
 
+def compute_PSD(epochs, freqlist=None, method='multitaper'):
+    epochs_psds = []
+    if freqlist == None:
+        freqlist = [ [4, 8], [8, 12], [12, 20], [20, 30], [30, 60], [60, 90], [90, 120] ]
+    # Compute PSD
+    if method == 'multitaper':
+        psds, freqs = psd_multitaper(epochs, fmin=min(min(freqlist)), fmax=max(max(freqlist)), n_jobs=1)
+    if method == 'pwelch':
+        psds, freqs = psd_welch(epochs, average='median', fmin=min(min(freqlist)), fmax=max(max(freqlist)), n_jobs=1)
+    psds = 10. * np.log10(psds) # Convert power to dB scale.
+    # Average in freq bands
+    for low, high in freqlist:
+        freq_idx = [i for i, x in enumerate(freqs) if x >=low and x <= high]
+        psd = np.mean(psds[:,:,freq_idx], axis=2)
+        epochs_psds.append(psd)
+    epochs_psds = np.array(epochs_psds).swapaxes(2,0).swapaxes(1,0)
+    return epochs_psds
 
-def compute_PSD(epochs, f=None, method='hilbert'):
+def compute_PSD_hilbert(raw, ARlog, freqlist=None, tmin=0, tmax=0.8):
     epochs_envelopes = []
-    if f == None:
-        f = [ [4, 8], [8, 12], [12, 20], [20, 30], [30, 60], [60, 90], [90, 120] ]
-    if method == 'hilbert':
-        for low, high in f:
-            data = epochs.copy().filter(low, high)
-            hilbert = data.apply_hilbert(envelope=True)
-            hilbert_pow = hilbert.copy()
-            hilbert_pow._data = hilbert._data**2
-            epochs_envelopes.append(hilbert_pow)
-            del hilbert_pow
-            del hilbert
-            del data
+    if freqlist == None:
+        freqlist = [ [4, 8], [8, 12], [12, 20], [20, 30], [30, 60], [60, 90], [90, 120] ]
+    for low, high in freqlist:
+        # Filter continuous data
+        data = raw.copy().filter(low, high)
+        # Segment them
+        picks = mne.pick_types(raw.info, meg=True, ref_meg=True, eeg=False, eog=False, stim=False)
+        try:
+            events = mne.find_events(raw, min_duration=1/raw.info['sfreq'], verbose=False)
+        except ValueError:
+            events = mne.find_events(raw, min_duration=2/raw.info['sfreq'], verbose=False)
+        event_id = {'Freq': 21, 'Rare': 31}
+        epochs = mne.Epochs(raw, events=events, event_id=event_id, tmin=tmin,
+                        tmax=tmax, baseline=None, reject=None, picks=picks, preload=True)
+        # Drop bad epochs
+        epochs.drop(ARlog.bad_epochs)
+        # Apply Hilbert transform to obtain envelope
+        hilbert = epochs.apply_hilbert(envelope=True)
+        hilbert_pow = hilbert.copy()
+        hilbert_pow._data = hilbert._data**2
+        epochs_envelopes.append(hilbert_pow)
+        del hilbert_pow
+        del hilbert
+        del data
+        del epochs
     return epochs_envelopes
 
-'''
-    data = data.swapaxes(0,1).swapaxes(1,2) # On réarange l'ordre des dimensions pour que ça correspond à ce qui est requis par Brainpipe
-    objet_PSD = feature.power(sf=int(sf), npts=int(sf*epochs_length), width=int((sf*epochs_length)/2), step=int((sf*epochs_length)/4), f=f, method='hilbert1') # La fonction Brainpipe pour créer un objet de calcul des PSD
-    data = data[:,0:int(sf*epochs_length),:] # weird trick pour corriger un pb de segmentation jpense
-    #print(data.shape)
-    psds = objet_PSD.get(data)[0] # Ici on calcule la PSD !
-    return psds
-'''
 
 def compute_TFR(epochs, baseline=False):
     decim = 3
