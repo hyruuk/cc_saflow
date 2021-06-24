@@ -13,14 +13,14 @@ def get_SAflow_bids(BIDS_PATH, subj, run, stage, cond=None):
     else:
         task = 'gradCPT'
 
-    if not('report' in stage) and 'epo' in stage or 'raw' in stage or 'PSD' in stage: # determine extension based on stage
+    if not('report' in stage) and 'epo' in stage or 'raw' in stage: # determine extension based on stage
         extension = '.fif'
     elif 'sources' in stage or 'TFR' in stage:
         extension = '.hd5'
     elif 'events' in stage:
         extension = '.tsv'
-    elif 'ARlog' in stage:
-        extension = '.hdf5'
+    elif 'ARlog' in stage or 'PSD' in stage:
+        extension = '.pkl'
     elif 'report' in stage:
         extension = '.html'
 
