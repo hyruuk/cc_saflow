@@ -1,7 +1,7 @@
 import mne
 import numpy as np
 from src.utils import get_SAflow_bids
-from src.neuro import compute_PSD_hilbert
+from src.neuro import compute_PSD_hilbert, compute_PSD
 from src.saflow_params import BIDS_PATH, IMG_DIR, FREQS, FREQS_NAMES, SUBJ_LIST, BLOCS_LIST
 from scipy.io import savemat
 import pickle
@@ -23,7 +23,7 @@ if __name__ == "__main__":
                 ARlog = pickle.load(f)
 
             # Compute envelopes
-            envelopes = compute_PSD_hilbert(raw, ARlog, f=FREQS)
+            envelopes = compute_PSD_hilbert(raw, ARlog, freqlist=FREQS)
             # Save envelopes
             for envelope, freqname in zip(envelopes, FREQS_NAMES):
                 _, envpath = get_SAflow_bids(BIDS_PATH, subj, bloc, stage='-epoenv_{}'.format(freqname), cond=None)
@@ -31,7 +31,7 @@ if __name__ == "__main__":
             del envelopes
 
             # Compute PSD
-            psds = compute_PSD(epochs, f=FREQS, method='multitaper')
+            psds = compute_PSD(epochs, freqlist=FREQS, method='multitaper')
             # Save PSD
             with open(PSDpath, 'wb') as f:
                 pickle.dump(psds, f)
