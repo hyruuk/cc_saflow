@@ -13,6 +13,7 @@ from src.utils import get_SAflow_bids
 from src.behav import find_logfile, get_VTC_from_file
 import random
 from matplotlib.pyplot import close
+from mne.time_frequency import psd_multitaper, psd_welch
 
 def find_rawfile(subj, bloc, BIDS_PATH):
     filepath = '/sub-{}/ses-recording/meg/'.format(subj)
