@@ -6,7 +6,7 @@ from mne.preprocessing import ICA, create_ecg_epochs, create_eog_epochs
 from autoreject import AutoReject
 from scipy.io import loadmat, savemat
 #from brainpipe import feature
-from src.saflow_params import FOLDERPATH, LOGS_DIR
+from src.saflow_params import BIDS_PATH, LOGS_DIR
 from mne.io import read_raw_fif, read_raw_ctf
 #from hytools.meg_utils import get_ch_pos
 from src.utils import get_SAflow_bids
@@ -14,6 +14,7 @@ from src.behav import find_logfile, get_VTC_from_file
 import random
 from matplotlib.pyplot import close
 from mne.time_frequency import psd_multitaper, psd_welch
+import pickle
 
 def find_rawfile(subj, bloc, BIDS_PATH):
     filepath = '/sub-{}/ses-recording/meg/'.format(subj)
@@ -208,17 +209,16 @@ def trim_INOUT_idx(INidx, OUTidx, events_trimmed, events):
     return INidx_trimmed, OUTidx_trimmed
 
 
-def get_VTC_epochs(LOGS_DIR, subj, bloc, stage='epo', lobound=None, hibound=None, save_epochs=False, filt_order=3, filt_cutoff=0.1):
+def get_VTC_epochs(BIDS_PATH, LOGS_DIR, subj, bloc, stage='-epo', lobound=None, hibound=None, save_epochs=False, filt_order=3, filt_cutoff=0.1):
     '''
     This functions allows to use the logfile to split the epochs obtained in the epo.fif file.
     It works by comparing the timestamps of IN and OUT events to the timestamps in the epo file events
     It returns IN and OUT indices that are to be used in the split_PSD_data function
 
-    TODO : FIND A WAY TO EARN TIME BY NOT LOADING THE DATA BUT JUST THE EVENTS
     '''
 
     ### Get events after artifact rejection have been performed
-    epo_path, epo_filename = get_SAflow_bids(FOLDERPATH, subj, bloc, stage=stage, cond=None)
+    epo_path, epo_filename = get_SAflow_bids(BIDS_PATH, subj, bloc, stage=stage, cond=None)
     events_artrej = mne.read_events(epo_filename, verbose=False) # get events from the epochs file (so no resp event)
 
     ### Find logfile to extract VTC
@@ -226,7 +226,7 @@ def get_VTC_epochs(LOGS_DIR, subj, bloc, stage='epo', lobound=None, hibound=None
     VTC, INbounds, OUTbounds, INidx, OUTidx, RT_array = get_VTC_from_file(log_file, lobound=lobound, hibound=hibound, filt=True, filt_order=filt_order, filt_cutoff=filt_cutoff)
 
     ### Get original events and split them using the VTC
-    events_fname, events_fpath = get_SAflow_bids(FOLDERPATH, subj, bloc, stage='preproc_raw', cond=None)
+    events_fname, events_fpath = get_SAflow_bids(BIDS_PATH, subj, bloc, stage='preproc_raw', cond=None)
     raw = read_raw_fif(events_fpath, preload=False, verbose=False)#, min_duration=2/epochs.info['sfreq'])
     try:
         events = mne.find_events(raw, min_duration=1/raw.info['sfreq'], verbose=False)
@@ -234,10 +234,10 @@ def get_VTC_epochs(LOGS_DIR, subj, bloc, stage='epo', lobound=None, hibound=None
         events = mne.find_events(raw, min_duration=2/raw.info['sfreq'], verbose=False)
 
     events_noerr, events_comerr, events_omerr = remove_errors(log_file, events)
+    # Keep only events that are correct and clean
     events_trimmed, idx_trimmed = trim_events(events_noerr, events_artrej)
-    #rewrite INidx and OUTidx
+    # Write INidx and OUTidx as indices of clean events
     INidx, OUTidx = trim_INOUT_idx(INidx, OUTidx, events_trimmed, events)
-
 
     VTC_epo = np.array([VTC[idx] for idx in idx_trimmed])
 
@@ -308,7 +308,7 @@ def compute_TFR(epochs, baseline=False):
     #this_power = this_tfr.data[:, :, :, :]  # we only have one channel.
     return this_tfr
 
-def load_PSD_data(FOLDERPATH, SUBJ_LIST, BLOCS_LIST, time_avg=True, stage='PSD'):
+def load_PSD_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, time_avg=True, stage='PSD'):
     '''
     Returns a list containing n_subj lists of n_blocs matrices of shape n_freqs X n_channels X n_trials
     '''
@@ -316,7 +316,7 @@ def load_PSD_data(FOLDERPATH, SUBJ_LIST, BLOCS_LIST, time_avg=True, stage='PSD')
     for subj in SUBJ_LIST:
         all_subj = [] ## all the data of one subject
         for run in BLOCS_LIST:
-            SAflow_bidsname, SAflow_bidspath = get_SAflow_bids(FOLDERPATH, subj, run, stage=stage, cond=None)
+            SAflow_bidsname, SAflow_bidspath = get_SAflow_bids(BIDS_PATH, subj, run, stage=stage, cond=None)
             mat = loadmat(SAflow_bidspath)['PSD']
             if time_avg == True:
                 mat = np.mean(mat, axis=2) # average PSDs in time across epochs
@@ -324,16 +324,16 @@ def load_PSD_data(FOLDERPATH, SUBJ_LIST, BLOCS_LIST, time_avg=True, stage='PSD')
         PSD_alldata.append(all_subj)
     return PSD_alldata
 
-def load_VTC_data(FOLDERPATH, LOGS_DIR, SUBJ_LIST, BLOCS_LIST):
+def load_VTC_data(BIDS_PATH, LOGS_DIR, SUBJ_LIST, BLOCS_LIST):
     VTC_alldata = []
     for subj in SUBJ_LIST:
         all_subj = [] ## all the data of one subject
         for run in BLOCS_LIST:
             # get events from epochs file
-            epo_path, epo_filename = get_SAflow_bids(FOLDERPATH, subj, run, 'epo', cond=None)
+            epo_path, epo_filename = get_SAflow_bids(BIDS_PATH, subj, run, 'epo', cond=None)
             events_epoched = mne.read_events(epo_filename, verbose=False) # get events from the epochs file (so no resp event)
             # get events from original file (only 599 events)
-            events_fname, events_fpath = get_SAflow_bids(FOLDERPATH, subj, run, stage='preproc_raw', cond=None)
+            events_fname, events_fpath = get_SAflow_bids(BIDS_PATH, subj, run, stage='preproc_raw', cond=None)
             raw = read_raw_fif(events_fpath, preload=False, verbose=False)#, min_duration=2/epochs.info['sfreq'])
             all_events = mne.find_events(raw, min_duration=2/raw.info['sfreq'], verbose=False)
             stim_idx = []
@@ -352,13 +352,13 @@ def load_VTC_data(FOLDERPATH, LOGS_DIR, SUBJ_LIST, BLOCS_LIST):
         VTC_alldata.append(all_subj)
     return VTC_alldata
 
-def split_TFR(filepath, subj, bloc, by='VTC', lobound=None, hibound=None, stage='1600TFR', filt_order=3, filt_cutoff=0.05):
+def split_TFR(BIDS_PATH, subj, bloc, by='VTC', lobound=None, hibound=None, stage='1600TFR', filt_order=3, filt_cutoff=0.05):
     if by == 'VTC':
         event_id = {'IN': 1, 'OUT': 0}
         INidx, OUTidx, VTC_epochs, idx_trimmed = get_VTC_epochs(LOGS_DIR, subj, bloc, lobound=lobound, hibound=hibound, stage=stage[:-3]+'epo', save_epochs=False, filt_order=filt_order, filt_cutoff=filt_cutoff)
-        epo_path, epo_filename = get_SAflow_bids(FOLDERPATH, subj, bloc, stage=stage[:-3]+'epo', cond=None)
+        epo_path, epo_filename = get_SAflow_bids(BIDS_PATH, subj, bloc, stage=stage[:-3]+'epo', cond=None)
         epo_events = mne.read_events(epo_filename, verbose=False) # get events from the epochs file (so no resp event)
-        TFR_path, TFR_filename = get_SAflow_bids(FOLDERPATH, subj, bloc, stage=stage, cond=None)
+        TFR_path, TFR_filename = get_SAflow_bids(BIDS_PATH, subj, bloc, stage=stage, cond=None)
         TFR = mne.time_frequency.read_tfrs(TFR_filename)
         for i, event in enumerate(epo_events):
             if i in INidx:
@@ -368,11 +368,11 @@ def split_TFR(filepath, subj, bloc, by='VTC', lobound=None, hibound=None, stage=
         TFR[0].event_id = event_id
     return TFR
 
-def split_PSD_data(FOLDERPATH, SUBJ_LIST, BLOCS_LIST, by='VTC', lobound=None, hibound=None, stage='PSD', filt_order=3, filt_cutoff=0.1):
+def split_PSD_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, by='VTC', lobound=None, hibound=None, stage='PSD', filt_order=3, filt_cutoff=0.1):
     '''
     This func splits the PSD data into two conditions. It returns a list of 2 (cond1 and cond2), each containing a list of n_subject matrices of shape n_freqs X n_channels X n_trials
     '''
-    PSD_alldata = load_PSD_data(FOLDERPATH, SUBJ_LIST, BLOCS_LIST, time_avg=True, stage=stage)
+    PSD_alldata = load_PSD_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, time_avg=True, stage=stage)
     PSD_cond1 = []
     PSD_cond2 = []
     for subj_idx, subj in enumerate(SUBJ_LIST):
@@ -388,10 +388,10 @@ def split_PSD_data(FOLDERPATH, SUBJ_LIST, BLOCS_LIST, by='VTC', lobound=None, hi
                 cond2_idx = OUTidx
             if by == 'odd':
                 # Get indices of freq and rare events
-                ev_fname, ev_fpath = get_SAflow_bids(FOLDERPATH, subj, bloc, stage='epo')
+                ev_fname, ev_fpath = get_SAflow_bids(BIDS_PATH, subj, bloc, stage='epo')
                 events_artrej = mne.read_events(ev_fpath)
                 log_file = LOGS_DIR + find_logfile(subj,bloc,os.listdir(LOGS_DIR))
-                events_fname, events_fpath = get_SAflow_bids(FOLDERPATH, subj, bloc, stage='preproc_raw', cond=None)
+                events_fname, events_fpath = get_SAflow_bids(BIDS_PATH, subj, bloc, stage='preproc_raw', cond=None)
                 raw = read_raw_fif(events_fpath, preload=False, verbose=False)#, min_duration=2/epochs.info['sfreq'])
                 try:
                     events = mne.find_events(raw, min_duration=1/raw.info['sfreq'], verbose=False)
@@ -424,3 +424,39 @@ def split_PSD_data(FOLDERPATH, SUBJ_LIST, BLOCS_LIST, by='VTC', lobound=None, hi
         PSD_cond2.append(subj_cond2)
     splitted_PSD = [PSD_cond1, PSD_cond2]
     return splitted_PSD
+
+def split_trials(BIDS_PATH, LOGS_DIR, subj, run, stage='PSD', by='VTC',
+                    keep_errors=False, equalize=False,
+                    lobound=None, hibound=None,
+                    filt_order=3, filt_cutoff=0.1,
+                    freq_names=None):
+    '''
+    If stage is 'env', freq_names must be specified.
+    '''
+    # Split epochs indices
+    if by == 'VTC':
+        INidx, OUTidx, VTC_epochs, idx_trimmed = get_VTC_epochs(BIDS_PATH, LOGS_DIR, subj, run, lobound=lobound, hibound=hibound, save_epochs=False, filt_order=filt_order, filt_cutoff=filt_cutoff)
+        condA_idx = INidx
+        condB_idx = OUTidx
+    elif by == 'odd':
+        print('Be patient.')
+        pass
+
+    # Load epochs
+    if stage == 'PSD':
+        fname, fpath = get_SAflow_bids(BIDS_PATH, subj, run, stage, cond=None)
+        with open(fpath, 'rb') as f:
+            data = pickle.load(f)
+        condA = data[INidx]
+        condB = data[OUTidx]
+    elif 'env' in stage:
+        condA = []
+        condB = []
+        for freq in freq_names:
+            fname, fpath = get_SAflow_bids(BIDS_PATH, subj, run, stage, cond=freq)
+            data = mne.read_epochs(fpath)
+            condA.append(data[INidx])
+            condB.append(data[OUTidx])
+
+
+    return condA, condB
