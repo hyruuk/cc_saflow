@@ -30,7 +30,7 @@ def get_SAflow_bids(BIDS_PATH, subj, run, stage, cond=None):
         if cond == None: # build basename with or without cond
             SAflow_bidsname = 'sub-{}_ses-recording_task-{}_run-0{}_meg_{}{}'.format(subj, task, run, stage, extension)
         else:
-            SAflow_bidsname = 'sub-{}_ses-recording_task-{}_run-0{}_meg_{}_{}{}'.format(subj, task, run, cond, stage, extension)
+            SAflow_bidsname = 'sub-{}_ses-recording_task-{}_run-0{}_meg_{}_{}{}'.format(subj, task, run, stage, cond, extension)
 
     SAflow_bidspath = os.path.join(BIDS_PATH, 'sub-{}'.format(subj), 'ses-recording', 'meg', SAflow_bidsname)
     return SAflow_bidsname, SAflow_bidspath
