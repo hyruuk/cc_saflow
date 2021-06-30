@@ -447,16 +447,16 @@ def split_trials(BIDS_PATH, LOGS_DIR, subj, run, stage='PSD', by='VTC',
         fname, fpath = get_SAflow_bids(BIDS_PATH, subj, run, stage, cond=None)
         with open(fpath, 'rb') as f:
             data = pickle.load(f)
-        condA = data[INidx]
-        condB = data[OUTidx]
+        condA = data[condA_idx]
+        condB = data[condB_idx]
     elif 'env' in stage:
         condA = []
         condB = []
         for freq in freq_names:
             fname, fpath = get_SAflow_bids(BIDS_PATH, subj, run, stage, cond=freq)
             data = mne.read_epochs(fpath)
-            condA.append(data[INidx])
-            condB.append(data[OUTidx])
+            condA.append(data[condA_idx])
+            condB.append(data[condB_idx])
 
 
     return condA, condB
