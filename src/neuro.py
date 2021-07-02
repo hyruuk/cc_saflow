@@ -438,6 +438,8 @@ def split_trials(BIDS_PATH, LOGS_DIR, subj, run, stage='PSD', by='VTC',
         INidx, OUTidx, VTC_epochs, idx_trimmed = get_VTC_epochs(BIDS_PATH, LOGS_DIR, subj, run, lobound=lobound, hibound=hibound, save_epochs=False, filt_order=filt_order, filt_cutoff=filt_cutoff)
         condA_idx = INidx
         condB_idx = OUTidx
+        print('{} IN epochs'.format(len(INidx)))
+        print('{} OUT epochs'.format(len(OUTidx)))
     elif by == 'odd':
         print('Be patient.')
         pass
