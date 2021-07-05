@@ -1,4 +1,4 @@
-from src.saflow_params import BIDS_PATH, SUBJ_LIST, BLOCS_LIST, FREQS_NAMES, ZONE_CONDS, RESULTS_PATH
+tfrom src.saflow_params import BIDS_PATH, SUBJ_LIST, BLOCS_LIST, FREQS_NAMES, ZONE_CONDS, RESULTS_PATH
 import pickle
 from src.utils import get_SAflow_bids
 import numpy as np
@@ -26,8 +26,8 @@ parser.add_argument(
 parser.add_argument(
     "-p",
     "--n_permutations",
-    default='10',
-    type=str,
+    default=1000,
+    type=int,
     help="Number of permutations",
 )
 
@@ -37,7 +37,7 @@ args = parser.parse_args()
 def classif_singlefeat(X,y,groups, n_perms):
     cv = LeaveOneGroupOut()
     clf = LinearDiscriminantAnalysis()
-    results = classification(clf, cv, X, y, groups=groups, perm=n_perm, n_jobs=8)
+    results = classification(clf, cv, X, y, groups=groups, perm=n_perms, n_jobs=8)
     print('Done')
     print('DA : ' + str(results['acc_score']))
     print('p value : ' + str(results['acc_pvalue']))
@@ -65,15 +65,15 @@ if __name__ == "__main__":
     CONDS_LIST = ZONE_CONDS
     N_PERMS = args.n_permutations
 
-    savepath = RESULTS_PATH + '/LDAsf_LOGO_1000perm/'
+    savepath = RESULTS_PATH + '/LDAsf_LOGO_{}perm/'.format(N_PERMS)
     if not(os.path.isdir(savepath)):
         os.makedirs(savepath)
 
     if args.channel != None:
         CHAN = args.channel
-    if args.frequency_bands != None:
+    if args.frequency_band != None:
         FREQ = FREQS_NAMES.index(args.frequency_band)
-    if args.channel != None or args.frequency_bands != None:
+    if args.channel != None or args.frequency_band != None:
         X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, CONDS_LIST, CHAN=CHAN, FREQ=FREQ)
         result = classif_singlefeat(X,y, groups, n_perms=N_PERMS)
         savename = 'chan_{}_{}.pkl'.format(CHAN, FREQS_NAMES[FREQ])
@@ -83,8 +83,10 @@ if __name__ == "__main__":
         for CHAN in range(270):
             for FREQ in range(len(FREQS_NAMES)):
                 savename = 'chan_{}_{}.pkl'.format(CHAN, FREQS_NAMES[FREQ])
+                print(savename)
                 if not(os.path.isfile(savepath + savename)):
                     X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, CONDS_LIST, CHAN=CHAN, FREQ=FREQ)
                     result = classif_singlefeat(X,y, groups, n_perms=N_PERMS)
                     with open(savepath + savename, 'wb') as f:
                         pickle.dump(result, f)
+                print('Ok.')
