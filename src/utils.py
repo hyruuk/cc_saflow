@@ -71,27 +71,3 @@ def create_pval_mask(pvals, alpha=0.05):
         if pval <= alpha:
             mask[i] = True
     return mask
-
-def get_ch_pos(epochs):
-    ### Obtain actual sensor positions for plotting (keep only channels that are present in the data)
-    new_ch_names = [s.strip('3105') for s in epochs.ch_names] # ajuste les noms de channels avant de comparer channels présents sur layout et data
-    actual_ch_names = [s.strip('-') for s in new_ch_names] # me demande pas pk faut le faire en 2 temps, marche pas sinon
-    reference_layout = mne.channels.find_layout(epochs.info) # obtain the CTF 275 layout based on the channels names
-    reference_ch_names = reference_layout.names # let's just be very explicit in here...
-    reference_pos = reference_layout.pos # again
-    not_in_actual = [x for x in reference_ch_names if not x in actual_ch_names] # find chan names that are in layout but not in data
-
-    # loop to get the indexes of chans to remove from the layout
-    idx_to_del = []
-    for i in range(len(not_in_actual)):
-        idx_to_del.append(reference_ch_names.index(not_in_actual[i])) # get layout index of every chan name not in data
-    reverted_idx_to_del = idx_to_del[::-1]
-
-    # actually removes the chans (f*** code efficiency)
-    list_ref_pos = list(reference_pos)
-    for i in range(len(reverted_idx_to_del)):
-        del list_ref_pos[reverted_idx_to_del[i]] # delete 'em
-    new_ref_pos = np.array(list_ref_pos)
-
-    ch_xy = new_ref_pos[:,0:2] # retain only the X and Y coordinates (0:2 veut dire "de 0 à 2", donc 0 et 1 car on compte pas 2)
-    return ch_xy
