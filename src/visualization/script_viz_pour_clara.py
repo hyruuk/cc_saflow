@@ -56,9 +56,11 @@ if __name__ == "__main__":
         freq_perms = list(itertools.chain.from_iterable(allchans_accperms))
         corrected_pval = []
         for acc in allchans_acc:
-            corrected_pval.append(compute_pval(acc, freq_perms))
+            corrected_pval.append(compute_pval(acc[0], freq_perms))
+            n_perm = len(freq_perms)
+            pvalue = (np.sum(freq_perms >= acc) + 1.0) / (n_perm + 1)
         pval_mask = create_pval_mask(np.array(corrected_pval), alpha=alpha)
-        print(pval_mask)
+        
         allfreqs_acc.append(np.array(allchans_acc).squeeze()) #array, shape (n_chan,)
         allfreqs_pval.append(np.array(allchans_pval).squeeze()) #array, shape (n_chan,)
         allmasks.append(pval_mask)
