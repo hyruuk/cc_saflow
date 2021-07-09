@@ -1,4 +1,4 @@
-from src.utils import array_topoplot, create_pval_mask, get_SAflow_bids, get_ch_pos
+from src.utils import array_topoplot, create_pval_mask, get_SAflow_bids
 from src.saflow_params import RESULTS_PATH, FREQS_NAMES, BIDS_PATH, IMG_DIR
 from mlneurotools.stats import compute_pval
 from str2bool import str2bool #Need to be installed
@@ -58,7 +58,7 @@ if __name__ == "__main__":
         for acc in allchans_acc:
             corrected_pval.append(compute_pval(acc, freq_perms))
         pval_mask = create_pval_mask(np.array(corrected_pval), alpha=alpha)
-
+        print(pval_mask)
         allfreqs_acc.append(np.array(allchans_acc).squeeze()) #array, shape (n_chan,)
         allfreqs_pval.append(np.array(allchans_pval).squeeze()) #array, shape (n_chan,)
         allmasks.append(pval_mask)

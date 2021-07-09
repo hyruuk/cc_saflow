@@ -47,7 +47,7 @@ def array_topoplot(toplot, ch_xy, showtitle=False, titles=None, savefig=False, f
 
         #option for title
         if showtitle == True:
-            ax[i].set_title(titles[i], fontdict={'fontsize': 20, 'fontweight': 'heavy'})
+            ax[0][i].set_title(titles[i], fontdict={'fontsize': 20, 'fontweight': 'heavy'})
 
     #add a colorbar at the end of the line (weird trick from https://www.martinos.org/mne/stable/auto_tutorials/stats-sensor-space/plot_stats_spatio_temporal_cluster_sensors.html#sphx-glr-auto-tutorials-stats-sensor-space-plot-stats-spatio-temporal-cluster-sensors-py)
     divider = make_axes_locatable(ax[0][-1])
