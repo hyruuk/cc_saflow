@@ -65,7 +65,7 @@ if __name__ == "__main__":
     CONDS_LIST = ZONE_CONDS
     N_PERMS = args.n_permutations
 
-    savepath = RESULTS_PATH + '/LDAsf_LOGO_{}perm/'.format(N_PERMS)
+    savepath = RESULTS_PATH + 'LDAsf_LOGO_{}perm/'.format(N_PERMS)
     if not(os.path.isdir(savepath)):
         os.makedirs(savepath)
 
