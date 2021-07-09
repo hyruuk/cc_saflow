@@ -77,6 +77,6 @@ if __name__ == "__main__":
     vmax = np.max(np.max(np.asarray(toplot)))
     vmin = np.min(np.min(np.asarray(toplot)))
 
-    array_topoplot(toplot, ch_xy, showtitle=False, titles=FREQS_NAMES,
+    array_topoplot(toplot, ch_xy, showtitle=True, titles=FREQS_NAMES,
                     savefig=True, figpath=figpath, vmin=vmin, vmax=vmax,
                     with_mask=True, masks=allmasks)
