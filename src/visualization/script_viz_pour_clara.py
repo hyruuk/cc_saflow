@@ -1,7 +1,7 @@
 from src.utils import array_topoplot, create_pval_mask, get_SAflow_bids
 from src.saflow_params import RESULTS_PATH, FREQS_NAMES, BIDS_PATH, IMG_DIR
 from mlneurotools.stats import compute_pval
-from str2bool import str2bool 
+from str2bool import str2bool
 import argparse
 import mne
 import itertools
@@ -61,17 +61,17 @@ if __name__ == "__main__":
             n_perm = len(freq_perms)
             pvalue = (np.sum(freq_perms >= acc) + 1.0) / (n_perm + 1)
         pval_mask = create_pval_mask(np.array(corrected_pval), alpha=alpha)
-        
+
         allfreqs_acc.append(np.array(allchans_acc).squeeze()) #array, shape (n_chan,)
         allfreqs_pval.append(np.array(allchans_pval).squeeze()) #array, shape (n_chan,)
         allmasks.append(pval_mask)
 
     if pval:
         toplot = allfreqs_pval
-        figpath = IMG_DIR + classif_name + '_p=' + str(alpha) + '_pval.png'
+        figpath = IMG_DIR + classif_name + '_pval' + str(alpha)[2:] + '.png'
     else:
         toplot = allfreqs_acc
-        figpath = IMG_DIR + classif_name + '_p=' + str(alpha) + '_acc.png'
+        figpath = IMG_DIR + classif_name + '_acc' + str(alpha)[2:] + '.png'
 
     _, data_fname = get_SAflow_bids(BIDS_PATH, subj='04', run='2', stage='-epo')
     epochs = mne.read_epochs(data_fname)
