@@ -1,7 +1,7 @@
 from src.utils import array_topoplot, create_pval_mask, get_SAflow_bids
 from src.saflow_params import RESULTS_PATH, FREQS_NAMES, BIDS_PATH, IMG_DIR
 from mlneurotools.stats import compute_pval
-from str2bool import str2bool #Need to be installed
+from str2bool import str2bool 
 import argparse
 import mne
 import itertools
@@ -40,6 +40,7 @@ if __name__ == "__main__":
     allfreqs_acc = []
     allfreqs_pval = []
     allmasks = []
+
     for FREQ in FREQS_NAMES:
         allchans_acc = []
         allchans_pval = []
@@ -67,15 +68,16 @@ if __name__ == "__main__":
 
     if pval:
         toplot = allfreqs_pval
-        figpath = IMG_DIR + classif_name + '_pval.png'
+        figpath = IMG_DIR + classif_name + '_p=' + str(alpha) + '_pval.png'
     else:
         toplot = allfreqs_acc
-        figpath = IMG_DIR + classif_name + '_acc.png'
+        figpath = IMG_DIR + classif_name + '_p=' + str(alpha) + '_acc.png'
 
     _, data_fname = get_SAflow_bids(BIDS_PATH, subj='04', run='2', stage='-epo')
     epochs = mne.read_epochs(data_fname)
-    ch_xy = epochs.pick_types(meg=True, ref_meg=False).info #type : np.ndarray, shape : (n_chan, 2)
+    ch_xy = epochs.pick_types(meg=True, ref_meg=False).info # Find the channel's position
 
+    # Setup the min and max value of the color scale
     vmax = np.max(np.max(np.asarray(toplot)))
     vmin = np.min(np.min(np.asarray(toplot)))
 
