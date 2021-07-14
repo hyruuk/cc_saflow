@@ -4,7 +4,6 @@ from src.utils import get_SAflow_bids
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit, GroupShuffleSplit, ShuffleSplit, LeaveOneGroupOut, KFold
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.neighbors import KNeighborsClassifier
 from mlneurotools.ml import classification, StratifiedShuffleGroupSplit
 import argparse
 import os
@@ -93,11 +92,11 @@ if __name__ == "__main__":
     else:
         for CHAN in range(270):
             for FREQ in range(len(FREQS_NAMES)):
-                savename = 'chan_{}_{}.pkl'.format(CHAN, FREQS_NAMES[FREQ])
                 print(savename)
                 if not(os.path.isfile(savepath + savename)):
                     X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=CHAN, FREQ=FREQ)
                     result = classif_singlefeat(X,y, groups, n_perms=n_perms)
+                    savename = 'chan_{}_{}.pkl'.format(CHAN, FREQS_NAMES[FREQ])
                     with open(savepath + savename, 'wb') as f:
                         pickle.dump(result, f)
                 print('Ok.')
