@@ -459,6 +459,4 @@ def split_trials(BIDS_PATH, LOGS_DIR, subj, run, stage='PSD', by='VTC',
             data = mne.read_epochs(fpath)
             condA.append(data[condA_idx])
             condB.append(data[condB_idx])
-
-
     return condA, condB

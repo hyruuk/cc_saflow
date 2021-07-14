@@ -4,6 +4,7 @@ from src.utils import get_SAflow_bids
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit, GroupShuffleSplit, ShuffleSplit, LeaveOneGroupOut, KFold
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.neighbors import KNeighborsClassifier
 from mlneurotools.ml import classification, StratifiedShuffleGroupSplit
 import argparse
 import os
@@ -30,6 +31,13 @@ parser.add_argument(
     type=int,
     help="Number of permutations",
 )
+parser.add_argument(
+    "-conds",
+    "--conditions",
+    default=('25', '75'),
+    type=tuple,
+    help="Number of permutations",
+)
 
 args = parser.parse_args()
 
@@ -43,14 +51,14 @@ def classif_singlefeat(X,y,groups, n_perms):
     print('p value : ' + str(results['acc_pvalue']))
     return results
 
-def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, CONDS_LIST, CHAN=0, FREQ=0):
+def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=0, FREQ=0):
     # Prepare data
     X = []
     y = []
     groups = []
     for i_subj, subj in enumerate(SUBJ_LIST):
         for run in BLOCS_LIST:
-            for i_cond, cond in enumerate(CONDS_LIST):
+            for i_cond, cond in enumerate(conds_list):
                 _, fpath_condA = get_SAflow_bids(BIDS_PATH, subj, run, stage='PSD', cond=cond)
                 with open(fpath_condA, 'rb') as f:
                     data = pickle.load(f)
@@ -62,10 +70,12 @@ def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, CONDS_LIST, CHAN=0, FREQ=0):
     return X, y, groups
 
 if __name__ == "__main__":
-    CONDS_LIST = ZONE_CONDS
-    N_PERMS = args.n_permutations
+    conds = args.conditions
+    n_perms = args.n_permutations
+    conds_list = (ZONE_CONDS[0] + conds[0], ZONE_CONDS[1] + conds[1])
 
-    savepath = RESULTS_PATH + 'LDAsf_LOGO_{}perm/'.format(N_PERMS)
+    savepath = RESULTS_PATH + 'LDAsf_LOGO_{}perm_{}{}/'.format(n_perms, conds[0], conds[1])
+
     if not(os.path.isdir(savepath)):
         os.makedirs(savepath)
 
@@ -74,8 +84,8 @@ if __name__ == "__main__":
     if args.frequency_band != None:
         FREQ = FREQS_NAMES.index(args.frequency_band)
     if args.channel != None or args.frequency_band != None:
-        X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, CONDS_LIST, CHAN=CHAN, FREQ=FREQ)
-        result = classif_singlefeat(X,y, groups, n_perms=N_PERMS)
+        X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=CHAN, FREQ=FREQ)
+        result = classif_singlefeat(X,y, groups, n_perms=n_perms)
         savename = 'chan_{}_{}.pkl'.format(CHAN, FREQS_NAMES[FREQ])
         with open(savepath + savename, 'wb') as f:
             pickle.dump(result, f)
@@ -85,8 +95,8 @@ if __name__ == "__main__":
                 savename = 'chan_{}_{}.pkl'.format(CHAN, FREQS_NAMES[FREQ])
                 print(savename)
                 if not(os.path.isfile(savepath + savename)):
-                    X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, CONDS_LIST, CHAN=CHAN, FREQ=FREQ)
-                    result = classif_singlefeat(X,y, groups, n_perms=N_PERMS)
+                    X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=CHAN, FREQ=FREQ)
+                    result = classif_singlefeat(X,y, groups, n_perms=n_perms)
                     with open(savepath + savename, 'wb') as f:
                         pickle.dump(result, f)
                 print('Ok.')
