@@ -47,7 +47,7 @@ def compute_VTC(RT_interp, filt=True, filt_order=3, filt_cutoff=0.05):
 
 def in_out_zone(VTC, lobound = None, hibound = None):
     ### Collects the indices of IN/OUT zone trials
-    # lobound and hibound are values between 0 and 1 representing quantiles
+    # lobound and hibound are values between 0 and 100 representing quantiles
     INzone = []
     OUTzone = []
     if lobound == None and hibound == None:
@@ -58,8 +58,8 @@ def in_out_zone(VTC, lobound = None, hibound = None):
             if val >= VTC_med:
                 OUTzone.append(i)
     else:
-        low = np.quantile(VTC, lobound)
-        high = np.quantile(VTC, hibound)
+        low = np.quantile(VTC, lobound/100)
+        high = np.quantile(VTC, hibound/100)
         for i, val in enumerate(VTC):
             if val < low:
                 INzone.append(i)
