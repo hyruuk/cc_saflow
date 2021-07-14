@@ -32,11 +32,12 @@ parser.add_argument(
     help="Number of permutations",
 )
 parser.add_argument(
-    "-conds",
-    "--conditions",
-    default=('25', '75'),
-    type=tuple,
-    help="Number of permutations",
+    "-s",
+    "--split",
+    default=[25, 75],
+    type=int,
+    nargs='+',
+    help="Bounds of percentile split",
 )
 
 args = parser.parse_args()
@@ -70,11 +71,11 @@ def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=0, FREQ=0):
     return X, y, groups
 
 if __name__ == "__main__":
-    conds = args.conditions
+    split = args.split
     n_perms = args.n_permutations
-    conds_list = (ZONE_CONDS[0] + conds[0], ZONE_CONDS[1] + conds[1])
+    conds_list = (ZONE_CONDS[0] + str(split[0]), ZONE_CONDS[1] + str(split[1]))
 
-    savepath = RESULTS_PATH + 'LDAsf_LOGO_{}perm_{}{}/'.format(n_perms, conds[0], conds[1])
+    savepath = RESULTS_PATH + 'LDAsf_LOGO_{}perm_{}{}/'.format(n_perms, split[0], split[1])
 
     if not(os.path.isdir(savepath)):
         os.makedirs(savepath)
