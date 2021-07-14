@@ -58,8 +58,6 @@ if __name__ == "__main__":
         corrected_pval = []
         for acc in allchans_acc:
             corrected_pval.append(compute_pval(acc[0], freq_perms))
-            n_perm = len(freq_perms)
-            pvalue = (np.sum(freq_perms >= acc) + 1.0) / (n_perm + 1)
         pval_mask = create_pval_mask(np.array(corrected_pval), alpha=alpha)
 
         allfreqs_acc.append(np.array(allchans_acc).squeeze()) #array, shape (n_chan,)
