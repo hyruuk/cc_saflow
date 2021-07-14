@@ -84,19 +84,18 @@ if __name__ == "__main__":
     if args.frequency_band != None:
         FREQ = FREQS_NAMES.index(args.frequency_band)
     if args.channel != None or args.frequency_band != None:
+        savename = 'chan_{}_{}.pkl'.format(CHAN, FREQS_NAMES[FREQ])
         X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=CHAN, FREQ=FREQ)
         result = classif_singlefeat(X,y, groups, n_perms=n_perms)
-        savename = 'chan_{}_{}.pkl'.format(CHAN, FREQS_NAMES[FREQ])
         with open(savepath + savename, 'wb') as f:
             pickle.dump(result, f)
     else:
         for CHAN in range(270):
             for FREQ in range(len(FREQS_NAMES)):
-                print(savename)
+                savename = 'chan_{}_{}.pkl'.format(CHAN, FREQS_NAMES[FREQ])
                 if not(os.path.isfile(savepath + savename)):
                     X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=CHAN, FREQ=FREQ)
                     result = classif_singlefeat(X,y, groups, n_perms=n_perms)
-                    savename = 'chan_{}_{}.pkl'.format(CHAN, FREQS_NAMES[FREQ])
                     with open(savepath + savename, 'wb') as f:
                         pickle.dump(result, f)
                 print('Ok.')
