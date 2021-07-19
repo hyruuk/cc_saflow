@@ -51,7 +51,7 @@ parser.add_argument(
 parser.add_argument(
     "-m",
     "--model",
-    default="LDA", 
+    default="LDA",
     type=str,
     help="Classifier to apply",
 )
@@ -60,14 +60,14 @@ args = parser.parse_args()
 model = args.model
 
 def classif_singlefeat(X,y,groups, n_perms, model):
-    
-    if model == "LDA" : 
-        clf = LinearDiscriminantAnalysis()    
+
+    if model == "LDA" :
+        clf = LinearDiscriminantAnalysis()
     elif model == "KNN" :
         clf = KNeighborsClassifier(n_neighbors=5)
     elif model == "SVM" :
         clf = SVC()
-    elif model == "DT" : #For decision tree 
+    elif model == "DT" : #For decision tree
         clf = DecisionTreeClassifier()
     elif model == "LR":
         clf = LogisticRegression()
@@ -121,6 +121,7 @@ if __name__ == "__main__":
         for CHAN in range(270):
             for FREQ in range(len(FREQS_NAMES)):
                 savename = 'chan_{}_{}.pkl'.format(CHAN, FREQS_NAMES[FREQ])
+                print(savename)
                 if not(os.path.isfile(savepath + savename)):
                     X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=CHAN, FREQ=FREQ)
                     result = classif_singlefeat(X,y, groups, n_perms=n_perms, model=model)
