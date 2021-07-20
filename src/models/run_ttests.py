@@ -61,7 +61,6 @@ def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, FREQ=0):
                         condB.append(x)
     condA = np.array(condA)
     condB = np.array(condB)
-    max_trials = np.min((condA.shape[0], condB.shape[0]))
     return condA, condB
 
 if __name__ == "__main__":
