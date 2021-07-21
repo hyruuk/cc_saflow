@@ -11,6 +11,7 @@ from sklearn.linear_model import LogisticRegression
 from mlneurotools.ml import classification, StratifiedShuffleGroupSplit
 import argparse
 import os
+import random
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -42,6 +43,13 @@ parser.add_argument(
     nargs='+',
     help="Bounds of percentile split",
 )
+parser.add_argument(
+    "-by",
+    "--by",
+    default="VTC",
+    type=str,
+    help="Choose the classification problem ('VTC' or 'odd')",
+)
 
 #The arguments for the model selection can be :
 #KNN for K neearest neighbors
@@ -57,7 +65,7 @@ parser.add_argument(
 )
 
 args = parser.parse_args()
-model = args.model
+
 
 def classif_singlefeat(X,y,groups, n_perms, model):
 
@@ -79,7 +87,7 @@ def classif_singlefeat(X,y,groups, n_perms, model):
     print('p value : ' + str(results['acc_pvalue']))
     return results
 
-def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=0, FREQ=0):
+def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=0, FREQ=0, balance=False):
     # Prepare data
     X = []
     y = []
@@ -94,15 +102,49 @@ def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=0, FREQ=0):
                     X.append(x)
                     y.append(i_cond)
                     groups.append(i_subj)
+    if balance:
+        X_balanced = []
+        y_balanced = []
+        groups_balanced = []
+        # We want to balance the trials across subjects
+        for subj_idx in np.unique(groups):
+            y_subj = [label for i, label in enumerate(y) if groups[i] == subj_idx]
+            max_trials = min(np.unique(y_subj, return_counts=True)[1])
+
+            X_subj_0 = [x for i, x in enumerate(X) if groups[i] == subj_idx and y[i] == 0]
+            X_subj_1 = [x for i, x in enumerate(X) if groups[i] == subj_idx and y[i] == 1]
+
+            idx_list_0 = [x for x in range(len(X_subj_0))]
+            idx_list_1 = [x for x in range(len(X_subj_1))]
+            picks_0 = random.sample(idx_list_0, max_trials)
+            picks_1 = random.sample(idx_list_1, max_trials)
+
+            for i in range(max_trials):
+                X_balanced.append(X_subj_0[picks_0[i]])
+                y_balanced.append(0)
+                groups_balanced.append(subj_idx)
+                X_balanced.append(X_subj_1[picks_1[i]])
+                y_balanced.append(1)
+                groups_balanced.append(subj_idx)
+        X = X_balanced
+        y = y_balanced
+        groups = groups_balanced
     X = np.array(X).reshape(-1, 1)
     return X, y, groups
 
 if __name__ == "__main__":
+    model = args.model
     split = args.split
     n_perms = args.n_permutations
-    conds_list = (ZONE_CONDS[0] + str(split[0]), ZONE_CONDS[1] + str(split[1]))
+    by = args.by
+    if by == 'VTC':
+        conds_list = (ZONE_CONDS[0] + str(split[0]), ZONE_CONDS[1] + str(split[1]))
+        balance = True
+    elif by == 'odd':
+        conds_list = ['FREQhits', 'RAREhits']
+        balance = True
 
-    savepath = RESULTS_PATH + model + 'sf_LOGO_{}perm_{}{}/'.format(n_perms, split[0], split[1])
+    savepath = RESULTS_PATH + '{}_'.format(by) + model + 'sf_LOGO_{}perm_{}{}/'.format(n_perms, split[0], split[1])
 
     if not(os.path.isdir(savepath)):
         os.makedirs(savepath)
@@ -123,7 +165,7 @@ if __name__ == "__main__":
                 savename = 'chan_{}_{}.pkl'.format(CHAN, FREQS_NAMES[FREQ])
                 print(savename)
                 if not(os.path.isfile(savepath + savename)):
-                    X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=CHAN, FREQ=FREQ)
+                    X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=CHAN, FREQ=FREQ, balance=balance)
                     result = classif_singlefeat(X,y, groups, n_perms=n_perms, model=model)
                     with open(savepath + savename, 'wb') as f:
                         pickle.dump(result, f)
