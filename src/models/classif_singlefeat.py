@@ -155,7 +155,7 @@ if __name__ == "__main__":
         FREQ = FREQS_NAMES.index(args.frequency_band)
     if args.channel != None or args.frequency_band != None:
         savename = 'chan_{}_{}.pkl'.format(CHAN, FREQS_NAMES[FREQ])
-        X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=CHAN, FREQ=FREQ)
+        X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=CHAN, FREQ=FREQ, balance=balance)
         result = classif_singlefeat(X,y, groups, n_perms=n_perms, model=model)
         with open(savepath + savename, 'wb') as f:
             pickle.dump(result, f)

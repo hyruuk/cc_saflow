@@ -11,6 +11,7 @@ from sklearn.linear_model import LogisticRegression
 from mlneurotools.ml import classification, StratifiedShuffleGroupSplit
 import argparse
 import os
+import random
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -78,7 +79,7 @@ def classif_multifeat(X,y,groups, n_perms, model):
     print('p value : ' + str(results['acc_pvalue']))
     return results
 
-def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=0, balance=False):
+def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, FREQS_NAMES, conds_list, CHAN=0, balance=False):
     # Prepare data
     X = []
     y = []
@@ -120,7 +121,7 @@ def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=0, balance=F
         X = X_balanced
         y = y_balanced
         groups = groups_balanced
-    X = np.array(X).reshape(-1, 8) #Not sure about this part
+    X = np.array(X).reshape(-1, len(FREQS_NAMES))
     return X, y, groups
 
 if __name__ == "__main__":
@@ -136,7 +137,7 @@ if __name__ == "__main__":
         conds_list = ['FREQhits', 'RAREhits']
         balance = True
 
-    savepath = RESULTS_PATH + model + 'mf_LOGO_{}perm_{}{}/'.format(n_perms, split[0], split[1])
+    savepath = RESULTS_PATH + '{}_'.format(by) + model + 'mf_LOGO_{}perm_{}{}/'.format(n_perms, split[0], split[1])
 
     if not(os.path.isdir(savepath)):
         os.makedirs(savepath)
@@ -144,16 +145,16 @@ if __name__ == "__main__":
     if args.channel != None:
         CHAN = args.channel
     if args.channel != None :
-        savename = 'chan_{}_{}.pkl'.format(CHAN, 'multifreq')
-        X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=CHAN)
+        savename = 'chan_{}.pkl'.format(CHAN)
+        X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, FREQS_NAMES, conds_list, CHAN=CHAN, balance=balance)
         result = classif_singlefeat(X,y, groups, n_perms=n_perms, model=model)
         with open(savepath + savename, 'wb') as f:
             pickle.dump(result, f)
     else:
         for CHAN in range(270):
-            savename = 'chan_{}_{}.pkl'.format(CHAN, 'multifreq')
+            savename = 'chan_{}.pkl'.format(CHAN)
             if not(os.path.isfile(savepath + savename)):
-                X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=CHAN)
+                X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, FREQS_NAMES, conds_list, CHAN=CHAN, balance=balance)
                 result = classif_multifeat(X,y, groups, n_perms=n_perms, model=model)
                 with open(savepath + savename, 'wb') as f:
                     pickle.dump(result, f)
