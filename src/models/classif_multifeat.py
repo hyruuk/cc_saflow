@@ -52,7 +52,7 @@ parser.add_argument(
 parser.add_argument(
     "-m",
     "--model",
-    default="LDA", 
+    default="LDA",
     type=str,
     help="Classifier to apply",
 )
@@ -60,14 +60,14 @@ parser.add_argument(
 args = parser.parse_args()
 
 def classif_multifeat(X,y,groups, n_perms, model):
-    
-    if model == "LDA" : 
-        clf = LinearDiscriminantAnalysis()    
+
+    if model == "LDA" :
+        clf = LinearDiscriminantAnalysis()
     elif model == "KNN" :
         clf = KNeighborsClassifier(n_neighbors=5)
     elif model == "SVM" :
         clf = SVC()
-    elif model == "DT" : 
+    elif model == "DT" :
         clf = DecisionTreeClassifier()
     elif model == "LR":
         clf = LogisticRegression()
@@ -79,7 +79,7 @@ def classif_multifeat(X,y,groups, n_perms, model):
     print('p value : ' + str(results['acc_pvalue']))
     return results
 
-def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, FREQS_NAMES, conds_list, CHAN=0, balance=False):
+def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=0, balance=False):
     # Prepare data
     X = []
     y = []
@@ -121,7 +121,7 @@ def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, FREQS_NAMES, conds_list, CHAN
         X = X_balanced
         y = y_balanced
         groups = groups_balanced
-    X = np.array(X).reshape(-1, len(FREQS_NAMES))
+    X = np.array(X).reshape(-1, len(X_balanced[0]))
     return X, y, groups
 
 if __name__ == "__main__":
@@ -146,7 +146,7 @@ if __name__ == "__main__":
         CHAN = args.channel
     if args.channel != None :
         savename = 'chan_{}.pkl'.format(CHAN)
-        X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, FREQS_NAMES, conds_list, CHAN=CHAN, balance=balance)
+        X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=CHAN, balance=balance)
         result = classif_singlefeat(X,y, groups, n_perms=n_perms, model=model)
         with open(savepath + savename, 'wb') as f:
             pickle.dump(result, f)
@@ -154,7 +154,7 @@ if __name__ == "__main__":
         for CHAN in range(270):
             savename = 'chan_{}.pkl'.format(CHAN)
             if not(os.path.isfile(savepath + savename)):
-                X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, FREQS_NAMES, conds_list, CHAN=CHAN, balance=balance)
+                X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=CHAN, balance=balance)
                 result = classif_multifeat(X,y, groups, n_perms=n_perms, model=model)
                 with open(savepath + savename, 'wb') as f:
                     pickle.dump(result, f)
