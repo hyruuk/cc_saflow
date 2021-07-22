@@ -8,6 +8,7 @@ from mlneurotools.stats import ttest_perm
 import argparse
 import os
 import mne
+import random
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -43,25 +44,50 @@ parser.add_argument(
 args = parser.parse_args()
 
 
-def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, FREQ=0):
+def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=0, FREQ=0, balance=False):
     # Prepare data
-    condA = []
-    condB = []
+    X = []
+    y = []
+    groups = []
     for i_subj, subj in enumerate(SUBJ_LIST):
         for run in BLOCS_LIST:
             for i_cond, cond in enumerate(conds_list):
                 _, fpath_condA = get_SAflow_bids(BIDS_PATH, subj, run, stage='PSD', cond=cond)
                 with open(fpath_condA, 'rb') as f:
                     data = pickle.load(f)
-                if i_cond == 0:
-                    for x in data[:, :, FREQ]:
-                        condA.append(x)
-                else:
-                    for x in data[:, :, FREQ]:
-                        condB.append(x)
-    condA = np.array(condA)
-    condB = np.array(condB)
-    return condA, condB
+                for x in data[:, CHAN, FREQ]:
+                    X.append(x)
+                    y.append(i_cond)
+                    groups.append(i_subj)
+    if balance:
+        X_balanced = []
+        y_balanced = []
+        groups_balanced = []
+        # We want to balance the trials across subjects
+        for subj_idx in np.unique(groups):
+            y_subj = [label for i, label in enumerate(y) if groups[i] == subj_idx]
+            max_trials = min(np.unique(y_subj, return_counts=True)[1])
+
+            X_subj_0 = [x for i, x in enumerate(X) if groups[i] == subj_idx and y[i] == 0]
+            X_subj_1 = [x for i, x in enumerate(X) if groups[i] == subj_idx and y[i] == 1]
+
+            idx_list_0 = [x for x in range(len(X_subj_0))]
+            idx_list_1 = [x for x in range(len(X_subj_1))]
+            picks_0 = random.sample(idx_list_0, max_trials)
+            picks_1 = random.sample(idx_list_1, max_trials)
+
+            for i in range(max_trials):
+                X_balanced.append(X_subj_0[picks_0[i]])
+                y_balanced.append(0)
+                groups_balanced.append(subj_idx)
+                X_balanced.append(X_subj_1[picks_1[i]])
+                y_balanced.append(1)
+                groups_balanced.append(subj_idx)
+        X = X_balanced
+        y = y_balanced
+        groups = groups_balanced
+    X = np.array(X).reshape(-1, 1)
+    return X, y, groups
 
 if __name__ == "__main__":
     split = args.split
@@ -78,7 +104,9 @@ if __name__ == "__main__":
         FREQ = FREQS_NAMES.index(args.frequency_band)
     if args.frequency_band != None:
         savename = 'PSD_ttest_{}.pkl'.format(FREQS_NAMES[FREQ])
-        condA, condB = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, FREQ=FREQ)
+        X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, FREQ=FREQ, balance=True)
+        condA = np.array([float(x) for i, x in enumerate(X) if y[i] == 0])
+        condB = np.array([float(x) for i, x in enumerate(X) if y[i] == 1])
         tvals, pvals = ttest_perm(condA, condB, # cond1 = IN, cond2 = OUT
                 n_perm=nperms+1,
                 n_jobs=8,
@@ -96,7 +124,9 @@ if __name__ == "__main__":
         for FREQ in range(len(FREQS_NAMES)):
             savename = 'PSD_ttest_{}.pkl'.format(FREQS_NAMES[FREQ])
             if not(os.path.isfile(savepath + savename)):
-                condA, condB = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, FREQ=FREQ)
+                X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, FREQ=FREQ, balance=True)
+                condA = [float(x) for i, x in enumerate(X) if y[i] == 0]
+                condB = [float(x) for i, x in enumerate(X) if y[i] == 1]
                 tvals, pvals = ttest_perm(condA, condB, # cond1 = IN, cond2 = OUT
                         n_perm=n_perms+1,
                         n_jobs=8,
