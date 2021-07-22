@@ -208,6 +208,46 @@ def trim_INOUT_idx(INidx, OUTidx, events_trimmed, events):
 
     return INidx_trimmed, OUTidx_trimmed
 
+def get_odd_epochs(BIDS_PATH, LOGS_DIR, subj, bloc, stage='-epo'):
+    '''
+    Returns an array of indices of Freqs and Rares epochs. Retains only clean epochs.
+    '''
+    ### Get events after artifact rejection have been performed
+    epo_path, epo_filename = get_SAflow_bids(BIDS_PATH, subj, bloc, stage=stage, cond=None)
+    events_artrej = mne.read_events(epo_filename, verbose=False) # get events from the epochs file (so no resp event)
+
+    ### Get original events from the raw file, to compare them to the events left in the epochs file
+    events_fname, events_fpath = get_SAflow_bids(BIDS_PATH, subj, bloc, stage='preproc_raw', cond=None)
+    raw = read_raw_fif(events_fpath, preload=False, verbose=False)#, min_duration=2/epochs.info['sfreq'])
+    try:
+        events = mne.find_events(raw, min_duration=1/raw.info['sfreq'], verbose=False)
+    except ValueError:
+        events = mne.find_events(raw, min_duration=2/raw.info['sfreq'], verbose=False)
+
+    # Get the list of hits/miss events
+    log_file = LOGS_DIR + find_logfile(subj,bloc,os.listdir(LOGS_DIR))
+    events_noerr, events_comerr, events_omerr = remove_errors(log_file, events)
+
+    # Keep only events that are clean, and split them by condition
+    # Start with correct events
+    events_noerr_trimmed, idx_noerr_trimmed = trim_events(events_noerr, events_artrej)
+    freqs_hits_idx = np.array([idx_noerr_trimmed[i] for i, x in enumerate(events_noerr_trimmed) if x[2] == 21])
+    rares_hits_idx = np.array([idx_noerr_trimmed[i] for i, x in enumerate(events_noerr_trimmed) if x[2] == 31])
+
+    # Then commission errors
+    if events_comerr.size > 0:
+        events_comerr_trimmed, idx_comerr_trimmed = trim_events(events_comerr, events_artrej)
+        rares_miss_idx = np.array(idx_comerr_trimmed)
+    else:
+        rares_miss_idx = np.array([])
+    # And finally ommission errors
+    if events_omerr.size > 0:
+        events_omerr_trimmed, idx_omerr_trimmed = trim_events(events_omerr, events_artrej)
+        freqs_miss_idx = np.array(idx_omerr_trimmed)
+    else:
+        freqs_miss_idx = np.array([])
+
+    return freqs_hits_idx, freqs_miss_idx, rares_hits_idx, rares_miss_idx
 
 def get_VTC_epochs(BIDS_PATH, LOGS_DIR, subj, bloc, stage='-epo', lobound=None, hibound=None, save_epochs=False, filt_order=3, filt_cutoff=0.1):
     '''
@@ -216,7 +256,6 @@ def get_VTC_epochs(BIDS_PATH, LOGS_DIR, subj, bloc, stage='-epo', lobound=None, 
     It returns IN and OUT indices that are to be used in the split_PSD_data function
 
     '''
-
     ### Get events after artifact rejection have been performed
     epo_path, epo_filename = get_SAflow_bids(BIDS_PATH, subj, bloc, stage=stage, cond=None)
     events_artrej = mne.read_events(epo_filename, verbose=False) # get events from the epochs file (so no resp event)
@@ -429,7 +468,7 @@ def split_trials(BIDS_PATH, LOGS_DIR, subj, run, stage='PSD', by='VTC',
                     keep_errors=False, equalize=False,
                     lobound=None, hibound=None,
                     filt_order=3, filt_cutoff=0.1,
-                    freq_names=None):
+                    freq_names=None, oddball='hits'):
     '''
     If stage is 'env', freq_names must be specified.
     '''
@@ -441,8 +480,18 @@ def split_trials(BIDS_PATH, LOGS_DIR, subj, run, stage='PSD', by='VTC',
         print('{} IN epochs'.format(len(INidx)))
         print('{} OUT epochs'.format(len(OUTidx)))
     elif by == 'odd':
-        print('Be patient.')
-        pass
+        freqs_hits_idx, freqs_miss_idx, rares_hits_idx, rares_miss_idx = get_odd_epochs(BIDS_PATH, LOGS_DIR, subj, run, stage='-epo')
+        if oddball == 'all':
+            condA_idx = np.sort(np.concatenate((freqs_hits_idx, freqs_miss_idx)))
+            condB_idx = np.sort(np.concatenate((freqs_hits_idx, rares_miss_idx)))
+        elif oddball == 'hits':
+            condA_idx = freqs_hits_idx
+            condB_idx = rares_hits_idx
+        elif oddball == 'miss':
+            condA_idx = freqs_miss_idx
+            condB_idx = rares_miss_idx
+        print('{} Freqs epochs'.format(len(condA_idx)))
+        print('{} Rare epochs'.format(len(condB_idx)))
 
     # Load epochs
     if stage == 'PSD':
