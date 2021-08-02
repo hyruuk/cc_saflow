@@ -8,7 +8,10 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import RandomizedSearchCV
 from mlneurotools.ml import classification, StratifiedShuffleGroupSplit
+from xgboost import XGBClassifier
+from scipy.stats import uniform
 import argparse
 import os
 import random
@@ -45,10 +48,11 @@ parser.add_argument(
 )
 
 #The arguments for the model selection can be :
-#KNN for K neearest neighbors
+#KNN for K nearest neighbors
 #SVM for support vector machine
-#DT for decision tree
+#DT for decision tree 
 #LR for Logistic Regression
+#XGBC for XGBoost Classifier
 parser.add_argument(
     "-m",
     "--model",
@@ -64,20 +68,58 @@ def classif_multifeat(X,y,groups, n_perms, model):
     if model == "LDA" :
         clf = LinearDiscriminantAnalysis()
     elif model == "KNN" :
-        clf = KNeighborsClassifier(n_neighbors=5)
+        clf = KNeighborsClassifier()
+        distributions = dict(n_neighbors=np.arange(1, 16, 1), 
+                            weights = ['uniform', 'distance'],
+                            metric = ['minkowski', 'euclidean', 'manhattan'])
     elif model == "SVM" :
         clf = SVC()
+        distributions = dict()
     elif model == "DT" :
-        clf = DecisionTreeClassifier()
+        clf = DecisionTreeClassifier() 
+        distributions = dict()
     elif model == "LR":
         clf = LogisticRegression()
+        distributions = dict(C=uniform(loc=0, scale=4), 
+                                penalty=['l2', 'l1', 'elasticnet', 'none'], solver=['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'],
+                                multi_class = ['auto', 'ovr', 'multinomial'])
+    elif model == "XGBC" :
+        clf = XGBClassifier() 
 
+    #Find best parameters
     cv = LeaveOneGroupOut()
+    if model!='XGBC' and model!='LDA': 
+        search = RandomizedSearchCV(clf, distributions, cv=cv, random_state=0).fit(X, y, groups)
+        best_params = search.best_params_
+    
+    #Apply best hyperparameters to our classifier (with perms this time)
+    if model == "KNN" :
+        metric = best_params['metric']
+        n_neighbors = best_params['n_neighbors']
+        weights= best_params['weights']
+        clf = KNeighborsClassifier(n_neighbors=n_neighbors, metric=metric, weights=weights)
+    elif model == "SVM" :
+        clf = SVC(best_params)
+    elif model == "DT" :
+        clf = DecisionTreeClassifier(best_params)
+    elif model == "LR":
+        C = best_params['C']
+        penalty = best_params['penalty']
+        solver = best_params['solver']
+        multi_class = best_params['multi_class']
+        clf = LogisticRegression(C=C, penalty=penalty, solver=solver, multi_class=multi_class)
+
     results = classification(clf, cv, X, y, groups=groups, perm=n_perms, n_jobs=8)
     print('Done')
     print('DA : ' + str(results['acc_score']))
     print('p value : ' + str(results['acc_pvalue']))
-    return results
+
+    #Add hyperparameters into our results dictionary 
+    if model!='XGBC' and model!='LDA': 
+        for key, value in best_params.items() : 
+            results[key] = value 
+    return results 
+
 
 def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=0, balance=False):
     # Prepare data
@@ -128,7 +170,6 @@ if __name__ == "__main__":
     model = args.model
     split = args.split
     n_perms = args.n_permutations
-    conds_list = (ZONE_CONDS[0] + str(split[0]), ZONE_CONDS[1] + str(split[1]))
     by = args.by
     if by == 'VTC':
         conds_list = (ZONE_CONDS[0] + str(split[0]), ZONE_CONDS[1] + str(split[1]))
@@ -137,7 +178,7 @@ if __name__ == "__main__":
         conds_list = ['FREQhits', 'RAREhits']
         balance = True
 
-    savepath = RESULTS_PATH + '{}_'.format(by) + model + 'mf_LOGO_{}perm_{}{}/'.format(n_perms, split[0], split[1])
+    savepath = RESULTS_PATH + '{}_'.format(by) + model + 'mf_LOGO_RSCV_{}perm_{}{}/'.format(n_perms, split[0], split[1])
 
     if not(os.path.isdir(savepath)):
         os.makedirs(savepath)
@@ -147,12 +188,13 @@ if __name__ == "__main__":
     if args.channel != None :
         savename = 'chan_{}.pkl'.format(CHAN)
         X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=CHAN, balance=balance)
-        result = classif_singlefeat(X,y, groups, n_perms=n_perms, model=model)
+        result = classif_multifeat(X,y, groups, n_perms=n_perms, model=model)
         with open(savepath + savename, 'wb') as f:
             pickle.dump(result, f)
     else:
         for CHAN in range(270):
             savename = 'chan_{}.pkl'.format(CHAN)
+            print(savename)
             if not(os.path.isfile(savepath + savename)):
                 X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=CHAN, balance=balance)
                 result = classif_multifeat(X,y, groups, n_perms=n_perms, model=model)
