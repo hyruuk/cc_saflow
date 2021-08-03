@@ -77,7 +77,7 @@ def classif_multifeat(X,y,groups, n_perms, model):
         distributions = dict()
     elif model == "DT" :
         clf = DecisionTreeClassifier() 
-        distributions = dict()
+        distributions = dict(criterion=['gini', 'entropy'], splitter=['best', 'random']) #Idk if need more hp
     elif model == "LR":
         clf = LogisticRegression()
         distributions = dict(C=uniform(loc=0, scale=4), 
@@ -101,7 +101,9 @@ def classif_multifeat(X,y,groups, n_perms, model):
     elif model == "SVM" :
         clf = SVC(best_params)
     elif model == "DT" :
-        clf = DecisionTreeClassifier(best_params)
+        criterion=best_params['criterion']
+        splitter = best_params['splitter']
+        clf = DecisionTreeClassifier(criterion=criterion, splitter=splitter)
     elif model == "LR":
         C = best_params['C']
         penalty = best_params['penalty']
