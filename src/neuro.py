@@ -26,8 +26,8 @@ def find_rawfile(subj, bloc, BIDS_PATH):
 
 def saflow_preproc(filepath, savepath, reportpath):
     report = mne.Report(verbose=True)
-    raw = read_raw_ctf(filepath, preload=True)
-    raw_data = raw.copy().apply_gradient_compensation(grade=3) #required for source reconstruction
+    raw_data = read_raw_ctf(filepath, preload=True)
+    raw_data = raw_data.apply_gradient_compensation(grade=3) #required for source reconstruction
     picks = mne.pick_types(raw_data.info, meg=True, eog=True, exclude='bads')
     fig = raw_data.plot(show=False);
     report.add_figs_to_section(fig, captions='Time series', section='Raw data')
@@ -95,9 +95,10 @@ def saflow_preproc(filepath, savepath, reportpath):
     ## SAVE PREPROCESSED FILE
     report.save(reportpath, open_browser=False, overwrite=True);
     raw_data.save(savepath, overwrite=True)
-    del raw
     del ica
-    return raw_data
+    del report
+    del raw_data
+    del fig
 
 def segment_files(bids_filepath, tmin=0, tmax=0.8):
     raw = read_raw_fif(bids_filepath, preload=True)

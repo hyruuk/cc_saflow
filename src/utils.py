@@ -13,27 +13,28 @@ def get_SAflow_bids(BIDS_PATH, subj, run, stage, cond=None):
     else:
         task = 'gradCPT'
 
-    if not('report' in stage) and 'epo' in stage or 'raw' in stage: # determine extension based on stage
-        extension = '.fif'
-    elif 'sources' in stage or 'TFR' in stage:
-        extension = '.hd5'
-    elif 'events' in stage:
-        extension = '.tsv'
-    elif 'ARlog' in stage or 'PSD' in stage:
-        extension = '.pkl'
-    elif 'report' in stage:
-        extension = '.html'
-
-    if 'events' in stage:
-        SAflow_bidsname = 'sub-{}_ses-recording_task-{}_run-0{}_{}{}'.format(subj, task, run, stage, extension)
+    if stage == 'raw_ds':
+        SAflow_bidsname = 'sub-{}_ses-recording_task-{}_run-0{}_meg.ds'.format(subj, task, run)
+        SAflow_bidspath = os.path.join(BIDS_PATH, 'sub-{}'.format(subj), 'ses-recording', 'meg', SAflow_bidsname)
+        return SAflow_bidsname, SAflow_bidspath
     else:
-        if cond == None: # build basename with or without cond
+        if not('report' in stage) and 'epo' in stage or 'raw' in stage: # determine extension based on stage
+            extension = '.fif'
+        elif 'sources' in stage or 'TFR' in stage:
+            extension = '.hd5'
+        elif 'events' in stage:
+            extension = '.tsv'
+        elif 'ARlog' in stage or 'PSD' in stage:
+            extension = '.pkl'
+        elif 'report' in stage:
+            extension = '.html'
+
+        if cond == None or 'events' in stage: # build basename with or without cond
             SAflow_bidsname = 'sub-{}_ses-recording_task-{}_run-0{}_meg_{}{}'.format(subj, task, run, stage, extension)
         else:
             SAflow_bidsname = 'sub-{}_ses-recording_task-{}_run-0{}_meg_{}_{}{}'.format(subj, task, run, stage, cond, extension)
-
-    SAflow_bidspath = os.path.join(BIDS_PATH, 'sub-{}'.format(subj), 'ses-recording', 'meg', SAflow_bidsname)
-    return SAflow_bidsname, SAflow_bidspath
+        SAflow_bidspath = os.path.join(BIDS_PATH, 'sub-{}'.format(subj), 'ses-recording', 'meg', SAflow_bidsname)
+        return SAflow_bidsname, SAflow_bidspath
 
 def array_topoplot(toplot, ch_xy, showtitle=False, titles=None, savefig=False, figpath=None, vmin=-1, vmax=1, cmap='magma', with_mask=False, masks=None, show=True):
     #create fig
