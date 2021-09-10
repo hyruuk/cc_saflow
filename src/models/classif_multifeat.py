@@ -50,7 +50,7 @@ parser.add_argument(
 #The arguments for the model selection can be :
 #KNN for K nearest neighbors
 #SVM for support vector machine
-#DT for decision tree 
+#DT for decision tree
 #LR for Logistic Regression
 #XGBC for XGBoost Classifier
 parser.add_argument(
@@ -69,58 +69,73 @@ def classif_multifeat(X,y,groups, n_perms, model):
         clf = LinearDiscriminantAnalysis()
     elif model == "KNN" :
         clf = KNeighborsClassifier()
-        distributions = dict(n_neighbors=np.arange(1, 16, 1), 
+        distributions = dict(n_neighbors=np.arange(1, 16, 1),
                             weights = ['uniform', 'distance'],
                             metric = ['minkowski', 'euclidean', 'manhattan'])
     elif model == "SVM" :
         clf = SVC()
         distributions = dict()
     elif model == "DT" :
-        clf = DecisionTreeClassifier() 
+        clf = DecisionTreeClassifier()
         distributions = dict(criterion=['gini', 'entropy'], splitter=['best', 'random']) #Idk if need more hp
     elif model == "LR":
         clf = LogisticRegression()
-        distributions = dict(C=uniform(loc=0, scale=4), 
+        distributions = dict(C=uniform(loc=0, scale=4),
                                 penalty=['l2', 'l1', 'elasticnet', 'none'], solver=['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'],
                                 multi_class = ['auto', 'ovr', 'multinomial'])
     elif model == "XGBC" :
-        clf = XGBClassifier() 
+        clf = XGBClassifier()
 
     #Find best parameters
-    cv = LeaveOneGroupOut()
-    if model!='XGBC' and model!='LDA': 
-        search = RandomizedSearchCV(clf, distributions, cv=cv, random_state=0).fit(X, y, groups)
-        best_params = search.best_params_
-    
-    #Apply best hyperparameters to our classifier (with perms this time)
-    if model == "KNN" :
-        metric = best_params['metric']
-        n_neighbors = best_params['n_neighbors']
-        weights= best_params['weights']
-        clf = KNeighborsClassifier(n_neighbors=n_neighbors, metric=metric, weights=weights)
-    elif model == "SVM" :
-        clf = SVC(best_params)
-    elif model == "DT" :
-        criterion=best_params['criterion']
-        splitter = best_params['splitter']
-        clf = DecisionTreeClassifier(criterion=criterion, splitter=splitter)
-    elif model == "LR":
-        C = best_params['C']
-        penalty = best_params['penalty']
-        solver = best_params['solver']
-        multi_class = best_params['multi_class']
-        clf = LogisticRegression(C=C, penalty=penalty, solver=solver, multi_class=multi_class)
+    if model!='XGBC' and model!='LDA':
+        outer_cv = LeaveOneGroupOut()
+        inner_cv = LeaveOneGroupOut()
+        for train_outer, test_outer in outer_cv.split(X, y, groups):
+            search = RandomizedSearchCV(clf, distributions, cv=inner_cv, random_state=0).fit(X[train_outer], y[train_outer], groups[train_outer])
+            best_params = search.best_params_
+            #Apply best hyperparameters to our classifier (with perms this time)
+            if model == "KNN" :
+                metric = best_params['metric']
+                n_neighbors = best_params['n_neighbors']
+                weights= best_params['weights']
+                clf = KNeighborsClassifier(n_neighbors=n_neighbors, metric=metric, weights=weights)
+            elif model == "SVM" :
+                clf = SVC(best_params)
+            elif model == "DT" :
+                criterion=best_params['criterion']
+                splitter = best_params['splitter']
+                clf = DecisionTreeClassifier(criterion=criterion, splitter=splitter)
+            elif model == "LR":
+                C = best_params['C']
+                penalty = best_params['penalty']
+                solver = best_params['solver']
+                multi_class = best_params['multi_class']
+                clf = LogisticRegression(C=C, penalty=penalty, solver=solver, multi_class=multi_class)
 
-    results = classification(clf, cv, X, y, groups=groups, perm=n_perms, n_jobs=8)
-    print('Done')
-    print('DA : ' + str(results['acc_score']))
-    print('p value : ' + str(results['acc_pvalue']))
+            clf.fit(X[train_outer], y[train_outer])
+            DA = clf.score(X[test_outer], y[test_outer])
+            print('Done')
+            print('DA : ' + str(DA))
+            print('Best params : ' + str(best_params))
 
-    #Add hyperparameters into our results dictionary 
-    if model!='XGBC' and model!='LDA': 
-        for key, value in best_params.items() : 
-            results[key] = value 
-    return results 
+
+
+
+            results = classification(clf, cv, X[test_idx], y[test_idx], groups=groups, perm=n_perms, n_jobs=8)
+            print('Done')
+            print('DA : ' + str(results['acc_score']))
+            print('p value : ' + str(results['acc_pvalue']))
+
+        #Add hyperparameters into our results dictionary
+        for key, value in best_params.items() :
+            results[key] = value
+    else:
+        inner_cv = LeaveOneGroupOut()
+        results = classification(clf, inner_cv, X, y, groups=groups, perm=n_perms, n_jobs=8)
+        print('Done')
+        print('DA : ' + str(results['acc_score']))
+        print('p value : ' + str(results['acc_pvalue']))
+    return results
 
 
 def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=0, balance=False):
@@ -166,6 +181,8 @@ def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=0, balance=F
         y = y_balanced
         groups = groups_balanced
     X = np.array(X).reshape(-1, len(X_balanced[0]))
+    y = np.asarray(y)
+    groups = np.asarray(groups)
     return X, y, groups
 
 if __name__ == "__main__":
@@ -187,7 +204,6 @@ if __name__ == "__main__":
 
     if args.channel != None:
         CHAN = args.channel
-    if args.channel != None :
         savename = 'chan_{}.pkl'.format(CHAN)
         X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=CHAN, balance=balance)
         result = classif_multifeat(X,y, groups, n_perms=n_perms, model=model)
