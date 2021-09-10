@@ -123,7 +123,7 @@ def classif_multifeat(X,y,groups, n_perms, model):
             # - In each pass of the above loop, store DA and best_params
             # - When the for loop is over, get the params of the highest DA
             # - Store it in results (l. 128-130)
-            # - Run Permutations (i.e. shuffle y and re-run l.115-119 n_perms times)
+            # - Run Permutations (i.e. "shuffle y and re-run l.115-119" n_perms times)
 
             #Add hyperparameters into our results dictionary
             for key, value in best_params.items() :
