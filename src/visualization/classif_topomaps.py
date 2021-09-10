@@ -110,9 +110,9 @@ if __name__ == "__main__":
     vmin_acc = np.min(np.min(np.asarray(toplot_acc)))
 
     array_topoplot(toplot_pval, ch_xy, showtitle=True, titles=titles,
-                    savefig=True, figpath=figpath_pval, vmin=vmin_pval, vmax=vmax_pval,
-                    with_mask=True, masks=allmasks)
+                    savefig=True, figpath=figpath_pval, vmin=0, vmax=0.1,
+                    with_mask=True, masks=allmasks, cmap = 'viridis')
 
     array_topoplot(toplot_acc, ch_xy, showtitle=True, titles=titles,
                     savefig=True, figpath=figpath_acc, vmin=vmin_acc, vmax=vmax_acc,
-                    with_mask=True, masks=allmasks)
+                    with_mask=True, masks=allmasks, cmap = 'plasma')
