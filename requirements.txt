@@ -17,3 +17,5 @@ autoreject
 joblib
 sklearn
 str2bool
+mlneurotools
+xgboost
