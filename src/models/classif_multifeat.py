@@ -223,7 +223,10 @@ if __name__ == "__main__":
         conds_list = ['FREQhits', 'RAREhits']
         balance = True
 
-    savepath = RESULTS_PATH + '{}_'.format(by) + model + 'mf_LOGO_RSCV_{}perm_{}{}/'.format(n_perms, split[0], split[1])
+    if model!='XGBC' and model!='LDA' :
+        savepath = RESULTS_PATH + '{}_'.format(by) + model + 'mf_LOGO_RSCV_{}perm_{}{}/'.format(n_perms, split[0], split[1])
+    else :
+        savepath = RESULTS_PATH + '{}_'.format(by) + model + 'mf_LOGO_{}perm_{}{}/'.format(n_perms, split[0], split[1])
 
     if not(os.path.isdir(savepath)):
         os.makedirs(savepath)
