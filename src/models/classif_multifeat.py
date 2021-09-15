@@ -86,10 +86,15 @@ def classif_multifeat(X,y,groups, n_perms, model):
     elif model == "XGBC" :
         clf = XGBClassifier()
 
+    #Loop for permutations
+
     #Find best parameters
     if model!='XGBC' and model!='LDA':
         outer_cv = LeaveOneGroupOut()
         inner_cv = LeaveOneGroupOut()
+        DA_list = []
+        best_params_list = []
+
         for train_outer, test_outer in outer_cv.split(X, y, groups):
             search = RandomizedSearchCV(clf, distributions, cv=inner_cv, random_state=0).fit(X[train_outer], y[train_outer], groups[train_outer])
             best_params = search.best_params_
@@ -111,29 +116,51 @@ def classif_multifeat(X,y,groups, n_perms, model):
                 solver = best_params['solver']
                 multi_class = best_params['multi_class']
                 clf = LogisticRegression(C=C, penalty=penalty, solver=solver, multi_class=multi_class)
+        
+            perms = np.zeros((n_perms, 1))
+            for _ in perms :
+                clf.fit(X[train_outer], y[train_outer])
+                DA = clf.score(X[test_outer], y[test_outer])
+                print('Done')
+                print('DA : ' + str(DA))
+                print('Best params : ' + str(best_params))
+               
+                #Store DA and best_params
+                best_params_list.append(best_params)
+                DA_list.append(DA)
 
-            clf.fit(X[train_outer], y[train_outer])
-            DA = clf.score(X[test_outer], y[test_outer])
-            print('Done')
-            print('DA : ' + str(DA))
-            print('Best params : ' + str(best_params))
+                #Randomized y for permutations
+                np.random.shuffle(y)
 
+            #Find the higher DA and its best_params
+            index = 0
+            max_DA = max(DA_list)
+            hyperparameters = []
+            for i, elt in enumerate(DA_list): 
+                if elt == max_DA : 
+                    index = i 
+            hyperparameters = best_params_list[index]
 
-            # TODO :
-            # - In each pass of the above loop, store DA and best_params
-            # - When the for loop is over, get the params of the highest DA
-            # - Store it in results (l. 128-130)
-            # - Run Permutations (i.e. "shuffle y and re-run l.115-119" n_perms times)
+                # TODO :
+                # - Need to add the pvalue
 
-            #Add hyperparameters into our results dictionary
-            for key, value in best_params.items() :
-                results[key] = value
+            #Save DA and hyperparameters into results
+            results={}
+            results['acc_score'] = max_DA
+            results['best_params'] = hyperparameters
+
+            #Print the best DA with its hyperparameters
+            print('Best DA :' + str(max_DA))
+            print('Best hyperparameters : ' +str(hyperparameters))
+           
     else:
         inner_cv = LeaveOneGroupOut()
         results = classification(clf, inner_cv, X, y, groups=groups, perm=n_perms, n_jobs=8)
         print('Done')
         print('DA : ' + str(results['acc_score']))
         print('p value : ' + str(results['acc_pvalue']))
+
+
     return results
 
 
@@ -196,7 +223,10 @@ if __name__ == "__main__":
         conds_list = ['FREQhits', 'RAREhits']
         balance = True
 
-    savepath = RESULTS_PATH + '{}_'.format(by) + model + 'mf_LOGO_RSCV_{}perm_{}{}/'.format(n_perms, split[0], split[1])
+    if model!='XGBC' and model!='LDA' :
+        savepath = RESULTS_PATH + '{}_'.format(by) + model + 'mf_LOGO_RSCV_{}perm_{}{}/'.format(n_perms, split[0], split[1])
+    else :
+        savepath = RESULTS_PATH + '{}_'.format(by) + model + 'mf_LOGO_{}perm_{}{}/'.format(n_perms, split[0], split[1])
 
     if not(os.path.isdir(savepath)):
         os.makedirs(savepath)
