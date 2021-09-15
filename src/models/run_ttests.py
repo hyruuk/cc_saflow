@@ -34,6 +34,13 @@ parser.add_argument(
     help="Bounds of percentile split",
 )
 parser.add_argument(
+    "-by",
+    "--by",
+    default="VTC",
+    type=str,
+    help="Choose the classification problem ('VTC' or 'odd')",
+)
+parser.add_argument(
     "-a",
     "--alpha",
     default=0.05,
@@ -93,10 +100,18 @@ if __name__ == "__main__":
     split = args.split
     n_perms = args.n_permutations
     alpha = args.alpha
-    conds_list = (ZONE_CONDS[0] + str(split[0]), ZONE_CONDS[1] + str(split[1]))
+    by = args.by
+    if by == 'VTC':
+        conds_list = (ZONE_CONDS[0] + str(split[0]), ZONE_CONDS[1] + str(split[1]))
+        balance = True
+        savepath = RESULTS_PATH + 'PSD_ttest_{}perm_{}{}/'.format(n_perms, split[0], split[1])
+        figpath = IMG_DIR + 'PSD_ttest_{}perm_alpha{}_{}{}.png'.format(n_perms, str(alpha)[2:], split[0], split[1])
+    elif by == 'odd':
+        conds_list = ['FREQhits', 'RAREhits']
+        balance = True
+        savepath = RESULTS_PATH + '{}_PSD_ttest_{}perm/'.format(by, n_perms)
+        figpath = IMG_DIR + '{}_PSD_ttest_{}perm_alpha{}.png'.format(by, n_perms, str(alpha)[2:])
 
-    savepath = RESULTS_PATH + 'PSD_ttest_{}perm_{}{}/'.format(n_perms, split[0], split[1])
-    figpath = IMG_DIR + 'PSD_ttest_{}perm_alpha{}_{}{}.png'.format(n_perms, str(alpha)[2:], split[0], split[1])
     if not(os.path.isdir(savepath)):
         os.makedirs(savepath)
 
@@ -104,7 +119,7 @@ if __name__ == "__main__":
         FREQ = FREQS_NAMES.index(args.frequency_band)
     if args.frequency_band != None:
         savename = 'PSD_ttest_{}.pkl'.format(FREQS_NAMES[FREQ])
-        X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, FREQ=FREQ, balance=True)
+        X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, FREQ=FREQ, balance=balance)
         condA = np.array([float(x) for i, x in enumerate(X) if y[i] == 0])
         condB = np.array([float(x) for i, x in enumerate(X) if y[i] == 1])
         tvals, pvals = ttest_perm(condA, condB, # cond1 = IN, cond2 = OUT
