@@ -106,11 +106,13 @@ if __name__ == "__main__":
         balance = True
         savepath = RESULTS_PATH + 'PSD_ttest_{}perm_{}{}/'.format(n_perms, split[0], split[1])
         figpath = IMG_DIR + 'PSD_ttest_{}perm_alpha{}_{}{}.png'.format(n_perms, str(alpha)[2:], split[0], split[1])
+        figpath_contrast = IMG_DIR + 'PSD_contrast_{}perm_alpha{}_{}{}.png'.format(n_perms, str(alpha)[2:], split[0], split[1])
     elif by == 'odd':
         conds_list = ['FREQhits', 'RAREhits']
         balance = True
         savepath = RESULTS_PATH + '{}_PSD_ttest_{}perm/'.format(by, n_perms)
         figpath = IMG_DIR + '{}_PSD_ttest_{}perm_alpha{}.png'.format(by, n_perms, str(alpha)[2:])
+        figpath_contrast = IMG_DIR + '{}_PSD_contrast_{}perm_alpha{}.png'.format(by, n_perms, str(alpha)[2:])
 
     if not(os.path.isdir(savepath)):
         os.makedirs(savepath)
@@ -135,6 +137,7 @@ if __name__ == "__main__":
             pickle.dump(results, f)
     else:
         alltvals = []
+        allcontrasts = []
         masks = []
         for FREQ in range(len(FREQS_NAMES)):
             savename = 'PSD_ttest_{}.pkl'.format(FREQS_NAMES[FREQ])
@@ -158,17 +161,30 @@ if __name__ == "__main__":
                 with open(savepath + savename, 'rb') as f:
                     results = pickle.load(f)
                     tvals = results['tvals']
+            contrast = ((condA-condB)/condB)
+            allcontrasts.append(contrast)
             alltvals.append(results['tvals'])
             masks.append(create_pval_mask(results['pvals'], alpha=alpha))
-        # plot
-        toplot = alltvals
-        vmax = np.max(np.max(abs(np.asarray(toplot))))
-        vmin = -vmax
+
+        # Plots
         # obtain chan locations
         _, data_fname = get_SAflow_bids(BIDS_PATH, subj='04', run='2', stage='-epo')
         epochs = mne.read_epochs(data_fname)
         ch_xy = epochs.pick_types(meg=True, ref_meg=False).info # Find the channel's position
 
+
+        # Plot tvals
+        toplot = alltvals
+        vmax = np.max(np.max(abs(np.asarray(toplot))))
+        vmin = -vmax
         array_topoplot(toplot, ch_xy, showtitle=True, titles=FREQS_NAMES,
                         savefig=True, figpath=figpath, vmin=vmin, vmax=vmax,
+                        with_mask=True, masks=masks, cmap='coolwarm')
+
+        # Plot contrasts
+        toplot = allcontrasts
+        vmax = np.max(np.max(abs(np.asarray(toplot))))
+        vmin = -vmax
+        array_topoplot(toplot, ch_xy, showtitle=True, titles=FREQS_NAMES,
+                        savefig=True, figpath=figpath_contrast, vmin=vmin, vmax=vmax,
                         with_mask=True, masks=masks, cmap='coolwarm')
