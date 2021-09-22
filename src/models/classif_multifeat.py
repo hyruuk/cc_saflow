@@ -12,6 +12,7 @@ from sklearn.model_selection import RandomizedSearchCV
 from mlneurotools.ml import classification, StratifiedShuffleGroupSplit
 from xgboost import XGBClassifier
 from scipy.stats import uniform
+from itertools import permutations
 import argparse
 import os
 import random
@@ -96,6 +97,7 @@ def classif_multifeat(X,y,groups, n_perms, model):
         best_params_list = []
 
         for train_outer, test_outer in outer_cv.split(X, y, groups):
+            #Need to add the "fixed" randomized search
             search = RandomizedSearchCV(clf, distributions, cv=inner_cv, random_state=0).fit(X[train_outer], y[train_outer], groups[train_outer])
             best_params = search.best_params_
             #Apply best hyperparameters to our classifier (with perms this time)
@@ -117,8 +119,9 @@ def classif_multifeat(X,y,groups, n_perms, model):
                 multi_class = best_params['multi_class']
                 clf = LogisticRegression(C=C, penalty=penalty, solver=solver, multi_class=multi_class)
         
-            perms = np.zeros((n_perms, 1))
-            for _ in perms :
+            for _ in range(n_perms) :
+                #Randomized y for permutations
+                y_perm = permutations(y)
                 clf.fit(X[train_outer], y[train_outer])
                 DA = clf.score(X[test_outer], y[test_outer])
                 print('Done')
@@ -129,8 +132,6 @@ def classif_multifeat(X,y,groups, n_perms, model):
                 best_params_list.append(best_params)
                 DA_list.append(DA)
 
-                #Randomized y for permutations
-                np.random.shuffle(y)
 
             #Find the higher DA and its best_params
             index = 0
