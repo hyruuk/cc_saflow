@@ -9,6 +9,7 @@ import argparse
 import os
 import mne
 import random
+from tqdm import tqdm
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -121,10 +122,20 @@ if __name__ == "__main__":
         FREQ = FREQS_NAMES.index(args.frequency_band)
     if args.frequency_band != None:
         savename = 'PSD_ttest_{}.pkl'.format(FREQS_NAMES[FREQ])
-        X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, FREQ=FREQ, balance=balance)
-        condA = np.array([float(x) for i, x in enumerate(X) if y[i] == 0])
-        condB = np.array([float(x) for i, x in enumerate(X) if y[i] == 1])
-        tvals, pvals = ttest_perm(condA, condB, # cond1 = IN, cond2 = OUT
+        if not(os.path.isfile(savepath + savename)):
+            condA_allchans = []
+            condB_allchans = []
+            for CHAN in tqdm(range(270)):
+                X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, FREQ=FREQ, CHAN=CHAN, balance=True)
+                condA = [float(x) for i, x in enumerate(X) if y[i] == 0]
+                condB = [float(x) for i, x in enumerate(X) if y[i] == 1]
+                condA_allchans.append(condA)
+                condB_allchans.append(condB)
+            condA_allchans = np.asarray(condA_allchans).T
+            condB_allchans = np.asarray(condB_allchans).T
+
+            print(condA_allchans.shape)
+            tvals, pvals = ttest_perm(condA_allchans, condB_allchans, # cond1 = IN, cond2 = OUT
                 n_perm=nperms+1,
                 n_jobs=8,
                 correction='maxstat',
@@ -142,17 +153,28 @@ if __name__ == "__main__":
         for FREQ in range(len(FREQS_NAMES)):
             savename = 'PSD_ttest_{}.pkl'.format(FREQS_NAMES[FREQ])
             if not(os.path.isfile(savepath + savename)):
-                X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, FREQ=FREQ, balance=True)
-                condA = [float(x) for i, x in enumerate(X) if y[i] == 0]
-                condB = [float(x) for i, x in enumerate(X) if y[i] == 1]
-                tvals, pvals = ttest_perm(condA, condB, # cond1 = IN, cond2 = OUT
+                condA_allchans = []
+                condB_allchans = []
+                for CHAN in tqdm(range(270)):
+                    X, y, groups = prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, FREQ=FREQ, CHAN=CHAN, balance=True)
+                    condA = [float(x) for i, x in enumerate(X) if y[i] == 0]
+                    condB = [float(x) for i, x in enumerate(X) if y[i] == 1]
+                    condA_allchans.append(condA)
+                    condB_allchans.append(condB)
+                condA_allchans = np.asarray(condA_allchans).T
+                condB_allchans = np.asarray(condB_allchans).T
+
+                print(condA_allchans.shape)
+                tvals, pvals = ttest_perm(condA_allchans, condB_allchans, # cond1 = IN, cond2 = OUT
                         n_perm=n_perms+1,
                         n_jobs=8,
                         correction='maxstat',
                         paired=False,
                         two_tailed=True)
+                contrast = ((condA_allchans-condB_allchans)/condB_allchans)                
                 results = {'tvals':tvals,
-                           'pvals':pvals}
+                           'pvals':pvals,
+                           'contrast' :contrast}
 
                 with open(savepath + savename, 'wb') as f:
                     pickle.dump(results, f)
@@ -161,7 +183,7 @@ if __name__ == "__main__":
                 with open(savepath + savename, 'rb') as f:
                     results = pickle.load(f)
                     tvals = results['tvals']
-            contrast = ((condA-condB)/condB)
+                    contrast = results['contrast']
             allcontrasts.append(contrast)
             alltvals.append(results['tvals'])
             masks.append(create_pval_mask(results['pvals'], alpha=alpha))
