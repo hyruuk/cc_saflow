@@ -4,6 +4,7 @@ from src.neuro import segment_files
 from src.saflow_params import BIDS_PATH, LOGS_DIR, SUBJ_LIST, BLOCS_LIST
 import pickle
 import os
+import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
