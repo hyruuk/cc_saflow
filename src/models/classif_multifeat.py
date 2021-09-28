@@ -131,7 +131,10 @@ def classif_multifeat(X,y,groups, n_perms, model):
                 #Store DA and best_params
                 best_params_list.append(best_params)
                 DA_list.append(DA)
-
+                
+            acc_score = np.mean(DA_list)
+            pval = compute_pval(acc_score, DA_list)
+            print('pvalue : ', + pval)
 
             #Find the higher DA and its best_params
             index = 0
@@ -142,13 +145,11 @@ def classif_multifeat(X,y,groups, n_perms, model):
                     index = i 
             hyperparameters = best_params_list[index]
 
-                # TODO :
-                # - Need to add the pvalue
-
             #Save DA and hyperparameters into results
             results={}
             results['acc_score'] = max_DA
             results['best_params'] = hyperparameters
+            results['acc_pvalue'] = pval
 
             #Print the best DA with its hyperparameters
             print('Best DA :' + str(max_DA))
@@ -164,6 +165,10 @@ def classif_multifeat(X,y,groups, n_perms, model):
 
     return results
 
+def compute_pval(score, perm_scores):
+    n_perm = len(perm_scores)
+    pvalue = (np.sum(perm_scores >= score) + 1.0) / (n_perm + 1)
+    return pvalue
 
 def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=0, balance=False):
     # Prepare data
