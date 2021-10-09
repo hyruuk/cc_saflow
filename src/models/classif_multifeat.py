@@ -131,8 +131,9 @@ def classif_multifeat(X,y,groups, n_perms, model):
                 #Store DA and best_params
                 best_params_list.append(best_params)
                 DA_list.append(DA)
-                
-            acc_score = np.mean(DA_list)
+
+            clf.fit(X[train_outer], y[train_outer])
+            acc_score = clf.score(X[test_outer], y[test_outer])
             pval = compute_pval(acc_score, DA_list)
             print('pvalue : ', + pval)
 
