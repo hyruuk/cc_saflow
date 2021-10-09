@@ -14,6 +14,7 @@ parser.add_argument(
     help="Subject to process",
 )
 args = parser.parse_args()
+
 if __name__ == "__main__":
 	#for subj in SUBJ_LIST:
 	subj = args.subject

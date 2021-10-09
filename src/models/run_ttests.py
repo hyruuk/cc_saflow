@@ -171,7 +171,7 @@ if __name__ == "__main__":
                         correction='maxstat',
                         paired=False,
                         two_tailed=True)
-                contrast = ((condA_allchans-condB_allchans)/condB_allchans)                
+                contrast = ((condA_allchans-condB_allchans)/condB_allchans)
                 results = {'tvals':tvals,
                            'pvals':pvals,
                            'contrast' :contrast}
@@ -201,7 +201,7 @@ if __name__ == "__main__":
         vmin = -vmax
         array_topoplot(toplot, ch_xy, showtitle=True, titles=FREQS_NAMES,
                         savefig=True, figpath=figpath, vmin=vmin, vmax=vmax,
-                        with_mask=True, masks=masks, cmap='coolwarm')
+                        with_mask=True, masks=masks, cmap='magma')
 
         # Plot contrasts
         toplot = allcontrasts
