@@ -2,6 +2,7 @@ from src.saflow_params import BIDS_PATH, SUBJ_LIST, BLOCS_LIST, FREQS_NAMES, ZON
 import pickle
 from src.utils import get_SAflow_bids
 import numpy as np
+from numpy.random import permutation
 from sklearn.model_selection import StratifiedShuffleSplit, GroupShuffleSplit, ShuffleSplit, LeaveOneGroupOut, KFold
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.neighbors import KNeighborsClassifier
@@ -16,6 +17,8 @@ from itertools import permutations
 import argparse
 import os
 import random
+import warnings
+warnings.filterwarnings("ignore")
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -93,13 +96,17 @@ def classif_multifeat(X,y,groups, n_perms, model):
     if model!='XGBC' and model!='LDA':
         outer_cv = LeaveOneGroupOut()
         inner_cv = LeaveOneGroupOut()
-        DA_list = []
+
         best_params_list = []
+        acc_score_list = []
+        acc_pvalue_list = []
+        acc_perm_list = []
 
         for train_outer, test_outer in outer_cv.split(X, y, groups):
             #Need to add the "fixed" randomized search
             search = RandomizedSearchCV(clf, distributions, cv=inner_cv, random_state=0).fit(X[train_outer], y[train_outer], groups[train_outer])
             best_params = search.best_params_
+            print('Best params : ' + str(best_params))
             #Apply best hyperparameters to our classifier (with perms this time)
             if model == "KNN" :
                 metric = best_params['metric']
@@ -118,43 +125,41 @@ def classif_multifeat(X,y,groups, n_perms, model):
                 solver = best_params['solver']
                 multi_class = best_params['multi_class']
                 clf = LogisticRegression(C=C, penalty=penalty, solver=solver, multi_class=multi_class)
-        
+            DA_list = []
+
             for _ in range(n_perms) :
+
                 #Randomized y for permutations
-                y_perm = permutations(y)
-                clf.fit(X[train_outer], y[train_outer])
-                DA = clf.score(X[test_outer], y[test_outer])
-                print('Done')
-                print('DA : ' + str(DA))
-                print('Best params : ' + str(best_params))
-               
+                y_perm = permutation(y) 
+                clf.fit(X[train_outer], y_perm[train_outer])
+                DA = clf.score(X[test_outer], y_perm[test_outer])
                 #Store DA and best_params
                 best_params_list.append(best_params)
                 DA_list.append(DA)
+                print('Done')
+                print('DA : ' + str(DA))
 
+            #Make the real classification    
             clf.fit(X[train_outer], y[train_outer])
             acc_score = clf.score(X[test_outer], y[test_outer])
             pval = compute_pval(acc_score, DA_list)
+
+            results=[]
+            acc_score_list.append(acc_score)
+            best_params_list.append(best_params)
+            acc_pvalue_list.append(pval)
+            acc_perm_list.append(DA_list)
+
+            print('acc_score : ', + acc_score)
             print('pvalue : ', + pval)
 
-            #Find the higher DA and its best_params
-            index = 0
-            max_DA = max(DA_list)
-            hyperparameters = []
-            for i, elt in enumerate(DA_list): 
-                if elt == max_DA : 
-                    index = i 
-            hyperparameters = best_params_list[index]
-
-            #Save DA and hyperparameters into results
-            results={}
-            results['acc_score'] = max_DA
-            results['best_params'] = hyperparameters
-            results['acc_pvalue'] = pval
-
-            #Print the best DA with its hyperparameters
-            print('Best DA :' + str(max_DA))
-            print('Best hyperparameters : ' +str(hyperparameters))
+        #Save DA and hyperparameters into results
+        best_fold_id = acc_score_list.index(max(acc_score_list))
+        results={}
+        results['acc_score'] = acc_score_list[best_fold_id]
+        results['best_params'] = best_params_list[best_fold_id]
+        results['acc_pvalue'] = acc_pvalue_list[best_fold_id]
+        results['acc_perm'] = acc_perm_list
            
     else:
         inner_cv = LeaveOneGroupOut()
