@@ -172,6 +172,7 @@ if __name__ == "__main__":
                         paired=False,
                         two_tailed=True)
                 contrast = ((condA_allchans-condB_allchans)/condB_allchans)
+                contrast = np.mean(contrast, axis=0) 
                 results = {'tvals':tvals,
                            'pvals':pvals,
                            'contrast' :contrast}
