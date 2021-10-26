@@ -130,7 +130,7 @@ def classif_multifeat(X,y,groups, n_perms, model):
             for _ in range(n_perms) :
 
                 #Randomized y for permutations
-                y_perm = permutation(y) 
+                y_perm = permutation(y)
                 clf.fit(X[train_outer], y_perm[train_outer])
                 DA = clf.score(X[test_outer], y_perm[test_outer])
                 #Store DA and best_params
@@ -139,7 +139,7 @@ def classif_multifeat(X,y,groups, n_perms, model):
                 print('Done')
                 print('DA : ' + str(DA))
 
-            #Make the real classification    
+            #Make the real classification
             clf.fit(X[train_outer], y[train_outer])
             acc_score = clf.score(X[test_outer], y[test_outer])
             pval = compute_pval(acc_score, DA_list)
@@ -160,7 +160,7 @@ def classif_multifeat(X,y,groups, n_perms, model):
         results['best_params'] = best_params_list[best_fold_id]
         results['acc_pvalue'] = acc_pvalue_list[best_fold_id]
         results['acc_perm'] = acc_perm_list
-           
+
     else:
         inner_cv = LeaveOneGroupOut()
         results = classification(clf, inner_cv, X, y, groups=groups, perm=n_perms, n_jobs=8)
@@ -242,6 +242,7 @@ if __name__ == "__main__":
 
     if not(os.path.isdir(savepath)):
         os.makedirs(savepath)
+        print('Results dir created')
 
     if args.channel != None:
         CHAN = args.channel
@@ -250,6 +251,7 @@ if __name__ == "__main__":
         result = classif_multifeat(X,y, groups, n_perms=n_perms, model=model)
         with open(savepath + savename, 'wb') as f:
             pickle.dump(result, f)
+            print('Results saved.')
     else:
         for CHAN in range(270):
             savename = 'chan_{}.pkl'.format(CHAN)
