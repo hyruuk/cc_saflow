@@ -81,7 +81,7 @@ def classif_multifeat(X,y,groups, n_perms, model):
         distributions = dict()
     elif model == "DT" :
         clf = DecisionTreeClassifier()
-        distributions = dict(criterion=['gini', 'entropy'], splitter=['best', 'random']) #Idk if need more hp
+        distributions = dict(criterion=['gini', 'entropy'], splitter=['best', 'random'])
     elif model == "LR":
         clf = LogisticRegression()
         distributions = dict(C=uniform(loc=0, scale=4),
@@ -99,15 +99,15 @@ def classif_multifeat(X,y,groups, n_perms, model):
 
         best_params_list = []
         acc_score_list = []
-        acc_pvalue_list = []
-        acc_perm_list = []
 
         for train_outer, test_outer in outer_cv.split(X, y, groups):
+            DA_perm_list = []
             #Need to add the "fixed" randomized search
             search = RandomizedSearchCV(clf, distributions, cv=inner_cv, random_state=0).fit(X[train_outer], y[train_outer], groups[train_outer])
             best_params = search.best_params_
             print('Best params : ' + str(best_params))
-            #Apply best hyperparameters to our classifier (with perms this time)
+
+            #Apply best hyperparameters
             if model == "KNN" :
                 metric = best_params['metric']
                 n_neighbors = best_params['n_neighbors']
@@ -125,42 +125,42 @@ def classif_multifeat(X,y,groups, n_perms, model):
                 solver = best_params['solver']
                 multi_class = best_params['multi_class']
                 clf = LogisticRegression(C=C, penalty=penalty, solver=solver, multi_class=multi_class)
-            DA_list = []
 
-            for _ in range(n_perms) :
-
-                #Randomized y for permutations
-                y_perm = permutation(y) 
-                clf.fit(X[train_outer], y_perm[train_outer])
-                DA = clf.score(X[test_outer], y_perm[test_outer])
-                #Store DA and best_params
-                best_params_list.append(best_params)
-                DA_list.append(DA)
-                print('Done')
-                print('DA : ' + str(DA))
-
-            #Make the real classification    
             clf.fit(X[train_outer], y[train_outer])
-            acc_score = clf.score(X[test_outer], y[test_outer])
-            pval = compute_pval(acc_score, DA_list)
-
-            results=[]
-            acc_score_list.append(acc_score)
+            # evaluate fit above
+            acc_score_outer = clf.score(X[train_outer], y[train_outer])
+            # store hp and DA
+            acc_score_list.append(acc_score_outer)
             best_params_list.append(best_params)
-            acc_pvalue_list.append(pval)
-            acc_perm_list.append(DA_list)
+            print('Clf done :', acc_score_outer)
 
-            print('acc_score : ', + acc_score)
-            print('pvalue : ', + pval)
-
-        #Save DA and hyperparameters into results
+        # obtain hp of best DA
         best_fold_id = acc_score_list.index(max(acc_score_list))
-        results={}
-        results['acc_score'] = acc_score_list[best_fold_id]
-        results['best_params'] = best_params_list[best_fold_id]
-        results['acc_pvalue'] = acc_pvalue_list[best_fold_id]
-        results['acc_perm'] = acc_perm_list
-           
+        best_fold_params = best_params_list[best_fold_id]
+
+        # call arthur's classification() with best hp
+        if model == "KNN":
+            metric = best_fold_params['metric']
+            n_neighbors = best_fold_params['n_neighbors']
+            weights = best_fold_params['weights']
+            clf = KNeighborsClassifier(n_neighbors=n_neighbors, metric=metric, weights=weights)
+        elif model == "DT":
+            criterion = best_fold_params['criterion']
+            splitter = best_fold_params['splitter']
+            clf = DecisionTreeClassifier(criterion=criterion, splitter=splitter)
+        elif model == "LR":
+            C = best_fold_params['C']
+            penalty = best_fold_params['penalty']
+            solver = best_fold_params['solver']
+            multi_class = best_fold_params['multi_class']
+            clf = LogisticRegression(C=C, penalty=penalty, solver=solver, multi_class=multi_class)
+
+        results = classification(clf, outer_cv, X, y, groups=groups, perm=n_perms, n_jobs=8)
+
+        print('Done')
+        print('DA : ' + str(results['acc_score']))
+        print('p value : ' + str(results['acc_pvalue']))
+
     else:
         inner_cv = LeaveOneGroupOut()
         results = classification(clf, inner_cv, X, y, groups=groups, perm=n_perms, n_jobs=8)
@@ -260,3 +260,4 @@ if __name__ == "__main__":
                 with open(savepath + savename, 'wb') as f:
                     pickle.dump(result, f)
             print('Ok.')
+
