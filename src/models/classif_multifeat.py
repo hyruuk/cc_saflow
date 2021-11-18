@@ -134,7 +134,7 @@ def classif_multifeat(X,y,groups, n_perms, model):
             # store hp and DA
             acc_score_list.append(acc_score_outer)
             best_params_list.append(best_params)
-            print('Clf done :', acc_score_outer)
+            print('clf done :', acc_score_outer)
 
         # obtain hp of best DA
         best_fold_id = acc_score_list.index(max(acc_score_list))
