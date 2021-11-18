@@ -102,21 +102,23 @@ def classif_multifeat(X,y,groups, n_perms, model):
 
         for train_outer, test_outer in outer_cv.split(X, y, groups):
             DA_perm_list = []
-            #Need to add the "fixed" randomized search
-            search = RandomizedSearchCV(clf, distributions, cv=inner_cv, random_state=0).fit(X[train_outer], y[train_outer], groups[train_outer])
+            # Need to add the "fixed" randomized search
+            search = RandomizedSearchCV(clf, distributions, cv=inner_cv, random_state=0).fit(X[train_outer],
+                                                                                             y[train_outer],
+                                                                                             groups[train_outer])
             best_params = search.best_params_
             print('Best params : ' + str(best_params))
 
-            #Apply best hyperparameters
-            if model == "KNN" :
+            # Apply best hyperparameters
+            if model == "KNN":
                 metric = best_params['metric']
                 n_neighbors = best_params['n_neighbors']
-                weights= best_params['weights']
+                weights = best_params['weights']
                 clf = KNeighborsClassifier(n_neighbors=n_neighbors, metric=metric, weights=weights)
-            elif model == "SVM" :
+            elif model == "SVM":
                 clf = SVC(best_params)
-            elif model == "DT" :
-                criterion=best_params['criterion']
+            elif model == "DT":
+                criterion = best_params['criterion']
                 splitter = best_params['splitter']
                 clf = DecisionTreeClassifier(criterion=criterion, splitter=splitter)
             elif model == "LR":
@@ -242,6 +244,7 @@ if __name__ == "__main__":
 
     if not(os.path.isdir(savepath)):
         os.makedirs(savepath)
+        print('Results dir created')
 
     if args.channel != None:
         CHAN = args.channel
@@ -250,6 +253,7 @@ if __name__ == "__main__":
         result = classif_multifeat(X,y, groups, n_perms=n_perms, model=model)
         with open(savepath + savename, 'wb') as f:
             pickle.dump(result, f)
+            print('Results saved.')
     else:
         for CHAN in range(270):
             savename = 'chan_{}.pkl'.format(CHAN)

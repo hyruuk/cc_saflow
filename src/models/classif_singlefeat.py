@@ -127,8 +127,8 @@ def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=0, FREQ=0, b
                 y_balanced.append(1)
                 groups_balanced.append(subj_idx)
         X = X_balanced
-        y = y_balanced
-        groups = groups_balanced
+        y = np.asarray(y_balanced)
+        groups = np.asarray(groups_balanced)
     X = np.array(X).reshape(-1, 1)
     return X, y, groups
 
