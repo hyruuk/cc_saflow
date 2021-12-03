@@ -24,12 +24,20 @@ parser.add_argument(
     type=float,
     help="Desired alpha threshold",
 )
+parser.add_argument(
+    "-s",
+    "--subject",
+    default=None,
+    type=str,
+    help="Subject to plot (if none, plot between-subject classifs)",
+)
 args = parser.parse_args()
 
 
 if __name__ == "__main__":
     classif_name = args.classif_name
     alpha = args.alpha
+    subject = args.subject
     savepath = RESULTS_PATH + classif_name + '/'
 
     # Load the data
@@ -41,7 +49,10 @@ if __name__ == "__main__":
     allchans_pval = []
     allchans_accperms = []
     for CHAN in range(270):
-        savename = 'chan_{}_{}.pkl'.format(CHAN, 'multifreq')
+        if subject == None:
+            savename = 'chan_{}_{}.pkl'.format(CHAN, 'multifreq')
+        else:
+            savename = 'sub-{}_chan_{}_{}.pkl'.format(subject, CHAN, 'multifreq')
         with open(savepath + savename, 'rb') as f:
             result = pickle.load(f)
         allchans_acc.append(result['acc_score'])
