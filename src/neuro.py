@@ -493,6 +493,10 @@ def split_trials(BIDS_PATH, LOGS_DIR, subj, run, stage='PSD', by='VTC',
             condB_idx = rares_miss_idx
         print('{} Freqs epochs'.format(len(condA_idx)))
         print('{} Rare epochs'.format(len(condB_idx)))
+    elif by == 'resp':
+        freqs_hits_idx, freqs_miss_idx, rares_hits_idx, rares_miss_idx = get_odd_epochs(BIDS_PATH, LOGS_DIR, subj, run, stage='-epo')
+        condA_idx = np.sort(np.concatenate((freqs_hits_idx, rares_miss_idx)))
+        condB_idx = np.sort(np.concatenate((freqs_miss_idx, rares_hits_idx)))
 
     # Load epochs
     if stage == 'PSD':
