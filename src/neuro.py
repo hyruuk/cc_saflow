@@ -497,7 +497,10 @@ def split_trials(BIDS_PATH, LOGS_DIR, subj, run, stage='PSD', by='VTC',
         freqs_hits_idx, freqs_miss_idx, rares_hits_idx, rares_miss_idx = get_odd_epochs(BIDS_PATH, LOGS_DIR, subj, run, stage='-epo')
         condA_idx = np.sort(np.concatenate((freqs_hits_idx, rares_miss_idx)))
         condB_idx = np.sort(np.concatenate((freqs_miss_idx, rares_hits_idx)))
-
+        print('{} Resp epochs'.format(len(condA_idx)))
+        print('{} NoResp epochs'.format(len(condB_idx)))
+        condA_idx = [int(x) for x in condA_idx]
+        condB_idx = [int(x) for x in condB_idx]
     # Load epochs
     if stage == 'PSD':
         fname, fpath = get_SAflow_bids(BIDS_PATH, subj, run, stage, cond=None)
