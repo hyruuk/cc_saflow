@@ -51,3 +51,15 @@ if __name__ == "__main__":
                     pickle.dump(FREQepochs, fp)
                 with open(RAREepochs_filename, 'wb') as fp:
                     pickle.dump(RAREepochs, fp)
+
+
+            elif by == 'resp':
+                RESPepochs, NORESPepochs = split_trials(BIDS_PATH, LOGS_DIR, subj=subj, run=run, stage='PSD', by='resp')
+                RESPepochs_path, RESPepochs_filename = get_SAflow_bids(BIDS_PATH, subj=subj, run=run, stage='PSD', cond='RESP')
+                NORESPepochs_path, NORESPepochs_filename = get_SAflow_bids(BIDS_PATH, subj=subj, run=run, stage='PSD', cond='NORESP')
+
+                with open(RESPepochs_filename, 'wb') as fp:
+                    pickle.dump(RESPepochs, fp)
+                with open(NORESPepochs_filename, 'wb') as fp:
+                    pickle.dump(NORESPepochs, fp)
+            

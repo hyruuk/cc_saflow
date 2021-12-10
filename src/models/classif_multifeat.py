@@ -236,6 +236,9 @@ if __name__ == "__main__":
     elif by == 'odd':
         conds_list = ['FREQhits', 'RAREhits']
         balance = True
+    elif by == 'resp':
+        conds_list = ['RESP', 'NORESP']
+        balance = True
 
     if model!='XGBC' and model!='LDA' :
         savepath = RESULTS_PATH + '{}_'.format(by) + model + 'mf_LOGO_RSCV_{}perm_{}{}/'.format(n_perms, split[0], split[1])
@@ -264,4 +267,3 @@ if __name__ == "__main__":
                 with open(savepath + savename, 'wb') as f:
                     pickle.dump(result, f)
             print('Ok.')
-
