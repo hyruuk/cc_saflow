@@ -25,6 +25,7 @@ def find_rawfile(subj, bloc, BIDS_PATH):
     return filepath, filename
 
 def saflow_preproc(filepath, savepath, reportpath, ica=True):
+
     report = mne.Report(verbose=True)
     raw_data = read_raw_ctf(filepath, preload=True)
     raw_data = raw_data.apply_gradient_compensation(grade=3) #required for source reconstruction
