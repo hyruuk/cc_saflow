@@ -72,19 +72,105 @@ def classif_singlefeat(X,y,groups, n_perms, model):
     if model == "LDA" :
         clf = LinearDiscriminantAnalysis()
     elif model == "KNN" :
-        clf = KNeighborsClassifier(n_neighbors=5)
+        clf = KNeighborsClassifier()
+        distributions = dict(n_neighbors=np.arange(1, 16, 1),
+                            weights = ['uniform', 'distance'],
+                            metric = ['minkowski', 'euclidean', 'manhattan'])
     elif model == "SVM" :
         clf = SVC()
-    elif model == "DT" : #For decision tree
+        distributions = dict()
+    elif model == "DT" :
         clf = DecisionTreeClassifier()
+        distributions = dict(criterion=['gini', 'entropy'], splitter=['best', 'random'])
     elif model == "LR":
         clf = LogisticRegression()
+        distributions = dict(C=uniform(loc=0, scale=4),
+                                penalty=['l2', 'l1', 'elasticnet', 'none'], solver=['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'],
+                                multi_class = ['auto', 'ovr', 'multinomial'])
+    elif model == "XGBC" :
+        clf = XGBClassifier()
 
-    cv = LeaveOneGroupOut()
-    results = classification(clf, cv, X, y, groups=groups, perm=n_perms, n_jobs=8)
-    print('Done')
-    print('DA : ' + str(results['acc_score']))
-    print('p value : ' + str(results['acc_pvalue']))
+    #Loop for permutations
+
+    #Find best parameters
+    if model!='XGBC' and model!='LDA':
+        outer_cv = LeaveOneGroupOut()
+        inner_cv = LeaveOneGroupOut()
+
+        best_params_list = []
+        acc_score_list = []
+
+        for train_outer, test_outer in outer_cv.split(X, y, groups):
+            DA_perm_list = []
+            # Need to add the "fixed" randomized search
+            search = RandomizedSearchCV(clf, distributions, cv=inner_cv, random_state=0).fit(X[train_outer],
+                                                                                             y[train_outer],
+                                                                                             groups[train_outer])
+            best_params = search.best_params_
+            print('Best params : ' + str(best_params))
+
+            # Apply best hyperparameters
+            if model == "KNN":
+                metric = best_params['metric']
+                n_neighbors = best_params['n_neighbors']
+                weights = best_params['weights']
+                clf = KNeighborsClassifier(n_neighbors=n_neighbors, metric=metric, weights=weights)
+            elif model == "SVM":
+                clf = SVC(best_params)
+            elif model == "DT":
+                criterion = best_params['criterion']
+                splitter = best_params['splitter']
+                clf = DecisionTreeClassifier(criterion=criterion, splitter=splitter)
+            elif model == "LR":
+                C = best_params['C']
+                penalty = best_params['penalty']
+                solver = best_params['solver']
+                multi_class = best_params['multi_class']
+                clf = LogisticRegression(C=C, penalty=penalty, solver=solver, multi_class=multi_class)
+
+            clf.fit(X[train_outer], y[train_outer])
+            # evaluate fit above
+            acc_score_outer = clf.score(X[train_outer], y[train_outer])
+            # store hp and DA
+            acc_score_list.append(acc_score_outer)
+            best_params_list.append(best_params)
+            print('clf done :', acc_score_outer)
+
+        # obtain hp of best DA
+        best_fold_id = acc_score_list.index(max(acc_score_list))
+        best_fold_params = best_params_list[best_fold_id]
+
+        # call arthur's classification() with best hp
+        if model == "KNN":
+            metric = best_fold_params['metric']
+            n_neighbors = best_fold_params['n_neighbors']
+            weights = best_fold_params['weights']
+            clf = KNeighborsClassifier(n_neighbors=n_neighbors, metric=metric, weights=weights)
+        elif model == "DT":
+            criterion = best_fold_params['criterion']
+            splitter = best_fold_params['splitter']
+            clf = DecisionTreeClassifier(criterion=criterion, splitter=splitter)
+        elif model == "LR":
+            C = best_fold_params['C']
+            penalty = best_fold_params['penalty']
+            solver = best_fold_params['solver']
+            multi_class = best_fold_params['multi_class']
+            clf = LogisticRegression(C=C, penalty=penalty, solver=solver, multi_class=multi_class)
+
+        results = classification(clf, outer_cv, X, y, groups=groups, perm=n_perms, n_jobs=8)
+
+        print('Done')
+        print('DA : ' + str(results['acc_score']))
+        print('p value : ' + str(results['acc_pvalue']))
+
+    else:
+        inner_cv = LeaveOneGroupOut()
+        results = classification(clf, inner_cv, X, y, groups=groups, perm=n_perms, n_jobs=8)
+        print('Done')
+        print('DA : ' + str(results['acc_score']))
+        print('p value : ' + str(results['acc_pvalue']))
+
+
     return results
 
 def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=0, FREQ=0, balance=False):
@@ -142,6 +228,9 @@ if __name__ == "__main__":
         balance = True
     elif by == 'odd':
         conds_list = ['FREQhits', 'RAREhits']
+        balance = True
+    elif by == 'resp':
+        conds_list = ['RESP', 'NORESP']
         balance = True
 
     savepath = RESULTS_PATH + '{}_'.format(by) + model + 'sf_LOGO_{}perm_{}{}/'.format(n_perms, split[0], split[1])

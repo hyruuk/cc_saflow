@@ -24,7 +24,8 @@ def find_rawfile(subj, bloc, BIDS_PATH):
             filename = file
     return filepath, filename
 
-def saflow_preproc(filepath, savepath, reportpath):
+def saflow_preproc(filepath, savepath, reportpath, ica=True):
+
     report = mne.Report(verbose=True)
     raw_data = read_raw_ctf(filepath, preload=True)
     raw_data = raw_data.apply_gradient_compensation(grade=3) #required for source reconstruction
@@ -44,61 +45,68 @@ def saflow_preproc(filepath, savepath, reportpath):
     fig = raw_data.plot_psd(average=False, picks=picks, fmax=120, show=False);
     report.add_figs_to_section(fig, captions='PSD', section='Filtered data')
     close(fig)
+    if ica == False :
+        report.save(reportpath, open_browser=False, overwrite=True);
+        raw_data.save(savepath, overwrite=True)
+        del report
+        del raw_data
+        del fig
 
-    ## ICA
-    ica = ICA(n_components=20, random_state=0).fit(raw_data, decim=3)
-    fig = ica.plot_sources(raw_data, show=False);
-    report.add_figs_to_section(fig, captions='Independent Components', section='ICA')
-    close(fig)
+    elif ica == True :
+        ## ICA
+        ica = ICA(n_components=20, random_state=0).fit(raw_data, decim=3)
+        fig = ica.plot_sources(raw_data, show=False);
+        report.add_figs_to_section(fig, captions='Independent Components', section='ICA')
+        close(fig)
 
-    ## FIND ECG COMPONENTS
-    ecg_threshold = 0.50
-    ecg_epochs = create_ecg_epochs(raw_data, ch_name='EEG059')
-    ecg_inds, ecg_scores = ica.find_bads_ecg(ecg_epochs, ch_name='EEG059', method='ctps', threshold=ecg_threshold)
-    fig = ica.plot_scores(ecg_scores, ecg_inds, show=False);
-    report.add_figs_to_section(fig, captions='Correlation with ECG (EEG059)', section='ICA - ECG')
-    close(fig)
-    fig = list()
-    try:
-        fig = ica.plot_properties(ecg_epochs, picks=ecg_inds, image_args={'sigma': 1.}, show=False);
-        for i, figure in enumerate(fig):
-            report.add_figs_to_section(figure, captions='Detected component ' + str(i), section='ICA - ECG')
-            close(figure)
-    except:
-        print('No component to remove')
+        ## FIND ECG COMPONENTS
+        ecg_threshold = 0.50
+        ecg_epochs = create_ecg_epochs(raw_data, ch_name='EEG059')
+        ecg_inds, ecg_scores = ica.find_bads_ecg(ecg_epochs, ch_name='EEG059', method='ctps', threshold=ecg_threshold)
+        fig = ica.plot_scores(ecg_scores, ecg_inds, show=False);
+        report.add_figs_to_section(fig, captions='Correlation with ECG (EEG059)', section='ICA - ECG')
+        close(fig)
+        fig = list()
+        try:
+            fig = ica.plot_properties(ecg_epochs, picks=ecg_inds, image_args={'sigma': 1.}, show=False);
+            for i, figure in enumerate(fig):
+                report.add_figs_to_section(figure, captions='Detected component ' + str(i), section='ICA - ECG')
+                close(figure)
+        except:
+            print('No component to remove')
 
-    ## FIND EOG COMPONENTS
-    eog_threshold = 4
-    eog_epochs = create_eog_epochs(raw_data, ch_name='EEG057')
-    eog_inds, eog_scores = ica.find_bads_eog(eog_epochs, ch_name='EEG057', threshold=eog_threshold)
-    #TODO : if eog_inds == [] then eog_inds = [index(max(abs(eog_scores)))]
-    fig = ica.plot_scores(eog_scores, eog_inds, show=False);
-    report.add_figs_to_section(fig, captions='Correlation with EOG (EEG057)', section='ICA - EOG')
-    close(fig)
-    fig = list()
-    try:
-        fig = ica.plot_properties(eog_epochs, picks=eog_inds, image_args={'sigma': 1.}, show=False);
-        for i, figure in enumerate(fig):
-            report.add_figs_to_section(figure, captions='Detected component ' + str(i), section='ICA - EOG')
-            close(figure)
-    except:
-        print('No component to remove')
+        ## FIND EOG COMPONENTS
+        eog_threshold = 4
+        eog_epochs = create_eog_epochs(raw_data, ch_name='EEG057')
+        eog_inds, eog_scores = ica.find_bads_eog(eog_epochs, ch_name='EEG057', threshold=eog_threshold)
+        #TODO : if eog_inds == [] then eog_inds = [index(max(abs(eog_scores)))]
+        fig = ica.plot_scores(eog_scores, eog_inds, show=False);
+        report.add_figs_to_section(fig, captions='Correlation with EOG (EEG057)', section='ICA - EOG')
+        close(fig)
+        fig = list()
+        try:
+            fig = ica.plot_properties(eog_epochs, picks=eog_inds, image_args={'sigma': 1.}, show=False);
+            for i, figure in enumerate(fig):
+                report.add_figs_to_section(figure, captions='Detected component ' + str(i), section='ICA - EOG')
+                close(figure)
+        except:
+            print('No component to remove')
 
-    ## EXCLUDE COMPONENTS
-    ica.exclude = ecg_inds
-    ica.apply(raw_data)
-    ica.exclude = eog_inds
-    ica.apply(raw_data)
-    fig = raw_data.plot(show=False); # Plot the clean signal.
-    report.add_figs_to_section(fig, captions='After filtering + ICA', section='Raw data')
-    close(fig)
-    ## SAVE PREPROCESSED FILE
-    report.save(reportpath, open_browser=False, overwrite=True);
-    raw_data.save(savepath, overwrite=True)
-    del ica
-    del report
-    del raw_data
-    del fig
+        ## EXCLUDE COMPONENTS
+        ica.exclude = ecg_inds
+        ica.apply(raw_data)
+        ica.exclude = eog_inds
+        ica.apply(raw_data)
+        fig = raw_data.plot(show=False); # Plot the clean signal.
+        report.add_figs_to_section(fig, captions='After filtering + ICA', section='Raw data')
+        close(fig)
+        ## SAVE PREPROCESSED FILE
+        report.save(reportpath, open_browser=False, overwrite=True);
+        raw_data.save(savepath, overwrite=True)
+        del ica
+        del report
+        del raw_data
+        del fig
 
 def segment_files(bids_filepath, tmin=0, tmax=0.8):
     raw = read_raw_fif(bids_filepath, preload=True)
