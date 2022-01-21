@@ -1,4 +1,4 @@
-from saflow.saflow_params import BIDS_PATH, SUBJ_LIST, BLOCS_LIST, FREQS_NAMES, ZONE_CONDS, RESULTS_PATH, IMG_DIR
+from saflow import BIDS_PATH, SUBJ_LIST, BLOCS_LIST, FREQS_NAMES, ZONE_CONDS, RESULTS_PATH, IMG_DIR
 import pickle
 from saflow.utils import array_topoplot, create_pval_mask, get_SAflow_bids
 import numpy as np

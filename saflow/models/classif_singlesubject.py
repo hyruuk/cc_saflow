@@ -1,4 +1,4 @@
-from saflow.saflow_params import BIDS_PATH, SUBJ_LIST, BLOCS_LIST, FREQS_NAMES, ZONE_CONDS, RESULTS_PATH
+from saflow import BIDS_PATH, SUBJ_LIST, BLOCS_LIST, FREQS_NAMES, ZONE_CONDS, RESULTS_PATH
 import pickle
 from saflow.utils import get_SAflow_bids
 import numpy as np

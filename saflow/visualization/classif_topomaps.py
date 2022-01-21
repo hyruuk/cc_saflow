@@ -1,5 +1,5 @@
 from saflow.utils import array_topoplot, create_pval_mask, get_SAflow_bids
-from saflow.saflow_params import RESULTS_PATH, FREQS_NAMES, BIDS_PATH, IMG_DIR
+from saflow import RESULTS_PATH, FREQS_NAMES, BIDS_PATH, IMG_DIR
 from mlneurotools.stats import compute_pval
 from str2bool import str2bool
 import argparse

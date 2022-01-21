@@ -6,10 +6,11 @@ import nipype.interfaces.io as nio
 import ephypype
 from ephypype.nodes import create_iterator
 from ephypype.datasets import fetch_omega_dataset
+from saflow import BIDS_PATH
 
 #base_path = op.join(op.dirname(ephypype.__file__), '..', 'examples')
 #data_path = fetch_omega_dataset(base_path)
-data_path = op.join('/scratch/hyruuk/saflow_data/saflow_bids')
+data_path = op.join('/scratch/hyruuk/saflow_data/saflow_bids') # BIDS_PATH
 
 #### PARAMETERS
 import json  # noqa

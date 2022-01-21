@@ -1,4 +1,3 @@
-import os.path as op
 
 BIDS_PATH = '/media/storage/MEG_DATA/saflow/bids/'
 ACQ_PATH = '/storage/MEG_DATA/saflow/acquisition/'
