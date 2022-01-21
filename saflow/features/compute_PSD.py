@@ -1,8 +1,8 @@
 import mne
 import numpy as np
-from src.utils import get_SAflow_bids
-from src.neuro import compute_PSD_hilbert, compute_PSD
-from src.saflow_params import BIDS_PATH, IMG_DIR, FREQS, FREQS_NAMES, SUBJ_LIST, BLOCS_LIST
+from saflow.utils import get_SAflow_bids
+from saflow.neuro import compute_PSD_hilbert, compute_PSD
+from saflow.saflow_params import BIDS_PATH, IMG_DIR, FREQS, FREQS_NAMES, SUBJ_LIST, BLOCS_LIST
 from scipy.io import savemat
 import pickle
 import argparse

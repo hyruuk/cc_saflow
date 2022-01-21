@@ -1,7 +1,7 @@
 ##### OPEN PREPROC FILES AND SEGMENT THEM
 from ephypype.import_data import write_hdf5
-from src.neuro import get_VTC_epochs
-from src.saflow_params import FOLDERPATH, SUBJ_LIST, BLOCS_LIST, FEAT_PATH, LOGS_DIR
+from saflow.neuro import get_VTC_epochs
+from saflow.saflow_params import FOLDERPATH, SUBJ_LIST, BLOCS_LIST, FEAT_PATH, LOGS_DIR
 import h5py
 
 if __name__ == "__main__":

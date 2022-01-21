@@ -1,7 +1,7 @@
 ##### OPEN PREPROC FILES AND SEGMENT THEM
-from src.neuro import split_PSD_data, split_trials
-from src.saflow_params import FOLDERPATH, SUBJ_LIST, BLOCS_LIST, FEAT_PATH, BIDS_PATH, LOGS_DIR
-from src.utils import get_SAflow_bids
+from saflow.neuro import split_PSD_data, split_trials
+from saflow.saflow_params import FOLDERPATH, SUBJ_LIST, BLOCS_LIST, FEAT_PATH, BIDS_PATH, LOGS_DIR
+from saflow.utils import get_SAflow_bids
 from scipy.io import savemat
 import pickle
 import argparse
@@ -62,4 +62,3 @@ if __name__ == "__main__":
                     pickle.dump(RESPepochs, fp)
                 with open(NORESPepochs_filename, 'wb') as fp:
                     pickle.dump(NORESPepochs, fp)
-            

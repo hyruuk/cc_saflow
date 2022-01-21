@@ -1,6 +1,6 @@
-from src.saflow_params import BIDS_PATH, SUBJ_LIST, BLOCS_LIST, FREQS_NAMES, ZONE_CONDS, RESULTS_PATH
+from saflow.saflow_params import BIDS_PATH, SUBJ_LIST, BLOCS_LIST, FREQS_NAMES, ZONE_CONDS, RESULTS_PATH
 import pickle
-from src.utils import get_SAflow_bids
+from saflow.utils import get_SAflow_bids
 import numpy as np
 from numpy.random import permutation
 from sklearn.model_selection import StratifiedShuffleSplit, GroupShuffleSplit, ShuffleSplit, LeaveOneGroupOut, KFold
@@ -46,7 +46,7 @@ parser.add_argument(
 parser.add_argument(
     "-by",
     "--by",
-    default="VTC",
+    default="resp",
     type=str,
     help="Choose the classification problem ('VTC' or 'odd')",
 )
@@ -244,10 +244,7 @@ if __name__ == "__main__":
         savepath = RESULTS_PATH + '{}_'.format(by) + model + 'mf_LOGO_RSCV_{}perm_{}{}/'.format(n_perms, split[0], split[1])
     else :
         savepath = RESULTS_PATH + '{}_'.format(by) + model + 'mf_LOGO_{}perm_{}{}/'.format(n_perms, split[0], split[1])
-
-    if not(os.path.isdir(savepath)):
-        os.makedirs(savepath)
-        print('Results dir created')
+    os.makedirs(savepath, exist_ok=True)
 
     if args.channel != None:
         CHAN = args.channel

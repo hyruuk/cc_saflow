@@ -1,6 +1,6 @@
-from src.saflow_params import BIDS_PATH, SUBJ_LIST, BLOCS_LIST, FREQS_NAMES, ZONE_CONDS, RESULTS_PATH, IMG_DIR
+from saflow.saflow_params import BIDS_PATH, SUBJ_LIST, BLOCS_LIST, FREQS_NAMES, ZONE_CONDS, RESULTS_PATH, IMG_DIR
 import pickle
-from src.utils import array_topoplot, create_pval_mask, get_SAflow_bids
+from saflow.utils import array_topoplot, create_pval_mask, get_SAflow_bids
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit, GroupShuffleSplit, ShuffleSplit, LeaveOneGroupOut, KFold
 from mlneurotools.ml import classification, StratifiedShuffleGroupSplit
@@ -172,7 +172,7 @@ if __name__ == "__main__":
                         paired=False,
                         two_tailed=True)
                 contrast = ((condA_allchans-condB_allchans)/condB_allchans)
-                contrast = np.mean(contrast, axis=0) 
+                contrast = np.mean(contrast, axis=0)
                 results = {'tvals':tvals,
                            'pvals':pvals,
                            'contrast' :contrast}

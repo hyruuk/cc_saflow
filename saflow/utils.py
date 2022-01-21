@@ -36,7 +36,7 @@ def get_SAflow_bids(BIDS_PATH, subj, run, stage, cond=None):
         SAflow_bidspath = os.path.join(BIDS_PATH, 'sub-{}'.format(subj), 'ses-recording', 'meg', SAflow_bidsname)
         return SAflow_bidsname, SAflow_bidspath
 
-def array_topoplot(toplot, ch_xy, showtitle=False, titles=None, savefig=False, figpath=None, vmin=-1, vmax=1, with_mask=False, masks=None, show=True):
+def array_topoplot(toplot, ch_xy, showtitle=False, titles=None, savefig=False, cmap='magma',figpath=None, vmin=-1, vmax=1, with_mask=False, masks=None, show=True):
     #create fig
     mask_params = dict(marker='o', markerfacecolor='w', markeredgecolor='k', linewidth=0, markersize=5)
     fig, ax = plt.subplots(1,len(toplot), figsize=(20,10), squeeze=False)

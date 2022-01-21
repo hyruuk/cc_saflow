@@ -6,11 +6,11 @@ from mne.preprocessing import ICA, create_ecg_epochs, create_eog_epochs
 from autoreject import AutoReject
 from scipy.io import loadmat, savemat
 #from brainpipe import feature
-from src.saflow_params import BIDS_PATH, LOGS_DIR
+from saflow.saflow_params import BIDS_PATH, LOGS_DIR
 from mne.io import read_raw_fif, read_raw_ctf
 #from hytools.meg_utils import get_ch_pos
-from src.utils import get_SAflow_bids
-from src.behav import find_logfile, get_VTC_from_file
+from saflow.utils import get_SAflow_bids
+from saflow.behav import find_logfile, get_VTC_from_file
 import random
 from matplotlib.pyplot import close
 from mne.time_frequency import psd_multitaper, psd_welch

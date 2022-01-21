@@ -1,5 +1,5 @@
-from src.utils import array_topoplot, create_pval_mask, get_SAflow_bids
-from src.saflow_params import RESULTS_PATH, BIDS_PATH, IMG_DIR
+from saflow.utils import array_topoplot, create_pval_mask, get_SAflow_bids
+from saflow.saflow_params import RESULTS_PATH, BIDS_PATH, IMG_DIR
 from mlneurotools.stats import compute_pval
 from str2bool import str2bool
 import argparse
@@ -49,10 +49,7 @@ if __name__ == "__main__":
     allchans_pval = []
     allchans_accperms = []
     for CHAN in range(270):
-        if subject == None:
-            savename = 'chan_{}_{}.pkl'.format(CHAN, 'multifreq')
-        else:
-            savename = 'sub-{}_chan_{}_{}.pkl'.format(subject, CHAN, 'multifreq')
+
         with open(savepath + savename, 'rb') as f:
             result = pickle.load(f)
         allchans_acc.append(result['acc_score'])
