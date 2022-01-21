@@ -9,4 +9,4 @@
 
 module load python/3.7.0
 
-$HOME/python_envs/cc_saflow/bin/python $HOME/projects/def-kjerbi/hyruuk/cc_saflow/src/data/preprocessing.py -s $1
+$HOME/python_envs/cc_saflow/bin/python $HOME/projects/def-kjerbi/hyruuk/cc_saflow/saflow/data/preprocessing.py -s $1
