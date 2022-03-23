@@ -1,7 +1,6 @@
 BIDS_PATH = '/scratch/hyruuk/saflow_data/bids/'
 ACQ_PATH = '/scratch/hyruuk/saflow_data/acquisition/'
 
-FOLDERPATH = '/home/hyruuk/GitHub/cc_saflow/'
 RESULTS_PATH = './results/'
 IMG_DIR = '/home/hyruuk/GitHub/cc_saflow/reports/figures/'
 CH_FILE = '/home/hyruuk/pCloudDrive/science/saflow/sub-04_ses-recording_task-gradCPT_run-02_meg.ds'
