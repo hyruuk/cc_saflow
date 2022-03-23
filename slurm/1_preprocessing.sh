@@ -2,7 +2,7 @@
 #SBATCH --account=def-kjerbi
 #SBATCH --time=12:00:00
 #SBATCH --job-name=saflow_generate_bids
-#SBATCH --mem=32G
+#SBATCH --mem=20G
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=12
 
