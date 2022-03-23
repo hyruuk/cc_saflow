@@ -1,6 +1,6 @@
 ##### OPEN PREPROC FILES AND SEGMENT THEM
 from saflow.neuro import split_PSD_data, split_trials
-from saflow import FOLDERPATH, SUBJ_LIST, BLOCS_LIST, FEAT_PATH, BIDS_PATH, LOGS_DIR
+from saflow import SUBJ_LIST, BLOCS_LIST, FEAT_PATH, BIDS_PATH, LOGS_DIR
 from saflow.utils import get_SAflow_bids
 from scipy.io import savemat
 import pickle
