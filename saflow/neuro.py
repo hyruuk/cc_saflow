@@ -36,10 +36,10 @@ def saflow_preproc(filepath, savepath, reportpath, ica=True):
     )  # required for source reconstruction
     picks = mne.pick_types(raw_data.info, meg=True, eog=True, exclude="bads")
     fig = raw_data.plot(show=False)
-    report.add_figures(fig, captions="Time series", section="Raw data")
+    report.add_figure(fig, captions="Time series", section="Raw data")
     close(fig)
     fig = raw_data.plot_psd(average=False, picks=picks, show=False)
-    report.add_figures(fig, captions="PSD", section="Raw data")
+    report.add_figure(fig, captions="PSD", section="Raw data")
     close(fig)
 
     ## Filtering
@@ -54,7 +54,7 @@ def saflow_preproc(filepath, savepath, reportpath, ica=True):
         fir_design="firwin",
     )
     fig = raw_data.plot_psd(average=False, picks=picks, fmax=120, show=False)
-    report.add_figures(fig, captions="PSD", section="Filtered data")
+    report.add_figure(fig, captions="PSD", section="Filtered data")
     close(fig)
     if ica == False:
         report.save(reportpath, open_browser=False, overwrite=True)
@@ -67,7 +67,7 @@ def saflow_preproc(filepath, savepath, reportpath, ica=True):
         ## ICA
         ica = ICA(n_components=20, random_state=0).fit(raw_data, decim=3)
         fig = ica.plot_sources(raw_data, show=False)
-        report.add_figures(fig, captions="Independent Components", section="ICA")
+        report.add_figure(fig, captions="Independent Components", section="ICA")
         close(fig)
 
         ## FIND ECG COMPONENTS
@@ -77,7 +77,7 @@ def saflow_preproc(filepath, savepath, reportpath, ica=True):
             ecg_epochs, ch_name="EEG059", method="ctps", threshold=ecg_threshold
         )
         fig = ica.plot_scores(ecg_scores, ecg_inds, show=False)
-        report.add_figures(
+        report.add_figure(
             fig, captions="Correlation with ECG (EEG059)", section="ICA - ECG"
         )
         close(fig)
@@ -87,7 +87,7 @@ def saflow_preproc(filepath, savepath, reportpath, ica=True):
                 ecg_epochs, picks=ecg_inds, image_args={"sigma": 1.0}, show=False
             )
             for i, figure in enumerate(fig):
-                report.add_figures(
+                report.add_figure(
                     figure, captions="Detected component " + str(i), section="ICA - ECG"
                 )
                 close(figure)
@@ -102,7 +102,7 @@ def saflow_preproc(filepath, savepath, reportpath, ica=True):
         )
         # TODO : if eog_inds == [] then eog_inds = [index(max(abs(eog_scores)))]
         fig = ica.plot_scores(eog_scores, eog_inds, show=False)
-        report.add_figures(
+        report.add_figure(
             fig, captions="Correlation with EOG (EEG057)", section="ICA - EOG"
         )
         close(fig)
@@ -112,7 +112,7 @@ def saflow_preproc(filepath, savepath, reportpath, ica=True):
                 eog_epochs, picks=eog_inds, image_args={"sigma": 1.0}, show=False
             )
             for i, figure in enumerate(fig):
-                report.add_figures(
+                report.add_figure(
                     figure, captions="Detected component " + str(i), section="ICA - EOG"
                 )
                 close(figure)
@@ -126,7 +126,7 @@ def saflow_preproc(filepath, savepath, reportpath, ica=True):
         ica.apply(raw_data)
         fig = raw_data.plot(show=False)
         # Plot the clean signal.
-        report.add_figures(fig, captions="After filtering + ICA", section="Raw data")
+        report.add_figure(fig, captions="After filtering + ICA", section="Raw data")
         close(fig)
         ## SAVE PREPROCESSED FILE
         report.save(reportpath, open_browser=False, overwrite=True)
