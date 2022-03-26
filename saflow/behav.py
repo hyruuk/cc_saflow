@@ -6,6 +6,7 @@ from scipy import signal
 import numpy as np
 import os.path as op
 from saflow import LOGS_DIR
+from saflow.neuro import remove_errors
 
 
 def find_logfile(subj, bloc, log_files):
@@ -187,6 +188,11 @@ def get_VTC_from_file(
     for idx, logfile in enumerate(subject_logfiles):
         data = loadmat(logfile)
         df_response = pd.DataFrame(data["response"])
+        # Replace commission errors by 0
+        for idx, line in enumerate(df_response.iterrows()):
+            if line[1][0] == 1.0 and line[1][1] != 0.0:
+                print(line[1])
+                df_response.loc[idx, 4] == 0.0
         RT_raw = np.asarray(df_response.loc[:, 4])
         RT_interpolated = interpolate_RT(RT_raw)
         RT_arrays.append(RT_interpolated)
