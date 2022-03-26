@@ -4,7 +4,7 @@ ACQ_PATH = '/scratch/hyruuk/saflow_data/acquisition/'
 RESULTS_PATH = './results/'
 IMG_DIR = '/home/hyruuk/GitHub/cc_saflow/reports/figures/'
 CH_FILE = '/home/hyruuk/pCloudDrive/science/saflow/sub-04_ses-recording_task-gradCPT_run-02_meg.ds'
-LOGS_DIR = '/home/karim/pCloudDrive/science/saflow/gradCPT/gradCPT_share_Mac_PC/gradCPT_share_Mac_PC/saflow_data/'
+LOGS_DIR = '/scratch/hyruuk/saflow_data/behav/'
 
 FEAT_PATH = './features/'
 FREQS = [ [2, 4], [4, 8], [8, 12], [12, 20], [20, 30], [30, 60], [60, 90], [90, 120] ]
