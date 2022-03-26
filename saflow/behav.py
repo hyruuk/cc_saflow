@@ -4,6 +4,7 @@ import os
 import matplotlib.pyplot as plt
 from scipy import signal
 import numpy as np
+import os.path as op
 
 
 def find_logfile(subj, bloc, log_files):
