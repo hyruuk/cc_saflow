@@ -7,4 +7,4 @@
 #SBATCH --ntasks-per-node=24
 
 
-$HOME/python_envs/cc_saflow/bin/python $HOME/projects/def-kjerbi/hyruuk/cc_saflow/saflow/features/split_trials.py -by odd
+$HOME/python_envs/cc_saflow/bin/python $HOME/projects/def-kjerbi/hyruuk/cc_saflow/saflow/features/split_trials.py -by VTC
