@@ -672,7 +672,7 @@ def split_trials(
     lobound=None,
     hibound=None,
     filt_order=3,
-    filt_cutoff=0.1,
+    filt_cutoff=0.05,
     freq_names=None,
     oddball="hits",
 ):
