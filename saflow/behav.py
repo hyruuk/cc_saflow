@@ -183,6 +183,7 @@ def get_VTC_from_file(
 
     # Load and clean RT arrays
     RT_arrays = []
+    RT_to_VTC = []
     for idx, logfile in enumerate(subject_logfiles):
         data = loadmat(logfile)
         df_response = pd.DataFrame(data["response"])
