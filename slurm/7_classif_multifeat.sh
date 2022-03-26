@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --account=def-kjerbi
 #SBATCH --time=12:00:00
-#SBATCH --job-name=saflow_MF
+#SBATCH --job-name=safMultiFeatures
 #SBATCH --mem=8G
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
