@@ -178,7 +178,7 @@ def get_VTC_from_file(
     subject_logfiles = []
     for bloc in cpt_blocs:
         subject_logfiles.append(
-            op.join(LOGS_DIR, find_logfile(subject, bloc, files_list))
+            op.join(LOGS_DIR, find_logfile(subject, run, files_list))
         )
 
     # Load and clean RT arrays
@@ -190,7 +190,7 @@ def get_VTC_from_file(
         RT_raw = np.asarray(df_response.loc[:, 4])
         RT_interpolated = interpolate_RT(RT_raw)
         RT_arrays.append(RT_interpolated)
-        if run == cpt_blocs[idx]:
+        if int(cpt_blocs[idx]) == int(run):
             RT_to_VTC = RT_interpolated
 
     # Obtain meand and std across runs
