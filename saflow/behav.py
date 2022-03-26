@@ -199,6 +199,8 @@ def get_VTC_from_file(
     subj_std = np.std(allruns_RT_array)
 
     # New VTC
+    print(subject)
+    print(run)
     VTC_raw = compute_VTC(RT_to_VTC, subj_mean, subj_std)
     b, a = signal.butter(3, 0.05)  # (filt_order,filt_cutoff)
     VTC_filtered = signal.filtfilt(b, a, VTC_raw)
