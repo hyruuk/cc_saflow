@@ -340,7 +340,8 @@ def get_VTC_epochs(
     behav_list = os.listdir(LOGS_DIR)
 
     # VTC, INbounds, OUTbounds, INidx, OUTidx, RT_array = get_VTC_from_file(log_file, lobound=lobound, hibound=hibound, filt=True, filt_order=filt_order, filt_cutoff=filt_cutoff)
-    IN_idx, OUT_idx, _ = get_VTC_from_file(subj, bloc, behav_list)
+    IN_idx, OUT_idx, _, _, _, _ = get_VTC_from_file(subj, bloc, behav_list)
+
     ### Get original events and split them using the VTC
     events_fname, events_fpath = get_SAflow_bids(
         BIDS_PATH, subj, bloc, stage="preproc_raw", cond=None
