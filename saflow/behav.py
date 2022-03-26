@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from scipy import signal
 import numpy as np
 import os.path as op
+from saflow import LOGS_DIR
 
 
 def find_logfile(subj, bloc, log_files):
@@ -177,7 +178,7 @@ def get_VTC_from_file(
     subject_logfiles = []
     for idx in range(len(cpt_blocs)):
         subject_logfiles.append(
-            op.join(behav_path, find_logfile(subject, cpt_blocs[idx], files_list))
+            op.join(LOGS_DIR, find_logfile(subject, cpt_blocs[idx], files_list))
         )
 
     # Load and clean RT arrays
