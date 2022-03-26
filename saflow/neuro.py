@@ -338,7 +338,7 @@ def get_VTC_epochs(
 
     ### Find logfile to extract VTC
     behav_list = os.listdir(LOGS_DIR)
-    log_file = find_logfile(subj, run, behav_list)
+    log_file = LOGS_DIR + find_logfile(subj, run, behav_list)
 
     # VTC, INbounds, OUTbounds, INidx, OUTidx, RT_array = get_VTC_from_file(log_file, lobound=lobound, hibound=hibound, filt=True, filt_order=filt_order, filt_cutoff=filt_cutoff)
     IN_idx, OUT_idx, _, _, _, _ = get_VTC_from_file(subj, run, behav_list)
