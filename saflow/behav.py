@@ -151,7 +151,7 @@ def old_get_VTC_from_file(
 
 
 def get_VTC_from_file(
-    subject, run, files_list, cpt_blocs=[2, 3, 4, 5, 6, 7], inout_bounds=[50, 50]
+    subject, run, files_list, cpt_blocs=[2, 3, 4, 5, 6, 7], inout_bounds=[25, 75]
 ):
     """Short summary.
 
@@ -176,9 +176,9 @@ def get_VTC_from_file(
     """
     # Find the logfiles belonging to a subject
     subject_logfiles = []
-    for idx in range(len(cpt_blocs)):
+    for bloc in cpt_blocs:
         subject_logfiles.append(
-            op.join(LOGS_DIR, find_logfile(subject, cpt_blocs[idx], files_list))
+            op.join(LOGS_DIR, find_logfile(subject, bloc, files_list))
         )
 
     # Load and clean RT arrays
@@ -204,10 +204,10 @@ def get_VTC_from_file(
     VTC_filtered = signal.filtfilt(b, a, VTC_raw)
 
     IN_mask = np.ma.masked_where(
-        VTC_filtered >= np.quantile(VTC_filtered, bounds[0] / 100), VTC_filtered
+        VTC_filtered >= np.quantile(VTC_filtered, inout_bounds[0] / 100), VTC_filtered
     )
     OUT_mask = np.ma.masked_where(
-        VTC_filtered < np.quantile(VTC_filtered, bounds[1] / 100), VTC_filtered
+        VTC_filtered < np.quantile(VTC_filtered, inout_bounds[1] / 100), VTC_filtered
     )
     IN_idx = np.where(IN_mask.mask == False)[0]
     OUT_idx = np.where(OUT_mask.mask == False)[0]
