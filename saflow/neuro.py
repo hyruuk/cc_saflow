@@ -314,7 +314,7 @@ def get_VTC_epochs(
     BIDS_PATH,
     LOGS_DIR,
     subj,
-    bloc,
+    run,
     stage="-epo",
     lobound=None,
     hibound=None,
@@ -330,7 +330,7 @@ def get_VTC_epochs(
     """
     ### Get events after artifact rejection have been performed
     epo_path, epo_filename = get_SAflow_bids(
-        BIDS_PATH, subj, bloc, stage=stage, cond=None
+        BIDS_PATH, subj, run, stage=stage, cond=None
     )
     events_artrej = mne.read_events(
         epo_filename, verbose=False
@@ -340,11 +340,11 @@ def get_VTC_epochs(
     behav_list = os.listdir(LOGS_DIR)
 
     # VTC, INbounds, OUTbounds, INidx, OUTidx, RT_array = get_VTC_from_file(log_file, lobound=lobound, hibound=hibound, filt=True, filt_order=filt_order, filt_cutoff=filt_cutoff)
-    IN_idx, OUT_idx, _, _, _, _ = get_VTC_from_file(subj, bloc, behav_list)
+    IN_idx, OUT_idx, _, _, _, _ = get_VTC_from_file(subj, run, behav_list)
 
     ### Get original events and split them using the VTC
     events_fname, events_fpath = get_SAflow_bids(
-        BIDS_PATH, subj, bloc, stage="preproc_raw", cond=None
+        BIDS_PATH, subj, run, stage="preproc_raw", cond=None
     )
     raw = read_raw_fif(
         events_fpath, preload=False, verbose=False
