@@ -200,7 +200,7 @@ def get_VTC_from_file(
 
     # New VTC
     VTC_raw = compute_VTC(RT_to_VTC, subj_mean, subj_std)
-    b, a = signal.butter(3, 0.1)  # (filt_order,filt_cutoff)
+    b, a = signal.butter(3, 0.05)  # (filt_order,filt_cutoff)
     VTC_filtered = signal.filtfilt(b, a, VTC_raw)
 
     IN_mask = np.ma.masked_where(
