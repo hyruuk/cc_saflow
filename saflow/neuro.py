@@ -165,6 +165,8 @@ def remove_errors(logfile, events):
     Takes as input the raw events, including both stimuli and responses.
     Outputs an event vector containing only the correct trials, and indices of their position in the list
     of all stims
+    TODO : base this on behav data instead of MNE events
+    /!\ that function looks fishy
     """
 
     # load RT vector
