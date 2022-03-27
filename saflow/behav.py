@@ -178,24 +178,23 @@ def get_VTC_from_file(
     subject_logfiles = []
     for bloc in cpt_blocs:
         subject_logfiles.append(
-            op.join(LOGS_DIR, find_logfile(subject, run, files_list))
+            op.join(behav_path, find_logfile(subject, run, files_list))
         )
 
     # Load and clean RT arrays
     RT_arrays = []
     RT_to_VTC = []
-    for idx, logfile in enumerate(subject_logfiles):
+    for idx_file, logfile in enumerate(subject_logfiles):
         data = loadmat(logfile)
         df_response = pd.DataFrame(data["response"])
         # Replace commission errors by 0
-        for idx, line in enumerate(df_response.iterrows()):
+        for idx_line, line in enumerate(df_response.iterrows()):
             if line[1][0] == 1.0 and line[1][1] != 0.0:
-                print(line[1])
-                df_response.loc[idx, 4] == 0.0
+                df_response.loc[idx_line, 4] == 0.0
         RT_raw = np.asarray(df_response.loc[:, 4])
         RT_interpolated = interpolate_RT(RT_raw)
         RT_arrays.append(RT_interpolated)
-        if int(cpt_blocs[idx]) == int(run):
+        if int(cpt_blocs[idx_file]) == int(run):
             RT_to_VTC = RT_interpolated
 
     # Obtain meand and std across runs
