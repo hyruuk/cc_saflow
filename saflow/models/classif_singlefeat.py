@@ -21,6 +21,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import RandomizedSearchCV
 from mlneurotools.ml import classification, StratifiedShuffleGroupSplit
 import argparse
 import os
@@ -153,7 +154,7 @@ def classif_singlefeat(X, y, groups, n_perms, model):
 
             clf.fit(X[train_outer], y[train_outer])
             # evaluate fit above
-            acc_score_outer = clf.score(X[train_outer], y[train_outer])
+            acc_score_outer = clf.score(X[test_outer], y[test_outer])
             # store hp and DA
             acc_score_list.append(acc_score_outer)
             best_params_list.append(best_params)
