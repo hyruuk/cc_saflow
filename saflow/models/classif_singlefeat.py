@@ -25,6 +25,7 @@ from mlneurotools.ml import classification, StratifiedShuffleGroupSplit
 import argparse
 import os
 import random
+from scipy.stats import uniform
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
