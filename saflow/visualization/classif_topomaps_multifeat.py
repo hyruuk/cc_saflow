@@ -49,7 +49,7 @@ if __name__ == "__main__":
     allchans_pval = []
     allchans_accperms = []
     for CHAN in range(270):
-
+        savename = "chan_{}.pkl".format(CHAN)
         with open(savepath + savename, 'rb') as f:
             result = pickle.load(f)
         allchans_acc.append(result['acc_score'])
