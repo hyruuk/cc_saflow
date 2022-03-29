@@ -7,7 +7,7 @@ from autoreject import AutoReject
 from scipy.io import loadmat, savemat
 
 # from brainpipe import feature
-from saflow import BIDS_PATH, LOGS_DIR
+from saflow import BIDS_PATH, LOGS_DIR, FREQS
 from mne.io import read_raw_fif, read_raw_ctf
 
 # from hytools.meg_utils import get_ch_pos
@@ -368,10 +368,9 @@ def get_VTC_epochs(
     return INidx, OUTidx, VTC_epo, idx_trimmed
 
 
-def compute_PSD(epochs, freqlist=None, method="multitaper"):
+def compute_PSD(epochs, freqlist=FREQS, method="multitaper"):
     epochs_psds = []
-    if freqlist == None:
-        freqlist = [[4, 8], [8, 12], [12, 20], [20, 30], [30, 60], [60, 90], [90, 120]]
+    
     # Compute PSD
     if method == "multitaper":
         psds, freqs = psd_multitaper(
@@ -385,6 +384,8 @@ def compute_PSD(epochs, freqlist=None, method="multitaper"):
             fmax=max(max(freqlist)),
             n_jobs=1,
         )
+    # TODO : compute via hilbert
+
     psds = 10.0 * np.log10(psds)  # Convert power to dB scale.
     # Average in freq bands
     for low, high in freqlist:
