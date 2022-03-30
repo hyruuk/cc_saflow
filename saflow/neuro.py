@@ -343,7 +343,18 @@ def get_VTC_epochs(
     log_file = LOGS_DIR + find_logfile(subj, run, behav_list)
 
     # VTC, INbounds, OUTbounds, INidx, OUTidx, RT_array = get_VTC_from_file(log_file, lobound=lobound, hibound=hibound, filt=True, filt_order=filt_order, filt_cutoff=filt_cutoff)
-    INidx, OUTidx, _, VTC, _, _ = get_VTC_from_file(subj, run, behav_list)
+    (
+        INidx,
+        OUTidx,
+        VTC_raw,
+        VTC_filtered,
+        IN_mask,
+        OUT_mask,
+        performance_dict,
+        df_response_out,
+    ) = get_VTC_from_file(
+        subj, run, behav_list, inout_bounds=[lobound, hibound], filt_cutoff=filt_cutoff
+    )
 
     ### Get original events and split them using the VTC
     events_fname, events_fpath = get_SAflow_bids(
@@ -370,7 +381,7 @@ def get_VTC_epochs(
 
 def compute_PSD(epochs, freqlist=FREQS, method="multitaper"):
     epochs_psds = []
-    
+
     # Compute PSD
     if method == "multitaper":
         psds, freqs = psd_multitaper(
