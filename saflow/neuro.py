@@ -717,7 +717,7 @@ def split_trials(
         )
         if oddball == "all":
             condA_idx = np.sort(np.concatenate((freqs_hits_idx, freqs_miss_idx)))
-            condB_idx = np.sort(np.concatenate((freqs_hits_idx, rares_miss_idx)))
+            condB_idx = np.sort(np.concatenate((rares_hits_idx, rares_miss_idx)))
         elif oddball == "hits":
             condA_idx = freqs_hits_idx
             condB_idx = rares_hits_idx
