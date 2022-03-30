@@ -136,7 +136,7 @@ def get_VTC_from_file(
     subject_logfiles = []
     for bloc in cpt_blocs:
         subject_logfiles.append(
-            op.join(behav_path, find_logfile(subject, bloc, files_list))
+            op.join(LOGS_DIR, find_logfile(subject, bloc, files_list))
         )
 
     # Load and clean RT arrays
