@@ -342,7 +342,6 @@ def get_VTC_epochs(
     behav_list = os.listdir(LOGS_DIR)
     log_file = LOGS_DIR + find_logfile(subj, run, behav_list)
 
-    # VTC, INbounds, OUTbounds, INidx, OUTidx, RT_array = get_VTC_from_file(log_file, lobound=lobound, hibound=hibound, filt=True, filt_order=filt_order, filt_cutoff=filt_cutoff)
     (
         INidx,
         OUTidx,
@@ -374,7 +373,7 @@ def get_VTC_epochs(
     # Write INidx and OUTidx as indices of clean events
     INidx, OUTidx = trim_INOUT_idx(INidx, OUTidx, events_trimmed, events)
 
-    VTC_epo = np.array([VTC[idx] for idx in idx_trimmed])
+    VTC_epo = np.array([VTC_raw[idx] for idx in idx_trimmed])
 
     return INidx, OUTidx, VTC_epo, idx_trimmed
 
