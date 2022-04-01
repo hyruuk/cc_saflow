@@ -110,6 +110,7 @@ def get_VTC_from_file(
     cpt_blocs=[2, 3, 4, 5, 6, 7],
     inout_bounds=[25, 75],
     filt_cutoff=0.05,
+    filt_type="butterworth",
 ):
     """Short summary.
 
@@ -149,24 +150,30 @@ def get_VTC_from_file(
         # Replace commission errors by 0
         df_clean, perf_dict = clean_comerr(df_response)
         RT_raw = np.asarray(df_clean.loc[:, 4])
-        RT_interpolated = interpolate_RT(RT_raw)
-        RT_arrays.append(RT_interpolated)
+        RT_raw = np.array([x if x != 0 else np.nan for x in RT_raw])  # zeros to nans
+        # RT_interpolated = interpolate_RT(RT_raw)
+        RT_arrays.append(RT_raw)
         if int(cpt_blocs[idx_file]) == int(run):
-            RT_to_VTC = RT_interpolated
+            RT_to_VTC = RT_raw
             performance_dict = perf_dict.copy()
             df_response_out = df_response
 
     # Obtain meand and std across runs
     allruns_RT_array = np.concatenate(RT_arrays)
-    subj_mean = np.mean(allruns_RT_array)
-    subj_std = np.std(allruns_RT_array)
+    subj_mean = np.nanmean(allruns_RT_array)
+    subj_std = np.nanstd(allruns_RT_array)
 
     # New VTC
-    VTC_raw = threshold_VTC(
-        compute_VTC(RT_to_VTC, subj_mean, subj_std), thresh=3
-    )  # Compute VTC remove variability values above threshold
-    b, a = signal.butter(3, filt_cutoff)  # (filt_order,filt_cutoff)
-    VTC_filtered = signal.filtfilt(b, a, VTC_raw)
+    VTC_raw = compute_VTC(RT_to_VTC, subj_mean, subj_std)
+    # VTC_thresholded = threshold_VTC(VTC_raw, thresh=3)  # Compute VTC remove variability values above threshold
+    VTC_raw[np.isnan(VTC_raw)] = 0
+    VTC_interpolated = interpolate_RT(VTC_raw)
+    if filt_type == "gaussian":
+        filt = signal.gaussian(9, 1)
+        VTC_filtered = np.convolve(VTC_interpolated, filt)
+    elif filt_type == "butterworth":
+        b, a = signal.butter(3, filt_cutoff)  # (filt_order,filt_cutoff)
+        VTC_filtered = signal.filtfilt(b, a, VTC_interpolated)
 
     IN_mask = np.ma.masked_where(
         VTC_filtered >= np.quantile(VTC_filtered, inout_bounds[0] / 100), VTC_filtered

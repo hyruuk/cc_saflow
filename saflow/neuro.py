@@ -395,6 +395,7 @@ def compute_PSD(epochs, freqlist=FREQS, method="multitaper"):
             n_jobs=1,
         )
     # TODO : compute via hilbert
+    if method == "hilbert":
 
     psds = 10.0 * np.log10(psds)  # Convert power to dB scale.
     # Average in freq bands
