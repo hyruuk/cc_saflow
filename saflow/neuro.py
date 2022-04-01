@@ -414,15 +414,15 @@ def compute_PSD(epochs, freqlist=FREQS, method="multitaper", tmin=0, tmax=0.8):
 
             # Segment them
             picks = mne.pick_types(
-                raw.info, meg=True, ref_meg=False, eeg=False, eog=False, stim=False
+                data.info, meg=True, ref_meg=False, eeg=False, eog=False, stim=False
             )
             try:
                 events = mne.find_events(
-                    raw, min_duration=1 / raw.info["sfreq"], verbose=False
+                    data, min_duration=1 / data.info["sfreq"], verbose=False
                 )
             except ValueError:
                 events = mne.find_events(
-                    raw, min_duration=2 / raw.info["sfreq"], verbose=False
+                    data, min_duration=2 / data.info["sfreq"], verbose=False
                 )
             event_id = {"Freq": 21, "Rare": 31}
             epochs = mne.Epochs(
