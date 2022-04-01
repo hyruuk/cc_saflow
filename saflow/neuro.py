@@ -378,7 +378,7 @@ def get_VTC_epochs(
     return INidx, OUTidx, VTC_epo, idx_trimmed
 
 
-def compute_PSD(epochs, freqlist=FREQS, method="multitaper"):
+def compute_PSD(epochs, freqlist=FREQS, method="multitaper", tmin=0, tmax=0.8):
     epochs_psds = []
 
     # Compute PSD
@@ -394,16 +394,52 @@ def compute_PSD(epochs, freqlist=FREQS, method="multitaper"):
             fmax=max(max(freqlist)),
             n_jobs=1,
         )
-    # TODO : compute via hilbert
-    # if method == "hilbert":
+    if method == "pwelch" or method == "multitaper":
+        psds = 10.0 * np.log10(psds)  # Convert power to dB scale.
+        # Average in freq bands
+        for low, high in freqlist:
+            freq_idx = [i for i, x in enumerate(freqs) if x >= low and x <= high]
+            psd = np.mean(psds[:, :, freq_idx], axis=2)
+            epochs_psds.append(psd)
+        epochs_psds = np.array(epochs_psds).swapaxes(2, 0).swapaxes(1, 0)
 
-    psds = 10.0 * np.log10(psds)  # Convert power to dB scale.
-    # Average in freq bands
-    for low, high in freqlist:
-        freq_idx = [i for i, x in enumerate(freqs) if x >= low and x <= high]
-        psd = np.mean(psds[:, :, freq_idx], axis=2)
-        epochs_psds.append(psd)
-    epochs_psds = np.array(epochs_psds).swapaxes(2, 0).swapaxes(1, 0)
+        # TODO : compute via hilbert
+    if method == "hilbert":
+        for low, high in freqlist:
+            # Filter continuous data
+            data = raw.copy().filter(low, high)
+            hilbert = data.apply_hilbert(envelope=True)
+            hilbert_pow = hilbert.copy()
+            hilbert_pow._data = hilbert._data**2
+
+            # Segment them
+            picks = mne.pick_types(
+                raw.info, meg=True, ref_meg=False, eeg=False, eog=False, stim=False
+            )
+            try:
+                events = mne.find_events(
+                    raw, min_duration=1 / raw.info["sfreq"], verbose=False
+                )
+            except ValueError:
+                events = mne.find_events(
+                    raw, min_duration=2 / raw.info["sfreq"], verbose=False
+                )
+            event_id = {"Freq": 21, "Rare": 31}
+            epochs = mne.Epochs(
+                hilbert_pow,
+                events=events,
+                event_id=event_id,
+                tmin=tmin,
+                tmax=tmax,
+                baseline=None,
+                reject=None,
+                picks=picks,
+                preload=True,
+            )
+            epochs_psds.append(epochs.get_data())
+        epochs_psds = np.array(epochs_psds)
+        epochs_psds = np.mean(epochs_psds, axis=3).transpose(1, 2, 0)
+        print(epochs_psds.shape)
     return epochs_psds
 
 
@@ -416,7 +452,7 @@ def compute_PSD_hilbert(raw, ARlog, freqlist=None, tmin=0, tmax=0.8):
         data = raw.copy().filter(low, high)
         # Segment them
         picks = mne.pick_types(
-            raw.info, meg=True, ref_meg=True, eeg=False, eog=False, stim=False
+            raw.info, meg=True, ref_meg=False, eeg=False, eog=False, stim=False
         )
         try:
             events = mne.find_events(
@@ -427,6 +463,7 @@ def compute_PSD_hilbert(raw, ARlog, freqlist=None, tmin=0, tmax=0.8):
                 raw, min_duration=2 / raw.info["sfreq"], verbose=False
             )
         event_id = {"Freq": 21, "Rare": 31}
+
         epochs = mne.Epochs(
             raw,
             events=events,
