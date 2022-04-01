@@ -43,7 +43,7 @@ parser.add_argument(
 parser.add_argument(
     "-s",
     "--split",
-    default=[50, 50],
+    default=[25, 75],
     type=int,
     nargs="+",
     help="Bounds of percentile split",
