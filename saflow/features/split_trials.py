@@ -22,6 +22,15 @@ parser.add_argument(
     type=str,
     help="Choose the basis on which to split the data ('VTC' or 'odd')",
 )
+parser.add_argument(
+    "-i",
+    "--input_stage",
+    default="PSD",
+    type=str,
+    help="Choose the PSD file to load (can be PSD, or PSD4001200 for epochs"
+    "splitted between 400 and 1200ms)",
+)
+
 
 args = parser.parse_args()
 
@@ -31,6 +40,7 @@ if __name__ == "__main__":
         for run in BLOCS_LIST:
             CONDS_LIST = args.split
             by = args.by
+            stage = args.input_stage
 
             if by == "VTC":
                 INepochs, OUTepochs = split_trials(
@@ -38,7 +48,7 @@ if __name__ == "__main__":
                     LOGS_DIR,
                     subj=subj,
                     run=run,
-                    stage="PSD",
+                    stage=stage,
                     by="VTC",
                     lobound=CONDS_LIST[0],
                     hibound=CONDS_LIST[1],
@@ -47,14 +57,14 @@ if __name__ == "__main__":
                     BIDS_PATH,
                     subj=subj,
                     run=run,
-                    stage="PSD",
+                    stage=stage,
                     cond="IN{}".format(CONDS_LIST[0]),
                 )
                 OUTepochs_path, OUTepochs_filename = get_SAflow_bids(
                     BIDS_PATH,
                     subj=subj,
                     run=run,
-                    stage="PSD",
+                    stage=stage,
                     cond="OUT{}".format(CONDS_LIST[1]),
                 )
 
@@ -69,15 +79,15 @@ if __name__ == "__main__":
                     LOGS_DIR,
                     subj=subj,
                     run=run,
-                    stage="PSD",
+                    stage=stage,
                     by="odd",
                     oddball="hits",
                 )
                 FREQepochs_path, FREQepochs_filename = get_SAflow_bids(
-                    BIDS_PATH, subj=subj, run=run, stage="PSD", cond="FREQhits"
+                    BIDS_PATH, subj=subj, run=run, stage=stage, cond="FREQhits"
                 )
                 RAREepochs_path, RAREepochs_filename = get_SAflow_bids(
-                    BIDS_PATH, subj=subj, run=run, stage="PSD", cond="RAREhits"
+                    BIDS_PATH, subj=subj, run=run, stage=stage, cond="RAREhits"
                 )
 
                 with open(FREQepochs_filename, "wb") as fp:
@@ -87,13 +97,13 @@ if __name__ == "__main__":
 
             elif by == "resp":
                 RESPepochs, NORESPepochs = split_trials(
-                    BIDS_PATH, LOGS_DIR, subj=subj, run=run, stage="PSD", by="resp"
+                    BIDS_PATH, LOGS_DIR, subj=subj, run=run, stage=stage, by="resp"
                 )
                 RESPepochs_path, RESPepochs_filename = get_SAflow_bids(
-                    BIDS_PATH, subj=subj, run=run, stage="PSD", cond="RESP"
+                    BIDS_PATH, subj=subj, run=run, stage=stage, cond="RESP"
                 )
                 NORESPepochs_path, NORESPepochs_filename = get_SAflow_bids(
-                    BIDS_PATH, subj=subj, run=run, stage="PSD", cond="NORESP"
+                    BIDS_PATH, subj=subj, run=run, stage=stage, cond="NORESP"
                 )
 
                 with open(RESPepochs_filename, "wb") as fp:
