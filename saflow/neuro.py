@@ -436,6 +436,7 @@ def compute_PSD(epochs, freqlist=FREQS, method="multitaper", tmin=0, tmax=0.8):
                 picks=picks,
                 preload=True,
             )
+            epochs.drop(ARlog.bad_epochs)
             epochs_psds.append(epochs.get_data())
         epochs_psds = np.array(epochs_psds)
         epochs_psds = np.mean(epochs_psds, axis=3).transpose(1, 2, 0)
@@ -443,7 +444,48 @@ def compute_PSD(epochs, freqlist=FREQS, method="multitaper", tmin=0, tmax=0.8):
     return epochs_psds
 
 
-def compute_PSD_hilbert(raw, ARlog, freqlist=None, tmin=0, tmax=0.8):
+def compute_hilber_PSD(raw, ARlog, tmin=0, tmax=0.8, freqlist=FREQS):
+    epochs_psds = []
+    for low, high in freqlist:
+        # Filter continuous data
+        data = raw.copy().filter(low, high)  # Here epochs is a raw file
+        hilbert = data.apply_hilbert(envelope=True)
+        hilbert_pow = hilbert.copy()
+        hilbert_pow._data = hilbert._data**2
+
+        # Segment them
+        picks = mne.pick_types(
+            raw.info, meg=True, ref_meg=False, eeg=False, eog=False, stim=False
+        )
+        try:
+            events = mne.find_events(
+                raw, min_duration=1 / raw.info["sfreq"], verbose=False
+            )
+        except ValueError:
+            events = mne.find_events(
+                raw, min_duration=2 / raw.info["sfreq"], verbose=False
+            )
+        event_id = {"Freq": 21, "Rare": 31}
+        epochs = mne.Epochs(
+            hilbert_pow,
+            events=events,
+            event_id=event_id,
+            tmin=tmin,
+            tmax=tmax,
+            baseline=None,
+            reject=None,
+            picks=picks,
+            preload=True,
+        )
+        epochs.drop(ARlog.bad_epochs)
+        epochs_psds.append(epochs.get_data())
+    epochs_psds = np.array(epochs_psds)
+    epochs_psds = np.mean(epochs_psds, axis=3).transpose(1, 2, 0)
+    print(epochs_psds.shape)
+    return epochs_psds
+
+
+def compute_envelopes_hilbert(raw, ARlog, freqlist=None, tmin=0, tmax=0.8):
     epochs_envelopes = []
     if freqlist == None:
         freqlist = [[4, 8], [8, 12], [12, 20], [20, 30], [30, 60], [60, 90], [90, 120]]
