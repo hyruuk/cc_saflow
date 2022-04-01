@@ -34,9 +34,9 @@ if __name__ == "__main__":
         raw = mne.io.read_raw_fif(rawpath, preload=True)
         with open(ARpath, "rb") as f:
             ARlog = pickle.load(f)
-
+        """
         # Compute envelopes
-        envelopes = compute_PSD_hilbert(raw, ARlog, freqlist=FREQS)
+        envelopes = compute_envelopes_hilbert(raw, ARlog, freqlist=FREQS)
         # Save envelopes
         for envelope, freqname in zip(envelopes, FREQS_NAMES):
             _, envpath = get_SAflow_bids(
@@ -44,9 +44,9 @@ if __name__ == "__main__":
             )
             envelope.save(envpath, overwrite=True)
         del envelopes
-
+        """
         # Compute PSD
-        psds = compute_PSD(raw, freqlist=FREQS, method="hilbert", tmin=0, tmax=0.8)
+        psds = compute_PSD_hilbert(raw, ARlog=ARlog, freqlist=FREQS, tmin=0, tmax=0.8)
         # Save PSD
         with open(PSDpath, "wb") as f:
             pickle.dump(psds, f)
