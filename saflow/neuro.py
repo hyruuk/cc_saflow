@@ -444,7 +444,7 @@ def compute_PSD(epochs, freqlist=FREQS, method="multitaper", tmin=0, tmax=0.8):
     return epochs_psds
 
 
-def compute_hilber_PSD(raw, ARlog, tmin=0, tmax=0.8, freqlist=FREQS):
+def compute_PSD_hilbert(raw, ARlog, tmin=0, tmax=0.8, freqlist=FREQS):
     epochs_psds = []
     for low, high in freqlist:
         # Filter continuous data
