@@ -407,7 +407,7 @@ def compute_PSD(epochs, freqlist=FREQS, method="multitaper", tmin=0, tmax=0.8):
     if method == "hilbert":
         for low, high in freqlist:
             # Filter continuous data
-            data = raw.copy().filter(low, high)
+            data = epochs.copy().filter(low, high)  # Here epochs is a raw file
             hilbert = data.apply_hilbert(envelope=True)
             hilbert_pow = hilbert.copy()
             hilbert_pow._data = hilbert._data**2
