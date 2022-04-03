@@ -828,7 +828,7 @@ def split_trials(
             condA = data[condA_idx]
             condB = data[condB_idx]
         except IndexError:
-            print("Rares miss empty")
+            print("condB empty")
             condB = []
     elif "env" in stage:
         condA = []
