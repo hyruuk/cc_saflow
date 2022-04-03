@@ -467,7 +467,7 @@ def compute_PSD_hilbert(raw, ARlog, tmin=0, tmax=0.8, freqlist=FREQS):
             )
         event_id = {"Freq": 21, "Rare": 31}
         epochs = mne.Epochs(
-            hilbert_pow,
+            hilbert,
             events=events,
             event_id=event_id,
             tmin=tmin,
