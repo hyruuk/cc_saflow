@@ -90,6 +90,7 @@ def prepare_data(
         y_balanced = []
         groups_balanced = []
         # We want to balance the trials across subjects
+        random.seed(10)
         for subj_idx in np.unique(groups):
             y_subj = [label for i, label in enumerate(y) if groups[i] == subj_idx]
             max_trials = min(np.unique(y_subj, return_counts=True)[1])
