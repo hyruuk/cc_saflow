@@ -824,8 +824,12 @@ def split_trials(
         fname, fpath = get_SAflow_bids(BIDS_PATH, subj, run, stage, cond=None)
         with open(fpath, "rb") as f:
             data = pickle.load(f)
-        condA = data[condA_idx]
-        condB = data[condB_idx]
+        try:
+            condA = data[condA_idx]
+            condB = data[condB_idx]
+        except IndexError:
+            print("Rares miss empty")
+            condB = []
     elif "env" in stage:
         condA = []
         condB = []
