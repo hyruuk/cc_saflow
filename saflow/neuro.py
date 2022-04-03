@@ -804,8 +804,11 @@ def split_trials(
         elif oddball == "miss":
             condA_idx = freqs_miss_idx
             condB_idx = rares_miss_idx
-        print("{} Freqs epochs".format(len(condA_idx)))
-        print("{} Rare epochs".format(len(condB_idx)))
+        elif oddball == "rares":
+            condA_idx = rares_hits_idx
+            condB_idx = rares_miss_idx
+        print("{} condA epochs".format(len(condA_idx)))
+        print("{} condB epochs".format(len(condB_idx)))
     elif by == "resp":
         freqs_hits_idx, freqs_miss_idx, rares_hits_idx, rares_miss_idx = get_odd_epochs(
             BIDS_PATH, LOGS_DIR, subj, run, stage="-epo"
