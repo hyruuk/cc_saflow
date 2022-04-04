@@ -81,7 +81,7 @@ if __name__ == "__main__":
                     run=run,
                     stage=stage,
                     by="odd",
-                    oddball="rares",
+                    oddball="hits",
                 )
                 FREQepochs_path, FREQepochs_filename = get_SAflow_bids(
                     BIDS_PATH, subj=subj, run=run, stage=stage, cond="FREQhits"
