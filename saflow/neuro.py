@@ -210,6 +210,31 @@ def remove_errors(logfile, events):
 
     return events_noerr, events_comerr, events_omerr, events_comcorr, events_omcorr
 
+def annotate_events(logfile, events):
+    data = loadmat(logfile)
+    df_response = pd.DataFrame(data["response"])
+
+    annotated_events = []
+    events_full = events.copy()
+    idx_stim = 0
+    for idx_ev, ev in enumerate(events_full):
+        current_ev = ev.copy()
+        if ev[2] == 21:
+            if df_response.loc[idx_stim, 1] != 0.0:
+                ev[2] = 211
+            else:
+                ev[2] = 210
+            annotated_events.append(ev)
+            idx_stim += 1
+        elif ev[2] == 31:
+            if df_response.loc[idx_stim, 1] == 0.0:
+                ev[2] = 311
+            else:
+                ev[2] = 310
+            annotated_events.append(ev)
+            idx_stim += 1
+    return np.array(annotated_events)
+
 
 def trim_events(events_noerr, events_artrej):
     """
