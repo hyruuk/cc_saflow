@@ -22,6 +22,8 @@ args = parser.parse_args()
 ### OPEN SEGMENTED FILES AND COMPUTE PSDS
 if __name__ == "__main__":
     subj = args.subject
+    tmin = 0
+    tmax = 0.8
     for bloc in BLOCS_LIST:
         # Generate filenames
         _, epopath = get_SAflow_bids(BIDS_PATH, subj, bloc, stage="-epo", cond=None)
