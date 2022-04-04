@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "-s",
     "--split",
-    default=[25, 75],
+    default=[50, 50],
     type=int,
     nargs="+",
     help="Bounds of percentile split",
@@ -35,6 +35,25 @@ parser.add_argument(
 args = parser.parse_args()
 
 
+def new_split_trials(subj, bloc, by="VTC"):
+    condA = []
+    condB = []
+    for idx_freq, freq_bounds in enumerate(FREQS):
+        _, PSDpath = get_SAflow_bids(
+            BIDS_PATH, subj, 3, stage=f"-epoenv_{FREQS_NAMES[idx_freq]}", cond=None
+        )
+
+        epochs = mne.read_epochs(PSDpath)
+        if by == "VTC":
+            condA_epochs = epochs["FreqIN"]
+            condB_epochs = epochs["FreqOUT"]
+        condA.append(condA_epochs.get_data())
+        condB.append(condB_epochs.get_data())
+    condA = np.mean(np.array(condA), axis=3).transpose(1, 2, 0)
+    condB = np.mean(np.array(condB), axis=3).transpose(1, 2, 0)
+    return condA, condB
+
+
 if __name__ == "__main__":
     for subj in SUBJ_LIST:
         for run in BLOCS_LIST:
@@ -43,15 +62,10 @@ if __name__ == "__main__":
             stage = args.input_stage
 
             if by == "VTC":
-                INepochs, OUTepochs = split_trials(
-                    BIDS_PATH,
-                    LOGS_DIR,
+                INepochs, OUTepochs = new_split_trials(
                     subj=subj,
                     run=run,
-                    stage=stage,
                     by="VTC",
-                    lobound=CONDS_LIST[0],
-                    hibound=CONDS_LIST[1],
                 )
                 INepochs_path, INepochs_filename = get_SAflow_bids(
                     BIDS_PATH,
@@ -74,14 +88,10 @@ if __name__ == "__main__":
                     pickle.dump(OUTepochs, fp)
 
             elif by == "odd":
-                FREQepochs, RAREepochs = split_trials(
-                    BIDS_PATH,
-                    LOGS_DIR,
+                FREQepochs, RAREepochs = new_split_trials(
                     subj=subj,
                     run=run,
-                    stage=stage,
                     by="odd",
-                    oddball="hits",
                 )
                 FREQepochs_path, FREQepochs_filename = get_SAflow_bids(
                     BIDS_PATH, subj=subj, run=run, stage=stage, cond="FREQhits"
