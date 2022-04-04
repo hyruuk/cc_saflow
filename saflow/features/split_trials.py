@@ -35,7 +35,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 
-def new_split_trials(subj, bloc, by="VTC"):
+def new_split_trials(subj, run, by="VTC"):
     condA = []
     condB = []
     for idx_freq, freq_bounds in enumerate(FREQS):
