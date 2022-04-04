@@ -44,10 +44,67 @@ if __name__ == "__main__":
             )
             envelope.save(envpath, overwrite=True)
         del envelopes
-        """
+
         # Compute PSD
         psds = compute_PSD_hilbert(raw, ARlog=ARlog, freqlist=FREQS, tmin=0, tmax=0.8)
+
         # Save PSD
         with open(PSDpath, "wb") as f:
             pickle.dump(psds, f)
         del psds
+        """
+        for idx_freq, freq_bounds in enumerate(FREQS):
+            low = freq_bounds[0]
+            high = freq_bounds[1]
+            # Filter continuous data
+            data = raw.copy().filter(low, high)  # Here epochs is a raw file
+            hilbert = data.apply_hilbert(envelope=True)
+
+            # Segment them
+            picks = mne.pick_types(
+                raw.info, meg=True, ref_meg=False, eeg=False, eog=False, stim=False
+            )
+            try:
+                events = mne.find_events(
+                    raw, min_duration=1 / raw.info["sfreq"], verbose=False
+                )
+            except ValueError:
+                events = mne.find_events(
+                    raw, min_duration=2 / raw.info["sfreq"], verbose=False
+                )
+            (
+                INidx,
+                OUTidx,
+                VTC_raw,
+                VTC_filtered,
+                IN_mask,
+                OUT_mask,
+                performance_dict,
+                df_response_out,
+            ) = get_VTC_from_file(
+                subj, bloc, os.listdir(LOGS_DIR), inout_bounds=[50, 50]
+            )
+            logfile = LOGS_DIR + find_logfile(subj, bloc, os.listdir(LOGS_DIR))
+            events = annotate_events(logfile, events, inout_idx=[INidx, OUTidx])
+            event_id = get_present_events(events)
+            epochs = mne.Epochs(
+                hilbert,
+                events=events,
+                event_id=event_id,
+                tmin=tmin,
+                tmax=tmax,
+                baseline=None,
+                reject=None,
+                picks=picks,
+                preload=True,
+            )
+            epochs.drop(ARlog.bad_epochs)
+
+            _, PSDpath = get_SAflow_bids(
+                BIDS_PATH,
+                subj,
+                bloc,
+                stage=f"-epoenv_{FREQS_NAMES[idx_freq]}",
+                cond=None,
+            )
+            epochs.save(PSDpath)
