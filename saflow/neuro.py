@@ -166,7 +166,7 @@ def remove_errors(logfile, events):
     Outputs an event vector containing only the correct trials, and indices of their position in the list
     of all stims
     TODO : base this on behav data instead of MNE events
-    /!\ that function looks fishy
+    /!\ that function looks fishy <- please just tell me why -_-
     """
 
     # load RT vector
@@ -186,23 +186,29 @@ def remove_errors(logfile, events):
 
     events_comerr = []
     events_omerr = []
+    events_comcorr = []
+    events_omcorr = []
 
     for idx, event in enumerate(events):
         if event[2] == 21:
             if RT_array[idx] != 0:
                 events_noerr.append(event)
+                events_comcorr.append(event)
             else:
                 events_omerr.append(event)
         if event[2] == 31:
             if RT_array[idx] == 0:
                 events_noerr.append(event)
+                events_omcorr.append(event)
             else:
                 events_comerr.append(event)
     events_noerr = np.array(events_noerr)
     events_comerr = np.array(events_comerr)
     events_omerr = np.array(events_omerr)
+    events_comcorr = np.array(events_comcorr)
+    events_omcorr = np.array(events_omcorr)
 
-    return events_noerr, events_comerr, events_omerr
+    return events_noerr, events_comerr, events_omerr, events_comcorr, events_omcorr
 
 
 def trim_events(events_noerr, events_artrej):
@@ -280,7 +286,7 @@ def get_odd_epochs(BIDS_PATH, LOGS_DIR, subj, bloc, stage="-epo"):
 
     # Get the list of hits/miss events
     log_file = LOGS_DIR + find_logfile(subj, bloc, os.listdir(LOGS_DIR))
-    events_noerr, events_comerr, events_omerr = remove_errors(log_file, events)
+    events_noerr, events_comerr, events_omerr, events_comcorr, events_omcorr = remove_errors(log_file, events)
 
     # Keep only events that are clean, and split them by condition
     # Start with correct events
@@ -367,9 +373,9 @@ def get_VTC_epochs(
     except ValueError:
         events = mne.find_events(raw, min_duration=2 / raw.info["sfreq"], verbose=False)
 
-    events_noerr, events_comerr, events_omerr = remove_errors(log_file, events)
+    events_noerr, events_comerr, events_omerr, events_comcorr, events_omcorr = remove_errors(log_file, events)
     # Keep only events that are correct and clean
-    events_trimmed, idx_trimmed = trim_events(events_noerr, events_artrej)
+    events_trimmed, idx_trimmed = trim_events(events_comcorr, events_artrej)
     # Write INidx and OUTidx as indices of clean events
     INidx, OUTidx = trim_INOUT_idx(INidx, OUTidx, events_trimmed, events)
 
