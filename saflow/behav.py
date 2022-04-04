@@ -103,6 +103,10 @@ def threshold_VTC(VTC, thresh=5):
     return VTC
 
 
+def fwhm2sigma(fwhm):
+    return fwhm / np.sqrt(8 * np.log(2))
+
+
 def get_VTC_from_file(
     subject,
     run,
@@ -110,7 +114,7 @@ def get_VTC_from_file(
     cpt_blocs=[2, 3, 4, 5, 6, 7],
     inout_bounds=[25, 75],
     filt_cutoff=0.05,
-    filt_type='gaussian'
+    filt_type="gaussian",
 ):
     """Short summary.
 
@@ -150,8 +154,8 @@ def get_VTC_from_file(
         # Replace commission errors by 0
         df_clean, perf_dict = clean_comerr(df_response)
         RT_raw = np.asarray(df_clean.loc[:, 4])
-        RT_raw = np.array([x if x != 0 else np.nan for x in RT_raw]) # zeros to nans
-        #RT_interpolated = interpolate_RT(RT_raw)
+        RT_raw = np.array([x if x != 0 else np.nan for x in RT_raw])  # zeros to nans
+        # RT_interpolated = interpolate_RT(RT_raw)
         RT_arrays.append(RT_raw)
         if int(cpt_blocs[idx_file]) == int(run):
             RT_to_VTC = RT_raw
@@ -165,13 +169,13 @@ def get_VTC_from_file(
 
     # New VTC
     VTC_raw = compute_VTC(RT_to_VTC, subj_mean, subj_std)
-    #VTC_thresholded = threshold_VTC(VTC_raw, thresh=3)  # Compute VTC remove variability values above threshold
+    # VTC_thresholded = threshold_VTC(VTC_raw, thresh=3)  # Compute VTC remove variability values above threshold
     VTC_raw[np.isnan(VTC_raw)] = 0
     VTC_interpolated = interpolate_RT(VTC_raw)
-    if filt_type == 'gaussian':
+    if filt_type == "gaussian":
         filt = signal.gaussian(len(VTC_interpolated), fwhm2sigma(9))
-        VTC_filtered = np.convolve(VTC_interpolated, filt, 'same')/sum(filt)
-    elif filt_type == 'butterworth':
+        VTC_filtered = np.convolve(VTC_interpolated, filt, "same") / sum(filt)
+    elif filt_type == "butterworth":
         b, a = signal.butter(3, filt_cutoff)  # (filt_order,filt_cutoff)
         VTC_filtered = signal.filtfilt(b, a, VTC_interpolated)
 
@@ -194,6 +198,7 @@ def get_VTC_from_file(
         performance_dict,
         df_response_out,
     )
+
 
 def plot_VTC(VTC_filtered, VTC_raw, IN_mask, OUT_mask, subject="?", bloc="?"):
     x = np.arange(0, len(VTC_raw))
