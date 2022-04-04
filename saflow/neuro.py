@@ -131,6 +131,37 @@ def saflow_preproc(filepath, savepath, reportpath, ica=True):
         del fig
 
 
+def get_present_events(events):
+    """Selects events detected from a full list of events. event_id cannot
+    contain events that aren't present in the data.
+
+    Parameters
+    ----------
+    events : np.array
+        MNE-style events object.
+
+    Returns
+    -------
+    type
+        MNE-style event_id dict.
+
+    """
+    full_event_id = {
+        "FreqHit": 211,
+        "FreqMiss": 210,
+        "RareHit": 311,
+        "RareMiss": 310,
+        "FreqIN": 2111,
+        "FreqOUT": 2110,
+    }
+    event_id = dict(
+        (key, full_event_id[key])
+        for key in full_event_id.keys()
+        if full_event_id[key] in np.unique(events[:, 2])
+    )
+    return event_id
+
+
 def segment_files(bids_filepath, tmin=0, tmax=0.8):
     raw = read_raw_fif(bids_filepath, preload=True)
     picks = mne.pick_types(
@@ -209,6 +240,7 @@ def remove_errors(logfile, events):
     events_omcorr = np.array(events_omcorr)
 
     return events_noerr, events_comerr, events_omerr, events_comcorr, events_omcorr
+
 
 def annotate_events(logfile, events):
     data = loadmat(logfile)
@@ -311,7 +343,13 @@ def get_odd_epochs(BIDS_PATH, LOGS_DIR, subj, bloc, stage="-epo"):
 
     # Get the list of hits/miss events
     log_file = LOGS_DIR + find_logfile(subj, bloc, os.listdir(LOGS_DIR))
-    events_noerr, events_comerr, events_omerr, events_comcorr, events_omcorr = remove_errors(log_file, events)
+    (
+        events_noerr,
+        events_comerr,
+        events_omerr,
+        events_comcorr,
+        events_omcorr,
+    ) = remove_errors(log_file, events)
 
     # Keep only events that are clean, and split them by condition
     # Start with correct events
@@ -398,7 +436,13 @@ def get_VTC_epochs(
     except ValueError:
         events = mne.find_events(raw, min_duration=2 / raw.info["sfreq"], verbose=False)
 
-    events_noerr, events_comerr, events_omerr, events_comcorr, events_omcorr = remove_errors(log_file, events)
+    (
+        events_noerr,
+        events_comerr,
+        events_omerr,
+        events_comcorr,
+        events_omcorr,
+    ) = remove_errors(log_file, events)
     # Keep only events that are correct and clean
     events_trimmed, idx_trimmed = trim_events(events_comcorr, events_artrej)
     # Write INidx and OUTidx as indices of clean events
