@@ -6,6 +6,8 @@ from saflow import BIDS_PATH, IMG_DIR, FREQS, FREQS_NAMES, SUBJ_LIST, BLOCS_LIST
 from scipy.io import savemat
 import pickle
 import argparse
+from saflow.behav import *
+from saflow.neuro import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
