@@ -242,7 +242,10 @@ def remove_errors(logfile, events):
     return events_noerr, events_comerr, events_omerr, events_comcorr, events_omcorr
 
 
-def annotate_events(logfile, events):
+def annotate_events(logfile, events, inout_idx):
+    INidx = inout_idx[0]
+    OUTidx = inout_idx[1]
+
     data = loadmat(logfile)
     df_response = pd.DataFrame(data["response"])
 
@@ -253,7 +256,12 @@ def annotate_events(logfile, events):
         current_ev = ev.copy()
         if ev[2] == 21:
             if df_response.loc[idx_stim, 1] != 0.0:
-                ev[2] = 211
+                if idx_stim in INidx:
+                    ev[2] = 2111
+                elif idx_stim in OUTidx:
+                    ev[2] = 2110
+                else:
+                    ev[2] = 211
             else:
                 ev[2] = 210
             annotated_events.append(ev)
