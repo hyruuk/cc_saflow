@@ -40,7 +40,7 @@ def new_split_trials(subj, bloc, by="VTC"):
     condB = []
     for idx_freq, freq_bounds in enumerate(FREQS):
         _, PSDpath = get_SAflow_bids(
-            BIDS_PATH, subj, 3, stage=f"-epoenv_{FREQS_NAMES[idx_freq]}", cond=None
+            BIDS_PATH, subj, 3, stage=f"ENV{FREQS_NAMES[idx_freq]}", cond=None
         )
 
         epochs = mne.read_epochs(PSDpath)
@@ -67,6 +67,13 @@ if __name__ == "__main__":
                     run=run,
                     by="VTC",
                 )
+                VTCepochs_path, VTCepochs_filename = get_SAflow_bids(
+                    BIDS_PATH,
+                    subj=subj,
+                    run=run,
+                    stage=stage,
+                    cond=f"VTC{CONDS_LIST}",
+                )
                 INepochs_path, INepochs_filename = get_SAflow_bids(
                     BIDS_PATH,
                     subj=subj,
@@ -86,6 +93,8 @@ if __name__ == "__main__":
                     pickle.dump(INepochs, fp)
                 with open(OUTepochs_filename, "wb") as fp:
                     pickle.dump(OUTepochs, fp)
+                with open(VTCepochs_filename, "wb") as fp:
+                    pickle.dump([INepochs, OUTepochs], fp)
 
             elif by == "odd":
                 FREQepochs, RAREepochs = new_split_trials(
@@ -100,10 +109,15 @@ if __name__ == "__main__":
                     BIDS_PATH, subj=subj, run=run, stage=stage, cond="RAREhits"
                 )
 
+                ODDepochs_path, ODDepochs_filename = get_SAflow_bids(
+                    BIDS_PATH, subj=subj, run=run, stage=stage, cond="ODDhits"
+                )
                 with open(FREQepochs_filename, "wb") as fp:
                     pickle.dump(FREQepochs, fp)
                 with open(RAREepochs_filename, "wb") as fp:
                     pickle.dump(RAREepochs, fp)
+                with open(ODDepochs_filename, "wb") as fp:
+                    pickle.dump([FREQepochs, RAREepochs], fp)
 
             elif by == "resp":
                 RESPepochs, NORESPepochs = split_trials(
