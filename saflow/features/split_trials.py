@@ -7,6 +7,7 @@ import pickle
 import argparse
 from saflow import *
 import mne
+import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -42,13 +43,16 @@ def new_split_trials(subj, run, by="VTC"):
     condB = []
     for idx_freq, freq_bounds in enumerate(FREQS):
         _, PSDpath = get_SAflow_bids(
-            BIDS_PATH, subj, 3, stage=f"-epoenv_{FREQS_NAMES[idx_freq]}", cond=None
+            BIDS_PATH, subj, run, stage=f"-epoenv_{FREQS_NAMES[idx_freq]}", cond=None
         )
 
         epochs = mne.read_epochs(PSDpath)
         if by == "VTC":
             condA_epochs = epochs["FreqIN"]
             condB_epochs = epochs["FreqOUT"]
+        elif by == "odd":
+            condA_epochs = epochs[["FreqIN", "FreqOUT", "FreqHit"]]
+            condB_epochs = epochs["RareHit"]
         condA.append(condA_epochs.get_data())
         condB.append(condB_epochs.get_data())
     condA = np.mean(np.array(condA), axis=3).transpose(1, 2, 0)
