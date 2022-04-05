@@ -40,25 +40,8 @@ if __name__ == "__main__":
         raw = mne.io.read_raw_fif(rawpath, preload=True)
         with open(ARpath, "rb") as f:
             ARlog = pickle.load(f)
-        """
-        # Compute envelopes
-        envelopes = compute_envelopes_hilbert(raw, ARlog, freqlist=FREQS)
-        # Save envelopes
-        for envelope, freqname in zip(envelopes, FREQS_NAMES):
-            _, envpath = get_SAflow_bids(
-                BIDS_PATH, subj, bloc, stage="-epoenv_{}".format(freqname), cond=None
-            )
-            envelope.save(envpath, overwrite=True)
-        del envelopes
 
-        # Compute PSD
-        psds = compute_PSD_hilbert(raw, ARlog=ARlog, freqlist=FREQS, tmin=0, tmax=0.8)
 
-        # Save PSD
-        with open(PSDpath, "wb") as f:
-            pickle.dump(psds, f)
-        del psds
-        """
         for idx_freq, freq_bounds in enumerate(FREQS):
             low = freq_bounds[0]
             high = freq_bounds[1]
@@ -70,14 +53,6 @@ if __name__ == "__main__":
             picks = mne.pick_types(
                 raw.info, meg=True, ref_meg=False, eeg=False, eog=False, stim=False
             )
-            try:
-                events = mne.find_events(
-                    raw, min_duration=1 / raw.info["sfreq"], verbose=False
-                )
-            except ValueError:
-                events = mne.find_events(
-                    raw, min_duration=2 / raw.info["sfreq"], verbose=False
-                )
             for inout_bounds in [[50, 50], [25, 75], [10, 90]]:
                 (
                     INidx,
@@ -90,6 +65,10 @@ if __name__ == "__main__":
                     df_response_out,
                 ) = get_VTC_from_file(
                     subj, bloc, os.listdir(LOGS_DIR), inout_bounds=inout_bounds
+                )
+
+                events = mne.find_events(
+                    raw, min_duration=1 / raw.info["sfreq"], verbose=False
                 )
                 logfile = LOGS_DIR + find_logfile(subj, bloc, os.listdir(LOGS_DIR))
                 events = annotate_events(logfile, events, inout_idx=[INidx, OUTidx])
