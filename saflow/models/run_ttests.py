@@ -62,29 +62,53 @@ parser.add_argument(
     type=float,
     help="Desired alpha threshold",
 )
+parser.add_argument(
+    "-cor",
+    "--correction",
+    default="maxstat",
+    type=str,
+    help="Choose correction to apply",
+)
+
 
 args = parser.parse_args()
 
 
 def prepare_data(
-    BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=0, FREQ=0, balance=False
+    BIDS_PATH,
+    SUBJ_LIST,
+    BLOCS_LIST,
+    conds_list,
+    CHAN=0,
+    FREQ=0,
+    balance=False,
+    avg=True,
 ):
     # Prepare data
     X = []
     y = []
     groups = []
     for i_subj, subj in enumerate(SUBJ_LIST):
-        for run in BLOCS_LIST:
-            for i_cond, cond in enumerate(conds_list):
-                _, fpath_condA = get_SAflow_bids(
+        for i_cond, cond in enumerate(conds_list):
+            X_subj = []
+            for run in BLOCS_LIST:
+                _, fpath_cond = get_SAflow_bids(
                     BIDS_PATH, subj, run, stage="PSD", cond=cond
                 )
-                with open(fpath_condA, "rb") as f:
+                # print(f"subj-{subj}_run-0{run}_cond-{cond} chan : {CHAN} freq :{FREQ}")
+                with open(fpath_cond, "rb") as f:
                     data = pickle.load(f)
-                for x in data[:, CHAN, FREQ]:
-                    X.append(x)
-                    y.append(i_cond)
-                    groups.append(i_subj)
+                if avg:
+                    X_subj.append(np.mean(data[:, CHAN, FREQ], axis=0))
+                else:
+                    for x in data[:, CHAN, FREQ]:
+                        X.append(x)
+                        y.append(i_cond)
+                        groups.append(i_subj)
+            if avg:
+                X.append(np.mean(np.array(X_subj), axis=0))
+                y.append(i_cond)
+                groups.append(i_subj)
     if balance:
         X_balanced = []
         y_balanced = []
@@ -114,10 +138,12 @@ def prepare_data(
                 X_balanced.append(X_subj_1[picks_1[i]])
                 y_balanced.append(1)
                 groups_balanced.append(subj_idx)
+
         X = X_balanced
         y = y_balanced
         groups = groups_balanced
-    X = np.array(X).reshape(-1, 1)
+
+    X = np.array(X)
     return X, y, groups
 
 
@@ -126,17 +152,18 @@ if __name__ == "__main__":
     n_perms = args.n_permutations
     alpha = args.alpha
     by = args.by
+    correction = args.correction
     if by == "VTC":
         conds_list = (ZONE_CONDS[0] + str(split[0]), ZONE_CONDS[1] + str(split[1]))
-        balance = True
-        savepath = RESULTS_PATH + "PSD_ttest_{}perm_{}{}/".format(
-            n_perms, split[0], split[1]
+        balance = False
+        savepath = RESULTS_PATH + "PSD_ttest_{}perm_{}{}_{}/".format(
+            n_perms, split[0], split[1], correction
         )
-        figpath = IMG_DIR + "PSD_ttest_{}perm_alpha{}_{}{}.png".format(
-            n_perms, str(alpha)[2:], split[0], split[1]
+        figpath = IMG_DIR + "PSD_ttest_{}perm_alpha{}_{}{}_{}.png".format(
+            n_perms, str(alpha)[2:], split[0], split[1], correction
         )
-        figpath_contrast = IMG_DIR + "PSD_contrast_{}perm_alpha{}_{}{}.png".format(
-            n_perms, str(alpha)[2:], split[0], split[1]
+        figpath_contrast = IMG_DIR + "PSD_contrast_{}perm_alpha{}_{}{}_{}.png".format(
+            n_perms, str(alpha)[2:], split[0], split[1], correction
         )
     elif by == "odd":
         conds_list = ["FREQhits", "RAREhits"]
@@ -152,136 +179,92 @@ if __name__ == "__main__":
     if not (os.path.isdir(savepath)):
         os.makedirs(savepath)
 
-    if args.frequency_band != None:
-        FREQ = FREQS_NAMES.index(args.frequency_band)
-    if args.frequency_band != None:
+    alltvals = []
+    allcontrasts = []
+    masks = []
+    for FREQ in range(len(FREQS_NAMES)):
         savename = "PSD_ttest_{}.pkl".format(FREQS_NAMES[FREQ])
-        if not (os.path.isfile(savepath + savename)):
-            condA_allchans = []
-            condB_allchans = []
-            for CHAN in tqdm(range(270)):
-                X, y, groups = prepare_data(
-                    BIDS_PATH,
-                    SUBJ_LIST,
-                    BLOCS_LIST,
-                    conds_list,
-                    FREQ=FREQ,
-                    CHAN=CHAN,
-                    balance=True,
-                )
-                condA = [float(x) for i, x in enumerate(X) if y[i] == 0]
-                condB = [float(x) for i, x in enumerate(X) if y[i] == 1]
-                condA_allchans.append(condA)
-                condB_allchans.append(condB)
-            condA_allchans = np.asarray(condA_allchans).T
-            condB_allchans = np.asarray(condB_allchans).T
+        condA_allchans = []
+        condB_allchans = []
+        # for CHAN in tqdm(range(270)):
+        X, y, groups = prepare_data(
+            BIDS_PATH,
+            SUBJ_LIST,
+            BLOCS_LIST,
+            conds_list,
+            FREQ=FREQ,
+            CHAN=[x for x in range(270)],
+            balance=True,
+            avg=False,
+        )
+        condA = [x for i, x in enumerate(X) if y[i] == 0]
+        condB = [x for i, x in enumerate(X) if y[i] == 1]
+        condA_allchans = np.asarray(condA)
+        condB_allchans = np.asarray(condB)
+        print(f"cond {conds_list[0]} shape : {condA_allchans.shape}")
+        print(f"cond {conds_list[1]} shape : {condB_allchans.shape}")
+        tvals, pvals = ttest_perm(
+            condA_allchans,
+            condB_allchans,  # cond1 = IN, cond2 = OUT
+            n_perm=n_perms + 1,
+            n_jobs=8,
+            correction=correction,
+            paired=False,
+            two_tailed=True,
+        )
+        contrast = (condA_allchans - condB_allchans) / condB_allchans
+        contrast = np.mean(contrast, axis=0)
+        results = {"tvals": tvals, "pvals": pvals, "contrast": contrast}
 
-            print(condA_allchans.shape)
-            tvals, pvals = ttest_perm(
-                condA_allchans,
-                condB_allchans,  # cond1 = IN, cond2 = OUT
-                n_perm=nperms + 1,
-                n_jobs=8,
-                correction="maxstat",
-                paired=False,
-                two_tailed=True,
-            )
-        print("Ok")
-        results = {"tvals": tvals, "pvals": pvals}
         with open(savepath + savename, "wb") as f:
             pickle.dump(results, f)
-    else:
-        alltvals = []
-        allcontrasts = []
-        masks = []
-        for FREQ in range(len(FREQS_NAMES)):
-            savename = "PSD_ttest_{}.pkl".format(FREQS_NAMES[FREQ])
-            if not (os.path.isfile(savepath + savename)):
-                condA_allchans = []
-                condB_allchans = []
-                for CHAN in tqdm(range(270)):
-                    X, y, groups = prepare_data(
-                        BIDS_PATH,
-                        SUBJ_LIST,
-                        BLOCS_LIST,
-                        conds_list,
-                        FREQ=FREQ,
-                        CHAN=CHAN,
-                        balance=True,
-                    )
-                    condA = [float(x) for i, x in enumerate(X) if y[i] == 0]
-                    condB = [float(x) for i, x in enumerate(X) if y[i] == 1]
-                    condA_allchans.append(condA)
-                    condB_allchans.append(condB)
-                condA_allchans = np.asarray(condA_allchans).T
-                condB_allchans = np.asarray(condB_allchans).T
+        print("Ok")
+        print(f"Min pval : {min(pvals)}")
 
-                print(condA_allchans.shape)
-                tvals, pvals = ttest_perm(
-                    condA_allchans,
-                    condB_allchans,  # cond1 = IN, cond2 = OUT
-                    n_perm=n_perms + 1,
-                    n_jobs=8,
-                    correction="maxstat",
-                    paired=False,
-                    two_tailed=True,
-                )
-                contrast = (condA_allchans - condB_allchans) / condB_allchans
-                contrast = np.mean(contrast, axis=0)
-                results = {"tvals": tvals, "pvals": pvals, "contrast": contrast}
+        allcontrasts.append(contrast)
+        alltvals.append(results["tvals"])
+        masks.append(create_pval_mask(results["pvals"], alpha=alpha))
 
-                with open(savepath + savename, "wb") as f:
-                    pickle.dump(results, f)
-                print("Ok")
-            else:
-                with open(savepath + savename, "rb") as f:
-                    results = pickle.load(f)
-                    tvals = results["tvals"]
-                    contrast = results["contrast"]
-            allcontrasts.append(contrast)
-            alltvals.append(results["tvals"])
-            masks.append(create_pval_mask(results["pvals"], alpha=alpha))
+    # Plots
+    # obtain chan locations
+    _, data_fname = get_SAflow_bids(BIDS_PATH, subj="04", run="2", stage="-epo")
+    epochs = mne.read_epochs(data_fname)
+    ch_xy = epochs.pick_types(
+        meg=True, ref_meg=False
+    ).info  # Find the channel positions
 
-        # Plots
-        # obtain chan locations
-        _, data_fname = get_SAflow_bids(BIDS_PATH, subj="04", run="2", stage="-epo")
-        epochs = mne.read_epochs(data_fname)
-        ch_xy = epochs.pick_types(
-            meg=True, ref_meg=False
-        ).info  # Find the channel positions
+    # Plot tvals
+    toplot = alltvals
+    vmax = np.max(np.max(abs(np.asarray(toplot))))
+    vmin = -vmax
+    array_topoplot(
+        toplot,
+        ch_xy,
+        showtitle=True,
+        titles=FREQS_NAMES,
+        savefig=True,
+        figpath=figpath,
+        vmin=vmin,
+        vmax=vmax,
+        with_mask=True,
+        masks=masks,
+        cmap="magma",
+    )
 
-        # Plot tvals
-        toplot = alltvals
-        vmax = np.max(np.max(abs(np.asarray(toplot))))
-        vmin = -vmax
-        array_topoplot(
-            toplot,
-            ch_xy,
-            showtitle=True,
-            titles=FREQS_NAMES,
-            savefig=True,
-            figpath=figpath,
-            vmin=vmin,
-            vmax=vmax,
-            with_mask=True,
-            masks=masks,
-            cmap="magma",
-        )
-
-        # Plot contrasts
-        toplot = allcontrasts
-        vmax = np.max(np.max(abs(np.asarray(toplot))))
-        vmin = -vmax
-        array_topoplot(
-            toplot,
-            ch_xy,
-            showtitle=True,
-            titles=FREQS_NAMES,
-            savefig=True,
-            figpath=figpath_contrast,
-            vmin=vmin,
-            vmax=vmax,
-            with_mask=True,
-            masks=masks,
-            cmap="coolwarm",
-        )
+    # Plot contrasts
+    toplot = allcontrasts
+    vmax = np.max(np.max(abs(np.asarray(toplot))))
+    vmin = -vmax
+    array_topoplot(
+        toplot,
+        ch_xy,
+        showtitle=True,
+        titles=FREQS_NAMES,
+        savefig=True,
+        figpath=figpath_contrast,
+        vmin=vmin,
+        vmax=vmax,
+        with_mask=True,
+        masks=masks,
+        cmap="coolwarm",
+    )
