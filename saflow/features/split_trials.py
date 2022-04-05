@@ -5,6 +5,8 @@ from saflow.utils import get_SAflow_bids
 from scipy.io import savemat
 import pickle
 import argparse
+from saflow import *
+import mne
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -40,7 +42,7 @@ def new_split_trials(subj, run, by="VTC"):
     condB = []
     for idx_freq, freq_bounds in enumerate(FREQS):
         _, PSDpath = get_SAflow_bids(
-            BIDS_PATH, subj, 3, stage=f"ENV{FREQS_NAMES[idx_freq]}", cond=None
+            BIDS_PATH, subj, 3, stage=f"-epoenv_{FREQS_NAMES[idx_freq]}", cond=None
         )
 
         epochs = mne.read_epochs(PSDpath)
