@@ -36,10 +36,18 @@ warnings.filterwarnings("ignore")
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    "-c", "--channel", default=None, type=int, help="Channels to compute",
+    "-c",
+    "--channel",
+    default=None,
+    type=int,
+    help="Channels to compute",
 )
 parser.add_argument(
-    "-p", "--n_permutations", default=1000, type=int, help="Number of permutations",
+    "-p",
+    "--n_permutations",
+    default=1000,
+    type=int,
+    help="Number of permutations",
 )
 parser.add_argument(
     "-s",
@@ -64,7 +72,11 @@ parser.add_argument(
 # LR for Logistic Regression
 # XGBC for XGBoost Classifier
 parser.add_argument(
-    "-m", "--model", default="LDA", type=str, help="Classifier to apply",
+    "-m",
+    "--model",
+    default="LDA",
+    type=str,
+    help="Classifier to apply",
 )
 
 args = parser.parse_args()
@@ -221,6 +233,7 @@ def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=0, balance=F
         y_balanced = []
         groups_balanced = []
         # We want to balance the trials across subjects
+        random.seed(10)
         for subj_idx in np.unique(groups):
             y_subj = [label for i, label in enumerate(y) if groups[i] == subj_idx]
             max_trials = min(np.unique(y_subj, return_counts=True)[1])
