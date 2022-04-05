@@ -229,11 +229,17 @@ if __name__ == "__main__":
         #    paired=False,
         #    two_tailed=True,
         #)
-        tvals, pvals = stats.ttest_ind(
-            condA_allchans,
-            condB_allchans,  # cond1 = IN, cond2 = OUT
-            permutations=n_perms + 1
-        )
+        if not avg:
+            tvals, pvals = stats.ttest_ind(
+                condA_allchans,
+                condB_allchans,  # cond1 = IN, cond2 = OUT
+                permutations=n_perms + 1
+            )
+        else:
+            tvals, pvals = stats.ttest_rel(
+                condA_allchans,
+                condB_allchans
+            )
         pvals = fdrcorrection(pvals, alpha=alpha)[1]
         contrast = (condA_allchans - condB_allchans) / condB_allchans
         contrast = np.mean(contrast, axis=0)
