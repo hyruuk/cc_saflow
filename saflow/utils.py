@@ -66,12 +66,14 @@ def array_topoplot(
     with_mask=False,
     masks=None,
     show=True,
+    figtitle='Untitled',
 ):
     # create fig
     mask_params = dict(
         marker="o", markerfacecolor="w", markeredgecolor="k", linewidth=0, markersize=5
     )
     fig, ax = plt.subplots(1, len(toplot), figsize=(20, 10), squeeze=False)
+    plt.suptitle(figtitle)
     for i, data in enumerate(toplot):
         if with_mask == False:
             image, _ = mne.viz.plot_topomap(
