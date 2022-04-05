@@ -159,6 +159,7 @@ if __name__ == "__main__":
     if by == "VTC":
         conds_list = (ZONE_CONDS[0] + str(split[0]), ZONE_CONDS[1] + str(split[1]))
         balance = False
+        avg = False
         savepath = RESULTS_PATH + "PSD_ttest_{}perm_{}{}_{}/".format(
             n_perms, split[0], split[1], correction
         )
@@ -180,6 +181,7 @@ if __name__ == "__main__":
         figpath_contrast = IMG_DIR + "{}_PSD_contrast_{}perm_alpha{}_{}.png".format(
             by, n_perms, str(alpha)[2:], correction
         )
+        avg = True
 
     if not (os.path.isdir(savepath)):
         os.makedirs(savepath)
@@ -200,7 +202,7 @@ if __name__ == "__main__":
             FREQ=FREQ,
             CHAN=[x for x in range(270)],
             balance=True,
-            avg=False,
+            avg=avg,
         )
         condA = [x for i, x in enumerate(X) if y[i] == 0]
         condB = [x for i, x in enumerate(X) if y[i] == 1]
