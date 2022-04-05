@@ -18,6 +18,7 @@ parser.add_argument(
     type=str,
     help="Subject to process",
 )
+
 args = parser.parse_args()
 
 ### OPEN SEGMENTED FILES AND COMPUTE PSDS
@@ -77,39 +78,40 @@ if __name__ == "__main__":
                 events = mne.find_events(
                     raw, min_duration=2 / raw.info["sfreq"], verbose=False
                 )
-            (
-                INidx,
-                OUTidx,
-                VTC_raw,
-                VTC_filtered,
-                IN_mask,
-                OUT_mask,
-                performance_dict,
-                df_response_out,
-            ) = get_VTC_from_file(
-                subj, bloc, os.listdir(LOGS_DIR), inout_bounds=[50, 50]
-            )
-            logfile = LOGS_DIR + find_logfile(subj, bloc, os.listdir(LOGS_DIR))
-            events = annotate_events(logfile, events, inout_idx=[INidx, OUTidx])
-            event_id = get_present_events(events)
-            epochs = mne.Epochs(
-                hilbert,
-                events=events,
-                event_id=event_id,
-                tmin=tmin,
-                tmax=tmax,
-                baseline=None,
-                reject=None,
-                picks=picks,
-                preload=True,
-            )
-            epochs.drop(ARlog.bad_epochs)
+            for inout_bounds in [[50, 50], [25, 75], [10, 90]]:
+                (
+                    INidx,
+                    OUTidx,
+                    VTC_raw,
+                    VTC_filtered,
+                    IN_mask,
+                    OUT_mask,
+                    performance_dict,
+                    df_response_out,
+                ) = get_VTC_from_file(
+                    subj, bloc, os.listdir(LOGS_DIR), inout_bounds=inout_bounds
+                )
+                logfile = LOGS_DIR + find_logfile(subj, bloc, os.listdir(LOGS_DIR))
+                events = annotate_events(logfile, events, inout_idx=[INidx, OUTidx])
+                event_id = get_present_events(events)
+                epochs = mne.Epochs(
+                    hilbert,
+                    events=events,
+                    event_id=event_id,
+                    tmin=tmin,
+                    tmax=tmax,
+                    baseline=None,
+                    reject=None,
+                    picks=picks,
+                    preload=True,
+                )
+                epochs.drop(ARlog.bad_epochs)
 
-            _, PSDpath = get_SAflow_bids(
-                BIDS_PATH,
-                subj,
-                bloc,
-                stage=f"-epoenv_{FREQS_NAMES[idx_freq]}",
-                cond=None,
-            )
-            epochs.save(PSDpath, overwrite=True)
+                _, PSDpath = get_SAflow_bids(
+                    BIDS_PATH,
+                    subj,
+                    bloc,
+                    stage=f"-epoenv_{FREQS_NAMES[idx_freq]}",
+                    cond=f"{inout_bounds[0]}{inout_bounds[1]}",
+                )
+                epochs.save(PSDpath, overwrite=True)
