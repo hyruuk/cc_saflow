@@ -111,4 +111,4 @@ if __name__ == "__main__":
                 stage=f"-epoenv_{FREQS_NAMES[idx_freq]}",
                 cond=None,
             )
-            epochs.save(PSDpath)
+            epochs.save(PSDpath, overwrite=True)
