@@ -8,6 +8,7 @@ import pickle
 import argparse
 from saflow.behav import *
 from saflow.neuro import *
+from saflow import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
