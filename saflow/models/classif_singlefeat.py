@@ -228,6 +228,7 @@ def prepare_data(
         X_balanced = []
         y_balanced = []
         groups_balanced = []
+        random.seed(10)
         # We want to balance the trials across subjects
         for subj_idx in np.unique(groups):
             y_subj = [label for i, label in enumerate(y) if groups[i] == subj_idx]
