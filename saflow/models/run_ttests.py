@@ -174,8 +174,8 @@ if __name__ == "__main__":
         savepath = RESULTS_PATH + "VTC_ttest_{}perm_{}{}_{}_{}/".format(
             n_perms, split[0], split[1], correction, avg
         )
-        figpath= op.join(IMG_DIR, f"{by}_tvals_{n_perms}perms_alpha{str(alpha)[2:]}_{split[0]}{split[1]}_{correction}_avg{avg}.png")
-        figpath= op.join(IMG_DIR, f"{by}_contrast_{n_perms}perms_alpha{str(alpha)[2:]}_{split[0]}{split[1]}_{correction}_avg{avg}.png")
+        figpath = op.join(IMG_DIR, f"{by}_tvals_{n_perms}perms_alpha{str(alpha)[2:]}_{split[0]}{split[1]}_{correction}_avg{avg}.png")
+        figpath_contrast = op.join(IMG_DIR, f"{by}_contrast_{n_perms}perms_alpha{str(alpha)[2:]}_{split[0]}{split[1]}_{correction}_avg{avg}.png")
     elif by == "odd":
         conds_list = ["FREQhits", "RAREhits"]
         balance = True
