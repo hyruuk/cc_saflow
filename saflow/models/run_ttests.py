@@ -159,9 +159,9 @@ if __name__ == "__main__":
     n_perms = args.n_permutations
     alpha = args.alpha
     by = args.by
-    if args.avg == 0:
+    if args.average == 0:
         avg = False
-    if args.avg == 1:
+    if args.average == 1:
         avg = True
     if not args.correction:
         correction = None
