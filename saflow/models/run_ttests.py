@@ -69,6 +69,13 @@ parser.add_argument(
     type=str,
     help="Choose correction to apply",
 )
+parser.add_argument(
+    "-avg",
+    "--average",
+    default=0,
+    type=int,
+    help="0 for no, 1 for yes",
+)
 
 
 args = parser.parse_args()
@@ -152,6 +159,10 @@ if __name__ == "__main__":
     n_perms = args.n_permutations
     alpha = args.alpha
     by = args.by
+    if args.avg == 0:
+        avg = False
+    if args.avg == 1:
+        avg = True
     if not args.correction:
         correction = None
     else:
@@ -159,29 +170,30 @@ if __name__ == "__main__":
     if by == "VTC":
         conds_list = (ZONE_CONDS[0] + str(split[0]), ZONE_CONDS[1] + str(split[1]))
         balance = False
-        avg = False
-        savepath = RESULTS_PATH + "PSD_ttest_{}perm_{}{}_{}/".format(
-            n_perms, split[0], split[1], correction
+        savepath = RESULTS_PATH + "PSD_ttest_{}perm_{}{}_{}_{}/".format(
+            n_perms, split[0], split[1], correction, avg
         )
-        figpath = IMG_DIR + "PSD_ttest_{}perm_alpha{}_{}{}_{}.png".format(
-            n_perms, str(alpha)[2:], split[0], split[1], correction
+        figpath = IMG_DIR + "PSD_ttest_{}perm_alpha{}_{}{}_{}_{}.png".format(
+            n_perms, str(alpha)[2:], split[0], split[1], correction, avg
         )
-        figpath_contrast = IMG_DIR + "PSD_contrast_{}perm_alpha{}_{}{}_{}.png".format(
-            n_perms, str(alpha)[2:], split[0], split[1], correction
+        figpath_contrast = (
+            IMG_DIR
+            + "PSD_contrast_{}perm_alpha{}_{}{}_{}_{}.png".format(
+                n_perms, str(alpha)[2:], split[0], split[1], correction, avg
+            )
         )
     elif by == "odd":
         conds_list = ["FREQhits", "RAREhits"]
         balance = True
-        savepath = RESULTS_PATH + "{}_PSD_ttest_{}perm_{}_avg/".format(
-            by, n_perms, correction
+        savepath = RESULTS_PATH + "{}_PSD_ttest_{}perm_{}__{}/".format(
+            by, n_perms, correction, avg
         )
-        figpath = IMG_DIR + "{}_PSD_ttest_{}perm_alpha{}_{}_avg.png".format(
-            by, n_perms, str(alpha)[2:], correction
+        figpath = IMG_DIR + "{}_PSD_ttest_{}perm_alpha{}_{}_{}.png".format(
+            by, n_perms, str(alpha)[2:], correction, avg
         )
-        figpath_contrast = IMG_DIR + "{}_PSD_contrast_{}perm_alpha{}_{}_avg.png".format(
-            by, n_perms, str(alpha)[2:], correction
+        figpath_contrast = IMG_DIR + "{}_PSD_contrast_{}perm_alpha{}_{}_{}.png".format(
+            by, n_perms, str(alpha)[2:], correction, avg
         )
-        avg = True
 
     if not (os.path.isdir(savepath)):
         os.makedirs(savepath)
