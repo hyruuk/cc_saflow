@@ -167,33 +167,23 @@ if __name__ == "__main__":
         correction = None
     else:
         correction = args.correction
+
     if by == "VTC":
         conds_list = (ZONE_CONDS[0] + str(split[0]), ZONE_CONDS[1] + str(split[1]))
         balance = False
-        savepath = RESULTS_PATH + "PSD_ttest_{}perm_{}{}_{}_{}/".format(
+        savepath = RESULTS_PATH + "VTC_ttest_{}perm_{}{}_{}_{}/".format(
             n_perms, split[0], split[1], correction, avg
         )
-        figpath = IMG_DIR + "PSD_ttest_{}perm_alpha{}_{}{}_{}_{}.png".format(
-            n_perms, str(alpha)[2:], split[0], split[1], correction, avg
-        )
-        figpath_contrast = (
-            IMG_DIR
-            + "PSD_contrast_{}perm_alpha{}_{}{}_{}_{}.png".format(
-                n_perms, str(alpha)[2:], split[0], split[1], correction, avg
-            )
-        )
+        figpath= op.join(IMG_DIR, f"{by}_tvals_{n_perms}perms_alpha{str(alpha)[2:]}_{split[0]}{split[1]}_{correction}_avg{avg}.png")
+        figpath= op.join(IMG_DIR, f"{by}_contrast_{n_perms}perms_alpha{str(alpha)[2:]}_{split[0]}{split[1]}_{correction}_avg{avg}.png")
     elif by == "odd":
         conds_list = ["FREQhits", "RAREhits"]
         balance = True
         savepath = RESULTS_PATH + "{}_PSD_ttest_{}perm_{}__{}/".format(
             by, n_perms, correction, avg
         )
-        figpath = IMG_DIR + "{}_PSD_ttest_{}perm_alpha{}_{}_{}.png".format(
-            by, n_perms, str(alpha)[2:], correction, avg
-        )
-        figpath_contrast = IMG_DIR + "{}_PSD_contrast_{}perm_alpha{}_{}_{}.png".format(
-            by, n_perms, str(alpha)[2:], correction, avg
-        )
+        figpath = op.join(IMG_DIR, f"{by}_tvals_{n_perms}perms_alpha{str(alpha)[2:]}_{correction}_avg{avg}.png")
+        figpath_contrast = op.join(IMG_DIR, f"{by}_contrast_{n_perms}perms_alpha{str(alpha)[2:]}_{correction}_avg{avg}.png")
 
     if not (os.path.isdir(savepath)):
         os.makedirs(savepath)
