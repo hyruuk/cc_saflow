@@ -65,7 +65,7 @@ parser.add_argument(
 parser.add_argument(
     "-cor",
     "--correction",
-    default="maxstat",
+    default=None,
     type=str,
     help="Choose correction to apply",
 )
