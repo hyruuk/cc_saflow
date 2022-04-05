@@ -25,12 +25,15 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import RandomizedSearchCV
 from mlneurotools.ml import classification, StratifiedShuffleGroupSplit
 from xgboost import XGBClassifier
-from scipy.stats import uniform
+from scipy.stats import uniform, zscore
 from itertools import permutations
 import argparse
 import os
 import random
 import warnings
+import pdb
+from tqdm import tqdm
+
 
 warnings.filterwarnings("ignore")
 
@@ -60,7 +63,7 @@ parser.add_argument(
 parser.add_argument(
     "-by",
     "--by",
-    default="resp",
+    default="VTC",
     type=str,
     help="Choose the classification problem ('VTC' or 'odd')",
 )
@@ -74,7 +77,7 @@ parser.add_argument(
 parser.add_argument(
     "-m",
     "--model",
-    default="LDA",
+    default="LR",
     type=str,
     help="Classifier to apply",
 )
@@ -121,7 +124,7 @@ def classif_multifeat(X, y, groups, n_perms, model):
         acc_score_list = []
 
         for train_outer, test_outer in outer_cv.split(X, y, groups):
-            DA_perm_list = []
+            print(train_outer, test_outer)
             # Need to add the "fixed" randomized search
             search = RandomizedSearchCV(
                 clf, distributions, cv=inner_cv, random_state=0
@@ -151,7 +154,6 @@ def classif_multifeat(X, y, groups, n_perms, model):
                 clf = LogisticRegression(
                     C=C, penalty=penalty, solver=solver, multi_class=multi_class
                 )
-
             clf.fit(X[train_outer], y[train_outer])
             # evaluate fit above
             acc_score_outer = clf.score(X[test_outer], y[test_outer])
@@ -211,7 +213,7 @@ def compute_pval(score, perm_scores):
     return pvalue
 
 
-def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=0, balance=False):
+def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=0, balance=False, normalize=True):
     # Prepare data
     X = []
     y = []
@@ -263,6 +265,10 @@ def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=0, balance=F
     X = np.array(X).reshape(-1, len(X_balanced[0]))
     y = np.asarray(y)
     groups = np.asarray(groups)
+    if normalize:
+        group_ids = np.unique(groups)
+        for group_id in group_ids:
+            X[groups == group_id] = zscore(X[groups == group_id], axis=0)
     return X, y, groups
 
 

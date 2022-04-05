@@ -206,7 +206,7 @@ def classif_singlefeat(X, y, groups, n_perms, model):
 
 
 def prepare_data(
-    BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=0, FREQ=0, balance=False
+    BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=0, FREQ=0, balance=False, normalize=True
 ):
     # Prepare data
     X = []
@@ -257,6 +257,10 @@ def prepare_data(
         y = np.asarray(y_balanced)
         groups = np.asarray(groups_balanced)
     X = np.array(X).reshape(-1, 1)
+    if normalize:
+        group_ids = np.unique(groups)
+        for group_id in group_ids:
+            X[groups == group_id] = zscore(X[groups == group_id], axis=0)
     return X, y, groups
 
 
