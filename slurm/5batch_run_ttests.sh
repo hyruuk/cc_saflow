@@ -1,31 +1,30 @@
-for COR in 'maxstat' 'fdr' None; do
-sbatch ./slurm/5_run_ttests.sh VTC 50 50 $COR 0
-done
 
-for COR in 'maxstat' 'fdr' None; do
-sbatch ./slurm/5_run_ttests.sh VTC 25 75 $COR 0
-done
+sbatch ./slurm/5_run_ttests.sh VTC 50 50 'fdr' 0
 
-for COR in 'maxstat' 'fdr' None; do
-sbatch ./slurm/5_run_ttests.sh VTC 10 90 $COR 0
-done
 
-for COR in 'maxstat' 'fdr' None; do
-sbatch ./slurm/5_run_ttests.sh odd 10 90 $COR 0
-done
 
-for COR in 'maxstat' 'fdr' None; do
-sbatch ./slurm/5_run_ttests.sh VTC 50 50 $COR 1
-done
+sbatch ./slurm/5_run_ttests.sh VTC 25 75 'fdr' 0
 
-for COR in 'maxstat' 'fdr' None; do
-sbatch ./slurm/5_run_ttests.sh VTC 25 75 $COR 1
-done
 
-for COR in 'maxstat' 'fdr' None; do
-sbatch ./slurm/5_run_ttests.sh VTC 10 90 $COR 1
-done
 
-for COR in 'maxstat' 'fdr' None; do
-sbatch ./slurm/5_run_ttests.sh odd 10 90 $COR 1
-done
+sbatch ./slurm/5_run_ttests.sh VTC 10 90 'fdr' 0
+
+
+
+sbatch ./slurm/5_run_ttests.sh odd 10 90 'fdr' 0
+
+
+
+sbatch ./slurm/5_run_ttests.sh VTC 50 50 'fdr' 1
+
+
+
+sbatch ./slurm/5_run_ttests.sh VTC 25 75 'fdr' 1
+
+
+
+sbatch ./slurm/5_run_ttests.sh VTC 10 90 'fdr' 1
+
+
+
+sbatch ./slurm/5_run_ttests.sh odd 10 90 'fdr' 1
