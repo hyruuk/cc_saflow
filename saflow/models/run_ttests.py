@@ -172,13 +172,13 @@ if __name__ == "__main__":
     elif by == "odd":
         conds_list = ["FREQhits", "RAREhits"]
         balance = True
-        savepath = RESULTS_PATH + "{}_PSD_ttest_{}perm_{}/".format(
+        savepath = RESULTS_PATH + "{}_PSD_ttest_{}perm_{}_avg/".format(
             by, n_perms, correction
         )
-        figpath = IMG_DIR + "{}_PSD_ttest_{}perm_alpha{}_{}.png".format(
+        figpath = IMG_DIR + "{}_PSD_ttest_{}perm_alpha{}_{}_avg.png".format(
             by, n_perms, str(alpha)[2:], correction
         )
-        figpath_contrast = IMG_DIR + "{}_PSD_contrast_{}perm_alpha{}_{}.png".format(
+        figpath_contrast = IMG_DIR + "{}_PSD_contrast_{}perm_alpha{}_{}_avg.png".format(
             by, n_perms, str(alpha)[2:], correction
         )
         avg = True
