@@ -24,6 +24,10 @@ import os
 import mne
 import random
 from tqdm import tqdm
+import os.path as op
+from scipy import stats
+from statsmodels.stats.multitest import fdrcorrection
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -65,7 +69,7 @@ parser.add_argument(
 parser.add_argument(
     "-cor",
     "--correction",
-    default=None,
+    default='fdr',
     type=str,
     help="Choose correction to apply",
 )
@@ -176,6 +180,7 @@ if __name__ == "__main__":
         )
         figpath = op.join(IMG_DIR, f"{by}_tvals_{n_perms}perms_alpha{str(alpha)[2:]}_{split[0]}{split[1]}_{correction}_avg{avg}.png")
         figpath_contrast = op.join(IMG_DIR, f"{by}_contrast_{n_perms}perms_alpha{str(alpha)[2:]}_{split[0]}{split[1]}_{correction}_avg{avg}.png")
+        figpath_pvals = op.join(IMG_DIR, f"{by}_pvals_{n_perms}perms_alpha{str(alpha)[2:]}_{split[0]}{split[1]}_{correction}_avg{avg}.png")
     elif by == "odd":
         conds_list = ["FREQhits", "RAREhits"]
         balance = True
@@ -184,6 +189,7 @@ if __name__ == "__main__":
         )
         figpath = op.join(IMG_DIR, f"{by}_tvals_{n_perms}perms_alpha{str(alpha)[2:]}_{correction}_avg{avg}.png")
         figpath_contrast = op.join(IMG_DIR, f"{by}_contrast_{n_perms}perms_alpha{str(alpha)[2:]}_{correction}_avg{avg}.png")
+        figpath_pvals = op.join(IMG_DIR, f"{by}_pvals_{n_perms}perms_alpha{str(alpha)[2:]}_{correction}_avg{avg}.png")
 
     if not (os.path.isdir(savepath)):
         os.makedirs(savepath)
@@ -191,6 +197,7 @@ if __name__ == "__main__":
     alltvals = []
     allcontrasts = []
     masks = []
+    allpvals = []
     for FREQ in range(len(FREQS_NAMES)):
         savename = "PSD_ttest_{}.pkl".format(FREQS_NAMES[FREQ])
         condA_allchans = []
@@ -212,15 +219,22 @@ if __name__ == "__main__":
         condB_allchans = np.asarray(condB)
         print(f"cond {conds_list[0]} shape : {condA_allchans.shape}")
         print(f"cond {conds_list[1]} shape : {condB_allchans.shape}")
-        tvals, pvals = ttest_perm(
+
+        #tvals, pvals = ttest_perm(
+        #    condA_allchans,
+        #    condB_allchans,  # cond1 = IN, cond2 = OUT
+        #    n_perm=n_perms + 1,
+        #    n_jobs=8,
+        #    correction=correction,
+        #    paired=False,
+        #    two_tailed=True,
+        #)
+        tvals, pvals = stats.ttest_ind(
             condA_allchans,
             condB_allchans,  # cond1 = IN, cond2 = OUT
-            n_perm=n_perms + 1,
-            n_jobs=8,
-            correction=correction,
-            paired=False,
-            two_tailed=True,
+            permutations=n_perms + 1
         )
+        pvals = fdrcorrection(pvals, alpha=alpha)[1]
         contrast = (condA_allchans - condB_allchans) / condB_allchans
         contrast = np.mean(contrast, axis=0)
         results = {"tvals": tvals, "pvals": pvals, "contrast": contrast}
@@ -232,6 +246,7 @@ if __name__ == "__main__":
 
         allcontrasts.append(contrast)
         alltvals.append(results["tvals"])
+        allpvals.append(results["pvals"])
         masks.append(create_pval_mask(results["pvals"], alpha=alpha))
 
     # Plots
@@ -273,6 +288,23 @@ if __name__ == "__main__":
         figpath=figpath_contrast,
         vmin=vmin,
         vmax=vmax,
+        with_mask=True,
+        masks=masks,
+        cmap="coolwarm",
+    )
+
+    toplot = allpvals
+    vmax = np.max(np.max(abs(np.asarray(toplot))))
+    vmin = -vmax
+    array_topoplot(
+        toplot,
+        ch_xy,
+        showtitle=True,
+        titles=FREQS_NAMES,
+        savefig=True,
+        figpath=figpath_pvals,
+        vmin=0,
+        vmax=1,
         with_mask=True,
         masks=masks,
         cmap="coolwarm",
