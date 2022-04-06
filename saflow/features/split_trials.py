@@ -38,7 +38,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 
-def new_split_trials(subj, run, by="VTC"):
+def new_split_trials(subj, run, by="VTC", inout_bounds=None):
     condA = []
     condB = []
     for idx_freq, freq_bounds in enumerate(FREQS):
@@ -72,6 +72,7 @@ if __name__ == "__main__":
                     subj=subj,
                     run=run,
                     by="VTC",
+                    inout_bounds=CONDS_LIST
                 )
                 VTCepochs_path, VTCepochs_filename = get_SAflow_bids(
                     BIDS_PATH,
