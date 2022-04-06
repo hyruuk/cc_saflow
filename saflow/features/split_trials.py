@@ -28,7 +28,7 @@ parser.add_argument(
 parser.add_argument(
     "-i",
     "--input_stage",
-    default="PSD4001200",
+    default="PSD",
     type=str,
     help="Choose the PSD file to load (can be PSD, or PSD4001200 for epochs"
     "splitted between 400 and 1200ms)",
@@ -47,7 +47,7 @@ def new_split_trials(subj, run, by="VTC", inout_bounds=None):
         cond = f"{inout_bounds[0]}{inout_bounds[1]}"
     for idx_freq, freq_bounds in enumerate(FREQS):
         _, PSDpath = get_SAflow_bids(
-            BIDS_PATH, subj, run, stage=f"-epoenv4001200_{FREQS_NAMES[idx_freq]}", cond=cond
+            BIDS_PATH, subj, run, stage=f"-epoenv_{FREQS_NAMES[idx_freq]}", cond=cond
         )
 
         epochs = mne.read_epochs(PSDpath)
