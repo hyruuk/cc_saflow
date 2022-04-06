@@ -24,8 +24,8 @@ args = parser.parse_args()
 ### OPEN SEGMENTED FILES AND COMPUTE PSDS
 if __name__ == "__main__":
     subj = args.subject
-    tmin = 0.4
-    tmax = 1.2
+    tmin = 0
+    tmax = 0.8
     for bloc in BLOCS_LIST:
         # Generate filenames
         _, epopath = get_SAflow_bids(BIDS_PATH, subj, bloc, stage="-epo", cond=None)
@@ -90,7 +90,7 @@ if __name__ == "__main__":
                     BIDS_PATH,
                     subj,
                     bloc,
-                    stage=f"-epoenv4001200_{FREQS_NAMES[idx_freq]}",
+                    stage=f"-epoenv_{FREQS_NAMES[idx_freq]}",
                     cond=f"{inout_bounds[0]}{inout_bounds[1]}",
                 )
                 epochs.save(PSDpath, overwrite=True)
