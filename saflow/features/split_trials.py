@@ -41,9 +41,13 @@ args = parser.parse_args()
 def new_split_trials(subj, run, by="VTC", inout_bounds=None):
     condA = []
     condB = []
+    if by=="odd":
+        cond = "5050"
+    elif by=="VTC":
+        cond = f"{inout_bounds[0]}{inout_bounds[1]}"
     for idx_freq, freq_bounds in enumerate(FREQS):
         _, PSDpath = get_SAflow_bids(
-            BIDS_PATH, subj, run, stage=f"-epoenv4001200_{FREQS_NAMES[idx_freq]}", cond=f"{inout_bounds[0]}{inout_bounds[1]}"
+            BIDS_PATH, subj, run, stage=f"-epoenv4001200_{FREQS_NAMES[idx_freq]}", cond=cond
         )
 
         epochs = mne.read_epochs(PSDpath)
