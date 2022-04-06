@@ -23,6 +23,7 @@ from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import RandomizedSearchCV
+from sklearn.ensemble import RandomForestClassifier
 from mlneurotools.ml import classification, StratifiedShuffleGroupSplit
 from xgboost import XGBClassifier
 from scipy.stats import uniform, zscore
@@ -55,7 +56,7 @@ parser.add_argument(
 parser.add_argument(
     "-s",
     "--split",
-    default=[25, 75],
+    default=[50, 50],
     type=int,
     nargs="+",
     help="Bounds of percentile split",
@@ -77,7 +78,7 @@ parser.add_argument(
 parser.add_argument(
     "-m",
     "--model",
-    default="LR",
+    default="RF",
     type=str,
     help="Classifier to apply",
 )
@@ -112,6 +113,16 @@ def classif_multifeat(X, y, groups, n_perms, model):
         )
     elif model == "XGBC":
         clf = XGBClassifier()
+    elif model == "RF":
+        clf = RandomForestClassifier()
+        distributions = {
+            "bootstrap": [True, False],
+            "max_depth": [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, None],
+            "max_features": ["auto", "sqrt"],
+            "min_samples_leaf": [1, 2, 4],
+            "min_samples_split": [2, 5, 10],
+            "n_estimators": [200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000],
+        }
 
     # Loop for permutations
 
@@ -122,9 +133,7 @@ def classif_multifeat(X, y, groups, n_perms, model):
 
         best_params_list = []
         acc_score_list = []
-
         for train_outer, test_outer in outer_cv.split(X, y, groups):
-            print(train_outer, test_outer)
             # Need to add the "fixed" randomized search
             search = RandomizedSearchCV(
                 clf, distributions, cv=inner_cv, random_state=0
@@ -154,6 +163,22 @@ def classif_multifeat(X, y, groups, n_perms, model):
                 clf = LogisticRegression(
                     C=C, penalty=penalty, solver=solver, multi_class=multi_class
                 )
+            elif model == "RF":
+                bootstrap = best_params["bootstrap"]
+                max_depth = best_params["max_depth"]
+                max_features = best_params["max_features"]
+                min_samples_leaf = best_params["min_samples_leaf"]
+                min_samples_split = best_params["min_samples_split"]
+                n_estimators = best_params["n_estimators"]
+                clf = RandomForestClassifier(
+                    bootstrap=bootstrap,
+                    max_depth=max_depth,
+                    max_features=max_features,
+                    min_samples_leaf=min_samples_leaf,
+                    min_samples_split=min_samples_split,
+                    n_estimators=n_estimators,
+                )
+
             clf.fit(X[train_outer], y[train_outer])
             # evaluate fit above
             acc_score_outer = clf.score(X[test_outer], y[test_outer])
@@ -186,6 +211,21 @@ def classif_multifeat(X, y, groups, n_perms, model):
             clf = LogisticRegression(
                 C=C, penalty=penalty, solver=solver, multi_class=multi_class
             )
+        elif model == "RF":
+            bootstrap = best_fold_params["bootstrap"]
+            max_depth = best_fold_params["max_depth"]
+            max_features = best_fold_params["max_features"]
+            min_samples_leaf = best_fold_params["min_samples_leaf"]
+            min_samples_split = best_fold_params["min_samples_split"]
+            n_estimators = best_fold_params["n_estimators"]
+            clf = RandomForestClassifier(
+                bootstrap=bootstrap,
+                max_depth=max_depth,
+                max_features=max_features,
+                min_samples_leaf=min_samples_leaf,
+                min_samples_split=min_samples_split,
+                n_estimators=n_estimators,
+            )
 
         results = classification(
             clf, outer_cv, X, y, groups=groups, perm=n_perms, n_jobs=8
@@ -213,7 +253,9 @@ def compute_pval(score, perm_scores):
     return pvalue
 
 
-def prepare_data(BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=0, balance=False, normalize=True):
+def prepare_data(
+    BIDS_PATH, SUBJ_LIST, BLOCS_LIST, conds_list, CHAN=0, balance=False, normalize=True
+):
     # Prepare data
     X = []
     y = []
