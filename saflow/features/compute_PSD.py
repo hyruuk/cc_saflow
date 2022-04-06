@@ -68,7 +68,7 @@ if __name__ == "__main__":
                 )
 
                 events = mne.find_events(
-                    raw, min_duration=1 / raw.info["sfreq"], verbose=False
+                    raw, min_duration=2 / raw.info["sfreq"], verbose=False
                 )
                 logfile = LOGS_DIR + find_logfile(subj, bloc, os.listdir(LOGS_DIR))
                 events = annotate_events(logfile, events, inout_idx=[INidx, OUTidx])
