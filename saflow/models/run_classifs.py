@@ -599,13 +599,11 @@ if __name__ == "__main__":
                         normalize=normalize,
                     )
                     if level == "group":
-                        result = classif_grouplevel(
+                        result = classif_LOGO(
                             X, y, groups, n_perms=n_perms, model=model
                         )
                     elif level == "subject":
-                        result = classif_subjectlevel(
-                            X, y, n_perms=n_perms, model=model
-                        )
+                        result = classif_LOO(X, y, n_perms=n_perms, model=model)
                     with open(savepath + savename, "wb") as f:
                         pickle.dump(result, f)
                     print("Ok.")
@@ -626,13 +624,11 @@ if __name__ == "__main__":
                             normalize=normalize,
                         )
                         if level == "group":
-                            result = classif_grouplevel(
+                            result = classif_LOGO(
                                 X, y, groups, n_perms=n_perms, model=model
                             )
                         elif level == "subject":
-                            result = classif_subjectlevel(
-                                X, y, n_perms=n_perms, model=model
-                            )
+                            result = classif_LOO(X, y, n_perms=n_perms, model=model)
                         with open(savepath + savename, "wb") as f:
                             pickle.dump(result, f)
                         print("Ok.")
