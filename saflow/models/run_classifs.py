@@ -534,7 +534,7 @@ if __name__ == "__main__":
         foldername = f"{by}_{model}_{level}-level_{mfsf_string}_{average_string}_{norm_string}_{n_perms}perm_{split[0]}{split[1]}-split"
     elif level == "subject":
         subject = args.subject
-        f"{by}_{model}_{level}-level_{mfsf_string}_{average_string}_{norm_string}_{n_perms}perm_{split[0]}{split[1]}-split_sub-{subject}"
+        foldername = f"{by}_{model}_{level}-level_{mfsf_string}_{average_string}_{norm_string}_{n_perms}perm_{split[0]}{split[1]}-split_sub-{subject}"
     savepath = op.join(RESULTS_PATH, foldername)
     os.makedirs(savepath, exist_ok=True)
 
