@@ -266,7 +266,9 @@ def classif_LOO(X, y, n_perms, model):
                 min_samples_split=min_samples_split,
                 n_estimators=n_estimators,
             )
-
+        # score, permutation_scores, pvalue = permutation_test_score(
+        #    clf, X, y, cv=outer_cv, n_permutations=n_perms, n_jobs=8
+        # )
         results = classification(
             clf, outer_cv, X, y, groups=None, perm=n_perms, n_jobs=8
         )
@@ -276,6 +278,7 @@ def classif_LOO(X, y, n_perms, model):
 
     else:
         inner_cv = LeaveOneOut()
+        print(X.shape)
         results = classification(
             clf, inner_cv, X, y, groups=None, perm=n_perms, n_jobs=8
         )
@@ -392,6 +395,7 @@ def classif_LOGO(X, y, groups, n_perms, model):
         results = classification(
             clf, outer_cv, X, y, groups=groups, perm=n_perms, n_jobs=8
         )
+        print(results)
         print("Done")
         print("DA : " + str(results["acc_score"]))
         print("p value : " + str(results["acc_pvalue"]))
