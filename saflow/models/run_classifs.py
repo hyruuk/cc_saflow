@@ -519,8 +519,10 @@ if __name__ == "__main__":
         mfsf_string = "multifeat"
     if level == "group":
         SUBJ_LIST = SUBJ_LIST
+        print("Processing all subjects.")
     elif level == "subject":
         SUBJ_LIST = [args.subject]
+        print(f"Processing subj-{args.subject}")
 
     if by == "VTC":
         conds_list = ("IN" + str(split[0]), "OUT" + str(split[1]))
@@ -540,7 +542,7 @@ if __name__ == "__main__":
         if multifeatures:
             savename = "chan_{}.pkl".format(CHAN)
             print(savename)
-            if not (os.path.isfile(savepath + savename)):
+            if not (os.path.isfile(op.join(savepath, savename))):
                 X, y, groups = prepare_data(
                     BIDS_PATH,
                     SUBJ_LIST,
@@ -555,14 +557,14 @@ if __name__ == "__main__":
                     result = classif_LOGO(X, y, groups, n_perms=n_perms, model=model)
                 else:
                     result = classif_LOO(X, y, n_perms=n_perms, model=model)
-                with open(savepath + savename, "wb") as f:
+                with open(op.join(savepath, savename), "wb") as f:
                     pickle.dump(result, f)
                 print("Ok.")
         else:
             for FREQ in range(len(FREQS_NAMES)):
                 savename = "chan_{}_{}.pkl".format(CHAN, FREQS_NAMES[FREQ])
                 print(savename)
-                if not (os.path.isfile(savepath + savename)):
+                if not (os.path.isfile(op.join(savepath, savename))):
                     X, y, groups = prepare_data(
                         BIDS_PATH,
                         SUBJ_LIST,
@@ -580,7 +582,7 @@ if __name__ == "__main__":
                         )
                     else:
                         result = classif_LOO(X, y, n_perms=n_perms, model=model)
-                    with open(savepath + savename, "wb") as f:
+                    with open(op.join(savepath, savename), "wb") as f:
                         pickle.dump(result, f)
                     print("Ok.")
     else:
@@ -588,7 +590,7 @@ if __name__ == "__main__":
             if multifeatures:
                 savename = "chan_{}.pkl".format(CHAN)
                 print(savename)
-                if not (os.path.isfile(savepath + savename)):
+                if not (os.path.isfile(op.join(savepath, savename))):
                     X, y, groups = prepare_data(
                         BIDS_PATH,
                         SUBJ_LIST,
@@ -605,14 +607,14 @@ if __name__ == "__main__":
                         )
                     elif level == "subject":
                         result = classif_LOO(X, y, n_perms=n_perms, model=model)
-                    with open(savepath + savename, "wb") as f:
+                    with open(op.join(savepath, savename), "wb") as f:
                         pickle.dump(result, f)
                     print("Ok.")
             else:
                 for FREQ in range(len(FREQS_NAMES)):
                     savename = "chan_{}_{}.pkl".format(CHAN, FREQS_NAMES[FREQ])
                     print(savename)
-                    if not (os.path.isfile(savepath + savename)):
+                    if not (os.path.isfile(op.join(savepath, savename))):
                         X, y, groups = prepare_data(
                             BIDS_PATH,
                             SUBJ_LIST,
@@ -630,6 +632,6 @@ if __name__ == "__main__":
                             )
                         elif level == "subject":
                             result = classif_LOO(X, y, n_perms=n_perms, model=model)
-                        with open(savepath + savename, "wb") as f:
+                        with open(op.join(savepath, savename), "wb") as f:
                             pickle.dump(result, f)
                         print("Ok.")
