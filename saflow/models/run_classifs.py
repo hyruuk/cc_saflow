@@ -291,7 +291,6 @@ def classif_LOGO(X, y, groups, n_perms, model):
         results = classification(
             clf, outer_cv, X, y, groups=groups, perm=n_perms, n_jobs=8
         )
-        print(results)
         print("Done")
         print("DA : " + str(results["acc_score"]))
         print("p value : " + str(results["acc_pvalue"]))
@@ -299,7 +298,6 @@ def classif_LOGO(X, y, groups, n_perms, model):
     else:
         cv = LeaveOneGroupOut()
         results = classification(clf, cv, X, y, groups=groups, perm=n_perms, n_jobs=8)
-        print(results)
         print("Done")
         print("DA : " + str(results["acc_score"]))
         print("p value : " + str(results["acc_pvalue"]))
