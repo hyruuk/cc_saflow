@@ -125,6 +125,7 @@ args = parser.parse_args()
 def init_classifier(model_type="LDA"):
     if model == "LDA":
         clf = LinearDiscriminantAnalysis()
+        distributions = dict()
     elif model == "KNN":
         clf = KNeighborsClassifier()
         distributions = dict(
