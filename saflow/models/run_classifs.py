@@ -281,6 +281,7 @@ def classif_LOO(X, y, n_perms, model):
         print("p value : " + str(results["acc_pvalue"]))
     return results
 
+
 def classif_LOGO(X, y, groups, n_perms, model):
     # Find best parameters
     clf, distributions = init_classifier(model_type=model)
@@ -498,22 +499,22 @@ if __name__ == "__main__":
     level = args.level
     if args.average == 0:
         avg = False
-        average_string = 'single-trial'
+        average_string = "single-trial"
     elif args.average == 1:
         avg = True
-        average_string = 'averaged'
+        average_string = "averaged"
     if args.normalize == 0:
         normalize = False
-        norm_string = 'non-normalized'
+        norm_string = "non-normalized"
     elif args.normalize == 1:
         normalize = True
-        norm_string = 'normalized'
+        norm_string = "normalized"
     if args.multifeatures == 0:
         multifeatures = False
-        mfsf_string = 'singlefeat'
+        mfsf_string = "singlefeat"
     elif args.multifeatures == 1:
         multifeatures = True
-        mfsf_string = 'multifeat'
+        mfsf_string = "multifeat"
     if level == "group":
         SUBJ_LIST = SUBJ_LIST
     elif level == "subject":
@@ -549,9 +550,7 @@ if __name__ == "__main__":
                     normalize=normalize,
                 )
                 if level == "group" and avg == 0:
-                    result = classif_LOGO(
-                        X, y, groups, n_perms=n_perms, model=model
-                    )
+                    result = classif_LOGO(X, y, groups, n_perms=n_perms, model=model)
                 else:
                     result = classif_LOO(X, y, n_perms=n_perms, model=model)
                 with open(savepath + savename, "wb") as f:
@@ -603,12 +602,14 @@ if __name__ == "__main__":
                             X, y, groups, n_perms=n_perms, model=model
                         )
                     elif level == "subject":
-                        result = classif_subjectlevel(X, y, n_perms=n_perms, model=model)
+                        result = classif_subjectlevel(
+                            X, y, n_perms=n_perms, model=model
+                        )
                     with open(savepath + savename, "wb") as f:
                         pickle.dump(result, f)
                     print("Ok.")
             else:
-                for FREQ in range(len(FREQS_NAMES):
+                for FREQ in range(len(FREQS_NAMES)):
                     savename = "chan_{}_{}.pkl".format(CHAN, FREQS_NAMES[FREQ])
                     print(savename)
                     if not (os.path.isfile(savepath + savename)):
@@ -628,7 +629,9 @@ if __name__ == "__main__":
                                 X, y, groups, n_perms=n_perms, model=model
                             )
                         elif level == "subject":
-                            result = classif_subjectlevel(X, y, n_perms=n_perms, model=model)
+                            result = classif_subjectlevel(
+                                X, y, n_perms=n_perms, model=model
+                            )
                         with open(savepath + savename, "wb") as f:
                             pickle.dump(result, f)
                         print("Ok.")
