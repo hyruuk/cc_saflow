@@ -53,7 +53,7 @@ if __name__ == "__main__":
             freq_perms = list(itertools.chain.from_iterable(allchans_accperms))
             corrected_pval = []
             for acc in allchans_acc:
-                corrected_pval.append(compute_pval(acc[0], freq_perms))
+                corrected_pval.append(compute_pval(acc, freq_perms))
             pval_mask = create_pval_mask(np.array(corrected_pval), alpha=alpha)
 
             allfreqs_acc.append(np.array(allchans_acc).squeeze())
