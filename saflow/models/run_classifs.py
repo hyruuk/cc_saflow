@@ -532,7 +532,7 @@ if __name__ == "__main__":
     savepath = op.join(RESULTS_PATH, foldername)
     os.makedirs(savepath, exist_ok=True)
 
-    if args.channel != None:
+    if args.channel is not None:
         CHAN = args.channel
         if multifeatures:
             savename = "chan_{}.pkl".format(CHAN)
@@ -558,7 +558,7 @@ if __name__ == "__main__":
                     pickle.dump(result, f)
                 print("Ok.")
         else:
-            for FREQ in range(len(FREQS_NAMES):
+            for FREQ in range(len(FREQS_NAMES)):
                 savename = "chan_{}_{}.pkl".format(CHAN, FREQS_NAMES[FREQ])
                 print(savename)
                 if not (os.path.isfile(savepath + savename)):
