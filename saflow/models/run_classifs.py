@@ -15,6 +15,7 @@ from sklearn.model_selection import (
     GroupShuffleSplit,
     ShuffleSplit,
     LeaveOneGroupOut,
+    LeaveOneOut,
     KFold,
 )
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
@@ -554,7 +555,7 @@ if __name__ == "__main__":
                     avg=avg,
                     normalize=normalize,
                 )
-                if level == "group" and avg == 0:
+                if level == "group" and not avg:
                     result = classif_LOGO(X, y, groups, n_perms=n_perms, model=model)
                 else:
                     result = classif_LOO(X, y, n_perms=n_perms, model=model)
@@ -577,7 +578,7 @@ if __name__ == "__main__":
                         avg=avg,
                         normalize=normalize,
                     )
-                    if level == "group" and avg == 0:
+                    if level == "group" and not avg:
                         result = classif_LOGO(
                             X, y, groups, n_perms=n_perms, model=model
                         )
