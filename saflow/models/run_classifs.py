@@ -40,7 +40,7 @@ warnings.filterwarnings("ignore")
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    "-s",
+    "-subj",
     "--subject",
     default=None,
     type=str,
