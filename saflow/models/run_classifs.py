@@ -1,0 +1,634 @@
+from saflow import (
+    BIDS_PATH,
+    SUBJ_LIST,
+    BLOCS_LIST,
+    FREQS_NAMES,
+    ZONE_CONDS,
+    RESULTS_PATH,
+)
+import pickle
+from saflow.utils import get_SAflow_bids
+import numpy as np
+from numpy.random import permutation
+from sklearn.model_selection import (
+    StratifiedShuffleSplit,
+    GroupShuffleSplit,
+    ShuffleSplit,
+    LeaveOneGroupOut,
+    KFold,
+)
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.ensemble import RandomForestClassifier
+from mlneurotools.ml import classification, StratifiedShuffleGroupSplit
+from xgboost import XGBClassifier
+from scipy.stats import uniform, zscore
+from itertools import permutations
+import argparse
+import os
+import random
+import warnings
+import pdb
+from tqdm import tqdm
+
+
+warnings.filterwarnings("ignore")
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "-s",
+    "--subject",
+    default=None,
+    type=str,
+    help="Subject to process",
+)
+parser.add_argument(
+    "-c",
+    "--channel",
+    default=None,
+    type=int,
+    help="Channels to compute",
+)
+parser.add_argument(
+    "-p",
+    "--n_permutations",
+    default=1000,
+    type=int,
+    help="Number of permutations",
+)
+parser.add_argument(
+    "-s",
+    "--split",
+    default=[50, 50],
+    type=int,
+    nargs="+",
+    help="Bounds of percentile split",
+)
+parser.add_argument(
+    "-by",
+    "--by",
+    default="VTC",
+    type=str,
+    help="Choose the classification problem ('VTC' or 'odd')",
+)
+parser.add_argument(
+    "-l",
+    "--level",
+    default="group",
+    type=str,
+    help="Choose the classification level ('group' or 'subject')",
+)
+parser.add_argument(
+    "-avg",
+    "--average",
+    default=0,
+    type=int,
+    help="0 for no, 1 for yes",
+)
+parser.add_argument(
+    "-norm",
+    "--normalize",
+    default=1,
+    type=int,
+    help="0 for no, 1 for yes",
+)
+parser.add_argument(
+    "-mf",
+    "--multifeatures",
+    default=1,
+    type=int,
+    help="0 for no, 1 for yes",
+)
+
+# The arguments for the model selection can be :
+# KNN for K nearest neighbors
+# SVM for support vector machine
+# DT for decision tree
+# LR for Logistic Regression
+# XGBC for XGBoost Classifier
+parser.add_argument(
+    "-m",
+    "--model",
+    default="LR",
+    type=str,
+    help="Classifier to apply",
+)
+
+args = parser.parse_args()
+
+
+def init_classifier(model_type="LDA"):
+    if model == "LDA":
+        clf = LinearDiscriminantAnalysis()
+    elif model == "KNN":
+        clf = KNeighborsClassifier()
+        distributions = dict(
+            n_neighbors=np.arange(1, 16, 1),
+            weights=["uniform", "distance"],
+            metric=["minkowski", "euclidean", "manhattan"],
+        )
+    elif model == "SVM":
+        clf = SVC()
+        distributions = dict()
+    elif model == "DT":
+        clf = DecisionTreeClassifier()
+        distributions = dict(criterion=["gini", "entropy"], splitter=["best", "random"])
+    elif model == "LR":
+        clf = LogisticRegression()
+        distributions = dict(
+            C=uniform(loc=0, scale=4),
+            penalty=["l2", "l1", "elasticnet", "none"],
+            solver=["newton-cg", "lbfgs", "liblinear", "sag", "saga"],
+            multi_class=["auto", "ovr", "multinomial"],
+        )
+    elif model == "XGBC":
+        clf = XGBClassifier()
+    elif model == "RF":
+        clf = RandomForestClassifier()
+        distributions = {
+            "bootstrap": [True, False],
+            "max_depth": [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, None],
+            "max_features": ["auto", "sqrt"],
+            "min_samples_leaf": [1, 2, 4],
+            "min_samples_split": [2, 5, 10],
+            "n_estimators": [200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000],
+        }
+    return clf, distributions
+
+
+def classif_LOO(X, y, n_perms, model):
+    # Find best parameters
+    clf, distributions = init_classifier(model_type=model)
+
+    if model != "XGBC" and model != "LDA":
+        # Optimize HPs
+        outer_cv = LeaveOneOut()
+        inner_cv = LeaveOneOut()
+        best_params_list = []
+        acc_score_list = []
+        for train_outer, test_outer in outer_cv.split(X, y):
+            # Need to add the "fixed" randomized search
+            search = RandomizedSearchCV(
+                clf, distributions, cv=inner_cv, random_state=0
+            ).fit(X[train_outer], y[train_outer])
+            best_params = search.best_params_
+            print("Best params : " + str(best_params))
+
+            # Apply best hyperparameters
+            if model == "KNN":
+                metric = best_params["metric"]
+                n_neighbors = best_params["n_neighbors"]
+                weights = best_params["weights"]
+                clf = KNeighborsClassifier(
+                    n_neighbors=n_neighbors, metric=metric, weights=weights
+                )
+            elif model == "SVM":
+                clf = SVC(best_params)
+            elif model == "DT":
+                criterion = best_params["criterion"]
+                splitter = best_params["splitter"]
+                clf = DecisionTreeClassifier(criterion=criterion, splitter=splitter)
+            elif model == "LR":
+                C = best_params["C"]
+                penalty = best_params["penalty"]
+                solver = best_params["solver"]
+                multi_class = best_params["multi_class"]
+                clf = LogisticRegression(
+                    C=C, penalty=penalty, solver=solver, multi_class=multi_class
+                )
+            elif model == "RF":
+                bootstrap = best_params["bootstrap"]
+                max_depth = best_params["max_depth"]
+                max_features = best_params["max_features"]
+                min_samples_leaf = best_params["min_samples_leaf"]
+                min_samples_split = best_params["min_samples_split"]
+                n_estimators = best_params["n_estimators"]
+                clf = RandomForestClassifier(
+                    bootstrap=bootstrap,
+                    max_depth=max_depth,
+                    max_features=max_features,
+                    min_samples_leaf=min_samples_leaf,
+                    min_samples_split=min_samples_split,
+                    n_estimators=n_estimators,
+                )
+
+            clf.fit(X[train_outer], y[train_outer])
+            # evaluate fit above
+            acc_score_outer = clf.score(X[test_outer], y[test_outer])
+            # store hp and DA
+            acc_score_list.append(acc_score_outer)
+            best_params_list.append(best_params)
+            print("clf done :", acc_score_outer)
+
+        # obtain hp of best DA
+        best_fold_id = acc_score_list.index(max(acc_score_list))
+        best_fold_params = best_params_list[best_fold_id]
+
+        # call arthur's classification() with best hp
+        if model == "KNN":
+            metric = best_fold_params["metric"]
+            n_neighbors = best_fold_params["n_neighbors"]
+            weights = best_fold_params["weights"]
+            clf = KNeighborsClassifier(
+                n_neighbors=n_neighbors, metric=metric, weights=weights
+            )
+        elif model == "DT":
+            criterion = best_fold_params["criterion"]
+            splitter = best_fold_params["splitter"]
+            clf = DecisionTreeClassifier(criterion=criterion, splitter=splitter)
+        elif model == "LR":
+            C = best_fold_params["C"]
+            penalty = best_fold_params["penalty"]
+            solver = best_fold_params["solver"]
+            multi_class = best_fold_params["multi_class"]
+            clf = LogisticRegression(
+                C=C, penalty=penalty, solver=solver, multi_class=multi_class
+            )
+        elif model == "RF":
+            bootstrap = best_fold_params["bootstrap"]
+            max_depth = best_fold_params["max_depth"]
+            max_features = best_fold_params["max_features"]
+            min_samples_leaf = best_fold_params["min_samples_leaf"]
+            min_samples_split = best_fold_params["min_samples_split"]
+            n_estimators = best_fold_params["n_estimators"]
+            clf = RandomForestClassifier(
+                bootstrap=bootstrap,
+                max_depth=max_depth,
+                max_features=max_features,
+                min_samples_leaf=min_samples_leaf,
+                min_samples_split=min_samples_split,
+                n_estimators=n_estimators,
+            )
+
+        results = classification(
+            clf, outer_cv, X, y, groups=None, perm=n_perms, n_jobs=8
+        )
+        print("Done")
+        print("DA : " + str(results["acc_score"]))
+        print("p value : " + str(results["acc_pvalue"]))
+
+    else:
+        inner_cv = LeaveOneGroupOut()
+        results = classification(
+            clf, inner_cv, X, y, groups=None, perm=n_perms, n_jobs=8
+        )
+        print("Done")
+        print("DA : " + str(results["acc_score"]))
+        print("p value : " + str(results["acc_pvalue"]))
+    return results
+
+def classif_LOGO(X, y, groups, n_perms, model):
+    # Find best parameters
+    clf, distributions = init_classifier(model_type=model)
+
+    if model != "XGBC" and model != "LDA":
+        # Optimize HPs
+        outer_cv = LeaveOneGroupOut()
+        inner_cv = LeaveOneGroupOut()
+        best_params_list = []
+        acc_score_list = []
+        for train_outer, test_outer in outer_cv.split(X, y, groups):
+            # Need to add the "fixed" randomized search
+            search = RandomizedSearchCV(
+                clf, distributions, cv=inner_cv, random_state=0
+            ).fit(X[train_outer], y[train_outer], groups[train_outer])
+            best_params = search.best_params_
+            print("Best params : " + str(best_params))
+
+            # Apply best hyperparameters
+            if model == "KNN":
+                metric = best_params["metric"]
+                n_neighbors = best_params["n_neighbors"]
+                weights = best_params["weights"]
+                clf = KNeighborsClassifier(
+                    n_neighbors=n_neighbors, metric=metric, weights=weights
+                )
+            elif model == "SVM":
+                clf = SVC(best_params)
+            elif model == "DT":
+                criterion = best_params["criterion"]
+                splitter = best_params["splitter"]
+                clf = DecisionTreeClassifier(criterion=criterion, splitter=splitter)
+            elif model == "LR":
+                C = best_params["C"]
+                penalty = best_params["penalty"]
+                solver = best_params["solver"]
+                multi_class = best_params["multi_class"]
+                clf = LogisticRegression(
+                    C=C, penalty=penalty, solver=solver, multi_class=multi_class
+                )
+            elif model == "RF":
+                bootstrap = best_params["bootstrap"]
+                max_depth = best_params["max_depth"]
+                max_features = best_params["max_features"]
+                min_samples_leaf = best_params["min_samples_leaf"]
+                min_samples_split = best_params["min_samples_split"]
+                n_estimators = best_params["n_estimators"]
+                clf = RandomForestClassifier(
+                    bootstrap=bootstrap,
+                    max_depth=max_depth,
+                    max_features=max_features,
+                    min_samples_leaf=min_samples_leaf,
+                    min_samples_split=min_samples_split,
+                    n_estimators=n_estimators,
+                )
+
+            clf.fit(X[train_outer], y[train_outer])
+            # evaluate fit above
+            acc_score_outer = clf.score(X[test_outer], y[test_outer])
+            # store hp and DA
+            acc_score_list.append(acc_score_outer)
+            best_params_list.append(best_params)
+            print("clf done :", acc_score_outer)
+
+        # obtain hp of best DA
+        best_fold_id = acc_score_list.index(max(acc_score_list))
+        best_fold_params = best_params_list[best_fold_id]
+
+        # call arthur's classification() with best hp
+        if model == "KNN":
+            metric = best_fold_params["metric"]
+            n_neighbors = best_fold_params["n_neighbors"]
+            weights = best_fold_params["weights"]
+            clf = KNeighborsClassifier(
+                n_neighbors=n_neighbors, metric=metric, weights=weights
+            )
+        elif model == "DT":
+            criterion = best_fold_params["criterion"]
+            splitter = best_fold_params["splitter"]
+            clf = DecisionTreeClassifier(criterion=criterion, splitter=splitter)
+        elif model == "LR":
+            C = best_fold_params["C"]
+            penalty = best_fold_params["penalty"]
+            solver = best_fold_params["solver"]
+            multi_class = best_fold_params["multi_class"]
+            clf = LogisticRegression(
+                C=C, penalty=penalty, solver=solver, multi_class=multi_class
+            )
+        elif model == "RF":
+            bootstrap = best_fold_params["bootstrap"]
+            max_depth = best_fold_params["max_depth"]
+            max_features = best_fold_params["max_features"]
+            min_samples_leaf = best_fold_params["min_samples_leaf"]
+            min_samples_split = best_fold_params["min_samples_split"]
+            n_estimators = best_fold_params["n_estimators"]
+            clf = RandomForestClassifier(
+                bootstrap=bootstrap,
+                max_depth=max_depth,
+                max_features=max_features,
+                min_samples_leaf=min_samples_leaf,
+                min_samples_split=min_samples_split,
+                n_estimators=n_estimators,
+            )
+
+        results = classification(
+            clf, outer_cv, X, y, groups=groups, perm=n_perms, n_jobs=8
+        )
+        print("Done")
+        print("DA : " + str(results["acc_score"]))
+        print("p value : " + str(results["acc_pvalue"]))
+
+    else:
+        inner_cv = LeaveOneGroupOut()
+        results = classification(
+            clf, inner_cv, X, y, groups=groups, perm=n_perms, n_jobs=8
+        )
+        print("Done")
+        print("DA : " + str(results["acc_score"]))
+        print("p value : " + str(results["acc_pvalue"]))
+    return results
+
+
+def compute_pval(score, perm_scores):
+    n_perm = len(perm_scores)
+    pvalue = (np.sum(perm_scores >= score) + 1.0) / (n_perm + 1)
+    return pvalue
+
+
+def prepare_data(
+    BIDS_PATH,
+    SUBJ_LIST,
+    BLOCS_LIST,
+    conds_list,
+    CHAN=0,
+    FREQ=None,
+    balance=False,
+    normalize=True,
+    avg=False,
+):
+    if not FREQ:
+        FREQ = [x for x in range(len(FREQS_NAMES))]
+    # Prepare data
+    X = []
+    y = []
+    groups = []
+    for i_subj, subj in enumerate(SUBJ_LIST):
+        for i_cond, cond in enumerate(conds_list):
+            X_subj = []
+            for run in BLOCS_LIST:
+                _, fpath_cond = get_SAflow_bids(
+                    BIDS_PATH, subj, run, stage="PSD", cond=cond
+                )
+                with open(fpath_cond, "rb") as f:
+                    data = pickle.load(f)
+                if avg:
+                    X_subj.append(np.mean(data[:, CHAN, FREQ], axis=0))
+                else:
+                    for x in data[:, CHAN, FREQ]:
+                        X.append(x)
+                        y.append(i_cond)
+                        groups.append(i_subj)
+            if avg:
+                X.append(np.mean(np.array(X_subj), axis=0))
+                y.append(i_cond)
+                groups.append(i_subj)
+    if balance:
+        X_balanced = []
+        y_balanced = []
+        groups_balanced = []
+        # We want to balance the trials across subjects
+        random.seed(10)
+        for subj_idx in np.unique(groups):
+            y_subj = [label for i, label in enumerate(y) if groups[i] == subj_idx]
+            max_trials = min(np.unique(y_subj, return_counts=True)[1])
+
+            X_subj_0 = [
+                x for i, x in enumerate(X) if groups[i] == subj_idx and y[i] == 0
+            ]
+            X_subj_1 = [
+                x for i, x in enumerate(X) if groups[i] == subj_idx and y[i] == 1
+            ]
+
+            idx_list_0 = [x for x in range(len(X_subj_0))]
+            idx_list_1 = [x for x in range(len(X_subj_1))]
+            picks_0 = random.sample(idx_list_0, max_trials)
+            picks_1 = random.sample(idx_list_1, max_trials)
+
+            for i in range(max_trials):
+                X_balanced.append(X_subj_0[picks_0[i]])
+                y_balanced.append(0)
+                groups_balanced.append(subj_idx)
+                X_balanced.append(X_subj_1[picks_1[i]])
+                y_balanced.append(1)
+                groups_balanced.append(subj_idx)
+        X = X_balanced
+        y = y_balanced
+        groups = groups_balanced
+    X = np.array(X).reshape(-1, len(X_balanced[0]))
+    y = np.asarray(y)
+    groups = np.asarray(groups)
+
+    if normalize:
+        group_ids = np.unique(groups)
+        for group_id in group_ids:
+            X[groups == group_id] = zscore(X[groups == group_id], axis=0)
+    return X, y, groups
+
+
+if __name__ == "__main__":
+    balance = True
+    model = args.model
+    split = args.split
+    n_perms = args.n_permutations
+    by = args.by
+    level = args.level
+    if args.average == 0:
+        avg = False
+        average_string = 'single-trial'
+    elif args.average == 1:
+        avg = True
+        average_string = 'averaged'
+    if args.normalize == 0:
+        normalize = False
+        norm_string = 'non-normalized'
+    elif args.normalize == 1:
+        normalize = True
+        norm_string = 'normalized'
+    if args.multifeatures == 0:
+        multifeatures = False
+        mfsf_string = 'singlefeat'
+    elif args.multifeatures == 1:
+        multifeatures = True
+        mfsf_string = 'multifeat'
+    if level == "group":
+        SUBJ_LIST = SUBJ_LIST
+    elif level == "subject":
+        SUBJ_LIST = [args.subject]
+
+    if by == "VTC":
+        conds_list = ("IN" + str(split[0]), "OUT" + str(split[1]))
+    elif by == "odd":
+        conds_list = ["FREQhits", "RAREhits"]
+    elif by == "resp":
+        conds_list = ["RESP", "NORESP"]
+    if level == "group":
+        foldername = f"{by}_{model}_{level}-level_{mfsf_string}_{average_string}_{norm_string}_{n_perms}perm_{split[0]}{split[1]}-split"
+    elif level == "subject":
+        f"{by}_{model}_{level}-level_{mfsf_string}_{average_string}_{norm_string}_{n_perms}perm_{split[0]}{split[1]}-split_sub-{subject}"
+    savepath = op.join(RESULTS_PATH, foldername)
+    os.makedirs(savepath, exist_ok=True)
+
+    if args.channel != None:
+        CHAN = args.channel
+        if multifeatures:
+            savename = "chan_{}.pkl".format(CHAN)
+            print(savename)
+            if not (os.path.isfile(savepath + savename)):
+                X, y, groups = prepare_data(
+                    BIDS_PATH,
+                    SUBJ_LIST,
+                    BLOCS_LIST,
+                    conds_list,
+                    CHAN=CHAN,
+                    balance=balance,
+                    avg=avg,
+                    normalize=normalize,
+                )
+                if level == "group" and avg == 0:
+                    result = classif_LOGO(
+                        X, y, groups, n_perms=n_perms, model=model
+                    )
+                else:
+                    result = classif_LOO(X, y, n_perms=n_perms, model=model)
+                with open(savepath + savename, "wb") as f:
+                    pickle.dump(result, f)
+                print("Ok.")
+        else:
+            for FREQ in range(len(FREQS_NAMES):
+                savename = "chan_{}_{}.pkl".format(CHAN, FREQS_NAMES[FREQ])
+                print(savename)
+                if not (os.path.isfile(savepath + savename)):
+                    X, y, groups = prepare_data(
+                        BIDS_PATH,
+                        SUBJ_LIST,
+                        BLOCS_LIST,
+                        conds_list,
+                        CHAN=CHAN,
+                        FREQ=FREQ,
+                        balance=balance,
+                        avg=avg,
+                        normalize=normalize,
+                    )
+                    if level == "group" and avg == 0:
+                        result = classif_LOGO(
+                            X, y, groups, n_perms=n_perms, model=model
+                        )
+                    else:
+                        result = classif_LOO(X, y, n_perms=n_perms, model=model)
+                    with open(savepath + savename, "wb") as f:
+                        pickle.dump(result, f)
+                    print("Ok.")
+    else:
+        for CHAN in range(270):
+            if multifeatures:
+                savename = "chan_{}.pkl".format(CHAN)
+                print(savename)
+                if not (os.path.isfile(savepath + savename)):
+                    X, y, groups = prepare_data(
+                        BIDS_PATH,
+                        SUBJ_LIST,
+                        BLOCS_LIST,
+                        conds_list,
+                        CHAN=CHAN,
+                        balance=balance,
+                        avg=avg,
+                        normalize=normalize,
+                    )
+                    if level == "group":
+                        result = classif_grouplevel(
+                            X, y, groups, n_perms=n_perms, model=model
+                        )
+                    elif level == "subject":
+                        result = classif_subjectlevel(X, y, n_perms=n_perms, model=model)
+                    with open(savepath + savename, "wb") as f:
+                        pickle.dump(result, f)
+                    print("Ok.")
+            else:
+                for FREQ in range(len(FREQS_NAMES):
+                    savename = "chan_{}_{}.pkl".format(CHAN, FREQS_NAMES[FREQ])
+                    print(savename)
+                    if not (os.path.isfile(savepath + savename)):
+                        X, y, groups = prepare_data(
+                            BIDS_PATH,
+                            SUBJ_LIST,
+                            BLOCS_LIST,
+                            conds_list,
+                            CHAN=CHAN,
+                            FREQ=FREQ,
+                            balance=balance,
+                            avg=avg,
+                            normalize=normalize,
+                        )
+                        if level == "group":
+                            result = classif_grouplevel(
+                                X, y, groups, n_perms=n_perms, model=model
+                            )
+                        elif level == "subject":
+                            result = classif_subjectlevel(X, y, n_perms=n_perms, model=model)
+                        with open(savepath + savename, "wb") as f:
+                            pickle.dump(result, f)
+                        print("Ok.")
