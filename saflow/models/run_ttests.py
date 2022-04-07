@@ -69,7 +69,7 @@ parser.add_argument(
 parser.add_argument(
     "-cor",
     "--correction",
-    default='fdr',
+    default="fdr",
     type=str,
     help="Choose correction to apply",
 )
@@ -106,7 +106,6 @@ def prepare_data(
                 _, fpath_cond = get_SAflow_bids(
                     BIDS_PATH, subj, run, stage="PSD", cond=cond
                 )
-                # print(f"subj-{subj}_run-0{run}_cond-{cond} chan : {CHAN} freq :{FREQ}")
                 with open(fpath_cond, "rb") as f:
                     data = pickle.load(f)
                 if avg:
@@ -165,7 +164,7 @@ if __name__ == "__main__":
     by = args.by
     if args.average == 0:
         avg = False
-    if args.average == 1:
+    elif args.average == 1:
         avg = True
     if not args.correction:
         correction = None
@@ -178,18 +177,36 @@ if __name__ == "__main__":
         savepath = RESULTS_PATH + "VTC_ttest_{}perm_{}{}_{}_{}/".format(
             n_perms, split[0], split[1], correction, avg
         )
-        figpath = op.join(IMG_DIR, f"{by}_tvals_{n_perms}perms_alpha{str(alpha)[2:]}_{split[0]}{split[1]}_{correction}_avg{avg}.png")
-        figpath_contrast = op.join(IMG_DIR, f"{by}_contrast_{n_perms}perms_alpha{str(alpha)[2:]}_{split[0]}{split[1]}_{correction}_avg{avg}.png")
-        figpath_pvals = op.join(IMG_DIR, f"{by}_pvals_{n_perms}perms_alpha{str(alpha)[2:]}_{split[0]}{split[1]}_{correction}_avg{avg}.png")
+        figpath = op.join(
+            IMG_DIR,
+            f"{by}_tvals_{n_perms}perms_alpha{str(alpha)[2:]}_{split[0]}{split[1]}_{correction}_avg{avg}.png",
+        )
+        figpath_contrast = op.join(
+            IMG_DIR,
+            f"{by}_contrast_{n_perms}perms_alpha{str(alpha)[2:]}_{split[0]}{split[1]}_{correction}_avg{avg}.png",
+        )
+        figpath_pvals = op.join(
+            IMG_DIR,
+            f"{by}_pvals_{n_perms}perms_alpha{str(alpha)[2:]}_{split[0]}{split[1]}_{correction}_avg{avg}.png",
+        )
     elif by == "odd":
         conds_list = ["FREQhits", "RAREhits"]
         balance = True
         savepath = RESULTS_PATH + "{}_PSD_ttest_{}perm_{}__{}/".format(
             by, n_perms, correction, avg
         )
-        figpath = op.join(IMG_DIR, f"{by}_tvals_{n_perms}perms_alpha{str(alpha)[2:]}_{correction}_avg{avg}.png")
-        figpath_contrast = op.join(IMG_DIR, f"{by}_contrast_{n_perms}perms_alpha{str(alpha)[2:]}_{correction}_avg{avg}.png")
-        figpath_pvals = op.join(IMG_DIR, f"{by}_pvals_{n_perms}perms_alpha{str(alpha)[2:]}_{correction}_avg{avg}.png")
+        figpath = op.join(
+            IMG_DIR,
+            f"{by}_tvals_{n_perms}perms_alpha{str(alpha)[2:]}_{correction}_avg{avg}.png",
+        )
+        figpath_contrast = op.join(
+            IMG_DIR,
+            f"{by}_contrast_{n_perms}perms_alpha{str(alpha)[2:]}_{correction}_avg{avg}.png",
+        )
+        figpath_pvals = op.join(
+            IMG_DIR,
+            f"{by}_pvals_{n_perms}perms_alpha{str(alpha)[2:]}_{correction}_avg{avg}.png",
+        )
 
     if not (os.path.isdir(savepath)):
         os.makedirs(savepath)
@@ -220,7 +237,7 @@ if __name__ == "__main__":
         print(f"cond {conds_list[0]} shape : {condA_allchans.shape}")
         print(f"cond {conds_list[1]} shape : {condB_allchans.shape}")
 
-        #tvals, pvals = ttest_perm(
+        # tvals, pvals = ttest_perm(
         #    condA_allchans,
         #    condB_allchans,  # cond1 = IN, cond2 = OUT
         #    n_perm=n_perms + 1,
@@ -228,18 +245,15 @@ if __name__ == "__main__":
         #    correction=correction,
         #    paired=False,
         #    two_tailed=True,
-        #)
+        # )
         if not avg:
             tvals, pvals = stats.ttest_ind(
                 condA_allchans,
                 condB_allchans,  # cond1 = IN, cond2 = OUT
-                permutations=n_perms + 1
+                permutations=n_perms + 1,
             )
         else:
-            tvals, pvals = stats.ttest_rel(
-                condA_allchans,
-                condB_allchans
-            )
+            tvals, pvals = stats.ttest_rel(condA_allchans, condB_allchans)
         pvals = fdrcorrection(pvals, alpha=alpha)[1]
         contrast = (condA_allchans - condB_allchans) / condB_allchans
         contrast = np.mean(contrast, axis=0)
