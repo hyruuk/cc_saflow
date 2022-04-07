@@ -274,7 +274,7 @@ def classif_LOO(X, y, n_perms, model):
         print("p value : " + str(results["acc_pvalue"]))
 
     else:
-        inner_cv = LeaveOneGroupOut()
+        inner_cv = LeaveOneOut()
         results = classification(
             clf, inner_cv, X, y, groups=None, perm=n_perms, n_jobs=8
         )
