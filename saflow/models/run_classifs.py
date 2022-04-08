@@ -483,9 +483,10 @@ if __name__ == "__main__":
                         n_cvgroups=n_cvgroups,
                         n_perms=n_perms,
                         model=model,
+                        avg=avg,
                     )
                 else:
-                    result = classif_SKFold(X, y, n_perms=n_perms, model=model)
+                    result = classif_SKFold(X, y, n_perms=n_perms, model=model, avg=avg)
                 with open(op.join(savepath, savename), "wb") as f:
                     pickle.dump(result, f)
                 print("Ok.")
