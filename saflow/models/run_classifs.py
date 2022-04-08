@@ -331,6 +331,7 @@ def prepare_data(
     X = []
     y = []
     groups = []
+    print("Loading data.")
     for i_subj, subj in enumerate(SUBJ_LIST):
         for i_cond, cond in enumerate(conds_list):
             X_subj = []
@@ -394,6 +395,7 @@ def prepare_data(
         group_ids = np.unique(groups)
         for group_id in group_ids:
             X[groups == group_id] = zscore(X[groups == group_id], axis=0)
+    print("Data loaded.")
     return X, y, groups
 
 
