@@ -277,7 +277,7 @@ def classif_LOGO(X, y, groups, n_perms, model):
                 distributions,
                 cv=inner_cv,
                 random_state=0,
-                verbose=3,
+                verbose=1,
             ).fit(X[train_outer], y[train_outer], groups[train_outer])
             best_params = search.best_params_
             print("Best params : " + str(best_params))
