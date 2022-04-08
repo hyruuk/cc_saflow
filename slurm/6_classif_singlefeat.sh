@@ -2,8 +2,8 @@
 #SBATCH --account=def-kjerbi
 #SBATCH --time=12:00:00
 #SBATCH --job-name=safSingleFeature
-#SBATCH --mem=4G
+#SBATCH --mem=8G
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=8
+#SBATCH --ntasks-per-node=24
 
-$HOME/python_envs/cc_saflow/bin/python $HOME/projects/def-kjerbi/hyruuk/cc_saflow/saflow/models/classif_singlefeat.py -m LR -c $1 -f $2 -by VTC
+$HOME/python_envs/cc_saflow/bin/python $HOME/projects/def-kjerbi/hyruuk/cc_saflow/saflow/models/run_classifs.py -m LR -mf 0 -c $1 -by VTC -s 50 50 -avg 1
