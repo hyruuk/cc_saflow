@@ -268,12 +268,16 @@ def classif_LOGO(X, y, groups, n_perms, model):
 
     if model != "XGBC" and model != "LDA":
         outer_cv = LeavePGroupsOut(n_groups=4)
-        inner_cv = LeavePGroupsOut(n_groups=4)
+        inner_cv = LeavePGroupsOut(n_groups=8)
         best_params_list = []
         acc_score_list = []
         for train_outer, test_outer in outer_cv.split(X, y, groups):
             search = RandomizedSearchCV(
-                clf, distributions, cv=inner_cv, random_state=0
+                clf,
+                distributions,
+                cv=inner_cv,
+                random_state=0,
+                verbose=1,
             ).fit(X[train_outer], y[train_outer], groups[train_outer])
             best_params = search.best_params_
             print("Best params : " + str(best_params))
@@ -282,7 +286,6 @@ def classif_LOGO(X, y, groups, n_perms, model):
             acc_score_outer = clf.score(X[test_outer], y[test_outer])
             acc_score_list.append(acc_score_outer)
             best_params_list.append(best_params)
-
             print("clf done :", acc_score_outer)
         # obtain hp of best DA
         best_fold_id = acc_score_list.index(max(acc_score_list))
@@ -331,7 +334,6 @@ def prepare_data(
     X = []
     y = []
     groups = []
-    print("Loading data.")
     for i_subj, subj in enumerate(SUBJ_LIST):
         for i_cond, cond in enumerate(conds_list):
             X_subj = []
@@ -395,7 +397,6 @@ def prepare_data(
         group_ids = np.unique(groups)
         for group_id in group_ids:
             X[groups == group_id] = zscore(X[groups == group_id], axis=0)
-    print("Data loaded.")
     return X, y, groups
 
 
