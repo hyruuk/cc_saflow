@@ -163,12 +163,12 @@ def init_classifier(model_type="LDA"):
     elif model == "RF":
         clf = RandomForestClassifier()
         distributions = {
-            "bootstrap": [True, False],
-            "max_depth": [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, None],
-            "max_features": ["auto", "sqrt"],
-            "min_samples_leaf": [1, 2, 4],
-            "min_samples_split": [2, 5, 10],
-            "n_estimators": [200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000],
+            "n_estimators": [100, 120, 150],
+            "criterion": ["entropy", "gini"],
+            "max_depth": [None, 1, 3, 5, 7, 9],
+            "max_features": range(1, 11),
+            "min_samples_split": range(2, 10),
+            "min_samples_leaf": [1, 3, 5],
         }
     return clf, distributions
 
@@ -197,14 +197,14 @@ def apply_best_params(best_params, model):
             C=C, penalty=penalty, solver=solver, multi_class=multi_class
         )
     elif model == "RF":
-        bootstrap = best_params["bootstrap"]
+        criterion = best_params["criterion"]
         max_depth = best_params["max_depth"]
         max_features = best_params["max_features"]
         min_samples_leaf = best_params["min_samples_leaf"]
         min_samples_split = best_params["min_samples_split"]
         n_estimators = best_params["n_estimators"]
         clf = RandomForestClassifier(
-            bootstrap=bootstrap,
+            criterion=criterion,
             max_depth=max_depth,
             max_features=max_features,
             min_samples_leaf=min_samples_leaf,
