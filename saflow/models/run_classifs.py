@@ -152,6 +152,7 @@ def init_classifier(model_type="LDA"):
         )
     elif model == "XGBC":
         clf = XGBClassifier()
+        distributions = dict()
     elif model == "RF":
         clf = RandomForestClassifier()
         distributions = {
