@@ -15,6 +15,7 @@ from sklearn.model_selection import (
     GroupShuffleSplit,
     ShuffleSplit,
     LeaveOneGroupOut,
+    LeavePGroupsOut,
     LeaveOneOut,
     StratifiedKFold,
     permutation_test_score,
@@ -205,7 +206,7 @@ def apply_best_params(best_params, model):
     return clf
 
 
-def classif_LOO(X, y, n_perms, model):
+def classif_SKFold(X, y, n_perms, model):
     # Find best parameters
     clf, distributions = init_classifier(model_type=model)
 
@@ -461,7 +462,7 @@ if __name__ == "__main__":
                 if level == "group":
                     result = classif_LOGO(X, y, groups, n_perms=n_perms, model=model)
                 else:
-                    result = classif_LOO(X, y, n_perms=n_perms, model=model)
+                    result = classif_SKFold(X, y, n_perms=n_perms, model=model)
                 with open(op.join(savepath, savename), "wb") as f:
                     pickle.dump(result, f)
                 print("Ok.")
@@ -486,7 +487,7 @@ if __name__ == "__main__":
                             X, y, groups, n_perms=n_perms, model=model
                         )
                     else:
-                        result = classif_LOO(X, y, n_perms=n_perms, model=model)
+                        result = classif_SKFold(X, y, n_perms=n_perms, model=model)
                     with open(op.join(savepath, savename), "wb") as f:
                         pickle.dump(result, f)
                     print("Ok.")
@@ -511,7 +512,7 @@ if __name__ == "__main__":
                             X, y, groups, n_perms=n_perms, model=model
                         )
                     else:
-                        result = classif_LOO(X, y, n_perms=n_perms, model=model)
+                        result = classif_SKFold(X, y, n_perms=n_perms, model=model)
                     with open(op.join(savepath, savename), "wb") as f:
                         pickle.dump(result, f)
                     print("Ok.")
@@ -536,7 +537,7 @@ if __name__ == "__main__":
                                 X, y, groups, n_perms=n_perms, model=model
                             )
                         else:
-                            result = classif_LOO(X, y, n_perms=n_perms, model=model)
+                            result = classif_SKFold(X, y, n_perms=n_perms, model=model)
                         with open(op.join(savepath, savename), "wb") as f:
                             pickle.dump(result, f)
                         print("Ok.")
