@@ -1,3 +1,3 @@
 for JOBID in {$1..$2}; do
-scancel JOBID
+scancel $JOBID
 done
