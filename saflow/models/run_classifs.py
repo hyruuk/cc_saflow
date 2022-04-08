@@ -235,7 +235,7 @@ def classif_SKFold(X, y, n_perms, model):
 
         clf = apply_best_params(best_fold_params, model)
         score, permutation_scores, pvalue = permutation_test_score(
-            clf, X, y, cv=outer_cv, n_permutations=n_perms, n_jobs=8
+            clf, X, y, cv=outer_cv, n_permutations=n_perms, n_jobs=24
         )
         results = {
             "acc_score": score,
@@ -249,7 +249,7 @@ def classif_SKFold(X, y, n_perms, model):
     else:
         cv = StratifiedKFold()
         score, permutation_scores, pvalue = permutation_test_score(
-            clf, X, y, cv=cv, n_permutations=n_perms, n_jobs=8
+            clf, X, y, cv=cv, n_permutations=n_perms, n_jobs=24
         )
         results = {
             "acc_score": score,
@@ -294,7 +294,7 @@ def classif_LOGO(X, y, groups, n_perms, model):
         clf = apply_best_params(best_fold_params, model)
 
         results = classification(
-            clf, outer_cv, X, y, groups=groups, perm=n_perms, n_jobs=8
+            clf, outer_cv, X, y, groups=groups, perm=n_perms, n_jobs=24
         )
         print("Done")
         print("DA : " + str(results["acc_score"]))
@@ -302,7 +302,7 @@ def classif_LOGO(X, y, groups, n_perms, model):
 
     else:
         cv = LeaveOneGroupOut()
-        results = classification(clf, cv, X, y, groups=groups, perm=n_perms, n_jobs=8)
+        results = classification(clf, cv, X, y, groups=groups, perm=n_perms, n_jobs=24)
         print("Done")
         print("DA : " + str(results["acc_score"]))
         print("p value : " + str(results["acc_pvalue"]))
