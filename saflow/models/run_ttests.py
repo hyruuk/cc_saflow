@@ -325,8 +325,6 @@ if __name__ == "__main__":
     )
 
     toplot = allpvals
-    vmax = np.max(np.max(abs(np.asarray(toplot))))
-    vmin = -vmax
     array_topoplot(
         toplot,
         ch_xy,
@@ -338,5 +336,5 @@ if __name__ == "__main__":
         vmax=1,
         with_mask=True,
         masks=masks,
-        cmap="coolwarm",
+        cmap="cividis",
     )
