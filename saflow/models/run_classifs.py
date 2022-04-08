@@ -276,7 +276,7 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0):
 
     if model != "XGBC" and model != "LDA" and avg == 0:
         outer_cv = LeavePGroupsOut(n_groups=1)  # n_cvgroups)
-        inner_cv = LeavePGroupsOut(n_groups=1)
+        inner_cv = LeavePGroupsOut(n_groups=4)
         best_params_list = []
         acc_score_list = []
         for train_outer, test_outer in outer_cv.split(X, y, groups):
@@ -436,7 +436,7 @@ if __name__ == "__main__":
     elif args.average == 1:
         avg = True
         average_string = "averaged"
-        n_cvgroups = 6
+        n_cvgroups = 4
     if args.normalize == 0:
         normalize = False
         norm_string = "non-normalized"
