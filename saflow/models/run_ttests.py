@@ -31,6 +31,13 @@ from statsmodels.stats.multitest import fdrcorrection
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
+    "-stage",
+    "--stage",
+    default="PSD",
+    type=str,
+    help="PSD files to use (PSD or PSD4001200)",
+)
+parser.add_argument(
     "-f",
     "--frequency_band",
     default=None,
@@ -90,6 +97,7 @@ def prepare_data(
     SUBJ_LIST,
     BLOCS_LIST,
     conds_list,
+    stage="PSD",
     CHAN=0,
     FREQ=0,
     balance=False,
@@ -104,7 +112,7 @@ def prepare_data(
             X_subj = []
             for run in BLOCS_LIST:
                 _, fpath_cond = get_SAflow_bids(
-                    BIDS_PATH, subj, run, stage="PSD", cond=cond
+                    BIDS_PATH, subj, run, stage=stage, cond=cond
                 )
                 with open(fpath_cond, "rb") as f:
                     data = pickle.load(f)
@@ -162,6 +170,7 @@ if __name__ == "__main__":
     n_perms = args.n_permutations
     alpha = args.alpha
     by = args.by
+    stage = args.stage
     if args.average == 0:
         avg = False
     elif args.average == 1:
@@ -174,38 +183,39 @@ if __name__ == "__main__":
     if by == "VTC":
         conds_list = (ZONE_CONDS[0] + str(split[0]), ZONE_CONDS[1] + str(split[1]))
         balance = False
-        savepath = RESULTS_PATH + "VTC_ttest_{}perm_{}{}_{}_{}/".format(
-            n_perms, split[0], split[1], correction, avg
+        savepath = op.join(
+            RESULTS_PATH,
+            f"VTC_ttest_{stage}_{n_perms}perm_{split[0]}{split[1]}_{correction}_{avg}/",
         )
         figpath = op.join(
             IMG_DIR,
-            f"{by}_tvals_{n_perms}perms_alpha{str(alpha)[2:]}_{split[0]}{split[1]}_{correction}_avg{avg}.png",
+            f"{by}_tvals_{stage}_{n_perms}perms_alpha{str(alpha)[2:]}_{split[0]}{split[1]}_{correction}_avg{avg}.png",
         )
         figpath_contrast = op.join(
             IMG_DIR,
-            f"{by}_contrast_{n_perms}perms_alpha{str(alpha)[2:]}_{split[0]}{split[1]}_{correction}_avg{avg}.png",
+            f"{by}_contrast_{stage}_{n_perms}perms_alpha{str(alpha)[2:]}_{split[0]}{split[1]}_{correction}_avg{avg}.png",
         )
         figpath_pvals = op.join(
             IMG_DIR,
-            f"{by}_pvals_{n_perms}perms_alpha{str(alpha)[2:]}_{split[0]}{split[1]}_{correction}_avg{avg}.png",
+            f"{by}_pvals_{stage}_{n_perms}perms_alpha{str(alpha)[2:]}_{split[0]}{split[1]}_{correction}_avg{avg}.png",
         )
     elif by == "odd":
         conds_list = ["FREQhits", "RAREhits"]
         balance = True
-        savepath = RESULTS_PATH + "{}_PSD_ttest_{}perm_{}__{}/".format(
-            by, n_perms, correction, avg
+        savepath = op.join(
+            RESULTS_PATH, f"odd_ttest_{stage}_{n_perms}perm_{correction}_{avg}/"
         )
         figpath = op.join(
             IMG_DIR,
-            f"{by}_tvals_{n_perms}perms_alpha{str(alpha)[2:]}_{correction}_avg{avg}.png",
+            f"{by}_tvals_{stage}_{n_perms}perms_alpha{str(alpha)[2:]}_{correction}_avg{avg}.png",
         )
         figpath_contrast = op.join(
             IMG_DIR,
-            f"{by}_contrast_{n_perms}perms_alpha{str(alpha)[2:]}_{correction}_avg{avg}.png",
+            f"{by}_contrast_{stage}_{n_perms}perms_alpha{str(alpha)[2:]}_{correction}_avg{avg}.png",
         )
         figpath_pvals = op.join(
             IMG_DIR,
-            f"{by}_pvals_{n_perms}perms_alpha{str(alpha)[2:]}_{correction}_avg{avg}.png",
+            f"{by}_pvals_{stage}_{n_perms}perms_alpha{str(alpha)[2:]}_{correction}_avg{avg}.png",
         )
 
     if not (os.path.isdir(savepath)):
@@ -225,6 +235,7 @@ if __name__ == "__main__":
             SUBJ_LIST,
             BLOCS_LIST,
             conds_list,
+            stage=stage,
             FREQ=FREQ,
             CHAN=[x for x in range(270)],
             balance=True,
