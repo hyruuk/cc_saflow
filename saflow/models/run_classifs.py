@@ -268,7 +268,7 @@ def classif_LOGO(X, y, groups, n_perms, model):
 
     if model != "XGBC" and model != "LDA":
         outer_cv = LeaveOneGroupOut()
-        inner_cv = LeaveOneGroupOut()
+        inner_cv = LeavePGroupsOut(n_groups=4)
         best_params_list = []
         acc_score_list = []
         for train_outer, test_outer in outer_cv.split(X, y, groups):
