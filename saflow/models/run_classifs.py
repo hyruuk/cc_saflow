@@ -262,12 +262,12 @@ def classif_SKFold(X, y, n_perms, model):
     return results
 
 
-def classif_LOGO(X, y, groups, n_perms, model):
+def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model):
 
     clf, distributions = init_classifier(model_type=model)
 
     if model != "XGBC" and model != "LDA":
-        outer_cv = LeavePGroupsOut(n_groups=8)
+        outer_cv = LeavePGroupsOut(n_groups=n_cvgroups)
         inner_cv = LeavePGroupsOut(n_groups=1)
         best_params_list = []
         acc_score_list = []
@@ -287,7 +287,6 @@ def classif_LOGO(X, y, groups, n_perms, model):
             acc_score_list.append(acc_score_outer)
             best_params_list.append(best_params)
             print("clf done :", acc_score_outer)
-            print(test_outer)
         # obtain hp of best DA
         best_fold_id = acc_score_list.index(max(acc_score_list))
         best_fold_params = best_params_list[best_fold_id]
@@ -411,9 +410,11 @@ if __name__ == "__main__":
     if args.average == 0:
         avg = False
         average_string = "single-trial"
+        n_cvgroups = 1
     elif args.average == 1:
         avg = True
         average_string = "averaged"
+        n_cvgroups = 6
     if args.normalize == 0:
         normalize = False
         norm_string = "non-normalized"
@@ -464,7 +465,14 @@ if __name__ == "__main__":
                     normalize=normalize,
                 )
                 if level == "group":
-                    result = classif_LOGO(X, y, groups, n_perms=n_perms, model=model)
+                    result = classif_LOGO(
+                        X,
+                        y,
+                        groups,
+                        n_cvgroups=n_cvgroups,
+                        n_perms=n_perms,
+                        model=model,
+                    )
                 else:
                     result = classif_SKFold(X, y, n_perms=n_perms, model=model)
                 with open(op.join(savepath, savename), "wb") as f:
@@ -488,7 +496,12 @@ if __name__ == "__main__":
                     )
                     if level == "group":
                         result = classif_LOGO(
-                            X, y, groups, n_perms=n_perms, model=model
+                            X,
+                            y,
+                            groups,
+                            n_cvgroups=n_cvgroups,
+                            n_perms=n_perms,
+                            model=model,
                         )
                     else:
                         result = classif_SKFold(X, y, n_perms=n_perms, model=model)
@@ -513,7 +526,12 @@ if __name__ == "__main__":
                     )
                     if level == "group":
                         result = classif_LOGO(
-                            X, y, groups, n_perms=n_perms, model=model
+                            X,
+                            y,
+                            groups,
+                            n_cvgroups=n_cvgroups,
+                            n_perms=n_perms,
+                            model=model,
                         )
                     else:
                         result = classif_SKFold(X, y, n_perms=n_perms, model=model)
@@ -538,7 +556,12 @@ if __name__ == "__main__":
                         )
                         if level == "group":
                             result = classif_LOGO(
-                                X, y, groups, n_perms=n_perms, model=model
+                                X,
+                                y,
+                                groups,
+                                n_cvgroups=n_cvgroups,
+                                n_perms=n_perms,
+                                model=model,
                             )
                         else:
                             result = classif_SKFold(X, y, n_perms=n_perms, model=model)
