@@ -287,6 +287,7 @@ def classif_LOGO(X, y, groups, n_perms, model):
             acc_score_list.append(acc_score_outer)
             best_params_list.append(best_params)
             print("clf done :", acc_score_outer)
+            print(test_outer)
         # obtain hp of best DA
         best_fold_id = acc_score_list.index(max(acc_score_list))
         best_fold_params = best_params_list[best_fold_id]
