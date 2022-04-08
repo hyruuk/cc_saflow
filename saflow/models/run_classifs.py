@@ -267,8 +267,8 @@ def classif_LOGO(X, y, groups, n_perms, model):
     clf, distributions = init_classifier(model_type=model)
 
     if model != "XGBC" and model != "LDA":
-        outer_cv = LeavePGroupsOut(n_groups=4)
-        inner_cv = LeavePGroupsOut(n_groups=8)
+        outer_cv = LeavePGroupsOut(n_groups=1)
+        inner_cv = LeavePGroupsOut(n_groups=1)
         best_params_list = []
         acc_score_list = []
         for train_outer, test_outer in outer_cv.split(X, y, groups):
@@ -277,7 +277,7 @@ def classif_LOGO(X, y, groups, n_perms, model):
                 distributions,
                 cv=inner_cv,
                 random_state=0,
-                verbose=1,
+                verbose=3,
             ).fit(X[train_outer], y[train_outer], groups[train_outer])
             best_params = search.best_params_
             print("Best params : " + str(best_params))
