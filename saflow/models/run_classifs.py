@@ -267,7 +267,7 @@ def classif_LOGO(X, y, groups, n_perms, model):
     clf, distributions = init_classifier(model_type=model)
 
     if model != "XGBC" and model != "LDA":
-        outer_cv = LeaveOneGroupOut()
+        outer_cv = LeavePGroupOut(n_groups=4)
         inner_cv = LeavePGroupsOut(n_groups=4)
         best_params_list = []
         acc_score_list = []
