@@ -51,6 +51,13 @@ parser.add_argument(
     help="Subject to process",
 )
 parser.add_argument(
+    "-stage",
+    "--stage",
+    default="PSD",
+    type=str,
+    help="PSD files to use (PSD or PSD4001200)",
+)
+parser.add_argument(
     "-c",
     "--channel",
     default=None,
@@ -320,6 +327,7 @@ def prepare_data(
     SUBJ_LIST,
     BLOCS_LIST,
     conds_list,
+    stage="PSD",
     CHAN=0,
     FREQ=None,
     balance=False,
@@ -340,7 +348,7 @@ def prepare_data(
             X_subj = []
             for run in BLOCS_LIST:
                 _, fpath_cond = get_SAflow_bids(
-                    BIDS_PATH, subj, run, stage="PSD", cond=cond
+                    BIDS_PATH, subj, run, stage=stage, cond=cond
                 )
                 with open(fpath_cond, "rb") as f:
                     data = pickle.load(f)
@@ -408,6 +416,7 @@ if __name__ == "__main__":
     n_perms = args.n_permutations
     by = args.by
     level = args.level
+    stage = args.stage
     if args.average == 0:
         avg = False
         average_string = "single-trial"
@@ -442,10 +451,10 @@ if __name__ == "__main__":
     elif by == "resp":
         conds_list = ["RESP", "NORESP"]
     if level == "group":
-        foldername = f"{by}_{model}_{level}-level_{mfsf_string}_{average_string}_{norm_string}_{n_perms}perm_{split[0]}{split[1]}-split"
+        foldername = f"{by}_{stage}_{model}_{level}-level_{mfsf_string}_{average_string}_{norm_string}_{n_perms}perm_{split[0]}{split[1]}-split"
     elif level == "subject":
         subject = args.subject
-        foldername = f"{by}_{model}_{level}-level_{mfsf_string}_{average_string}_{norm_string}_{n_perms}perm_{split[0]}{split[1]}-split_sub-{subject}"
+        foldername = f"{by}_{stage}_{model}_{level}-level_{mfsf_string}_{average_string}_{norm_string}_{n_perms}perm_{split[0]}{split[1]}-split_sub-{subject}"
     savepath = op.join(RESULTS_PATH, foldername)
     os.makedirs(savepath, exist_ok=True)
     print(foldername)
@@ -460,6 +469,7 @@ if __name__ == "__main__":
                     SUBJ_LIST,
                     BLOCS_LIST,
                     conds_list,
+                    stage=stage,
                     CHAN=CHAN,
                     balance=balance,
                     avg=avg,
@@ -489,6 +499,7 @@ if __name__ == "__main__":
                         SUBJ_LIST,
                         BLOCS_LIST,
                         conds_list,
+                        stage=stage,
                         CHAN=CHAN,
                         FREQ=FREQ,
                         balance=balance,
@@ -520,6 +531,7 @@ if __name__ == "__main__":
                         SUBJ_LIST,
                         BLOCS_LIST,
                         conds_list,
+                        stage=stage,
                         CHAN=CHAN,
                         balance=balance,
                         avg=avg,
@@ -549,6 +561,7 @@ if __name__ == "__main__":
                             SUBJ_LIST,
                             BLOCS_LIST,
                             conds_list,
+                            stage=stage,
                             CHAN=CHAN,
                             FREQ=FREQ,
                             balance=balance,
