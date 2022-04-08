@@ -214,11 +214,11 @@ def apply_best_params(best_params, model):
     return clf
 
 
-def classif_SKFold(X, y, n_perms, model):
+def classif_SKFold(X, y, n_perms, model, avg=0):
     # Find best parameters
     clf, distributions = init_classifier(model_type=model)
 
-    if model != "XGBC" and model != "LDA":
+    if model != "XGBC" and model != "LDA" and avg == 0:
         # Optimize HPs
         outer_cv = StratifiedKFold()
         inner_cv = StratifiedKFold()
@@ -270,13 +270,13 @@ def classif_SKFold(X, y, n_perms, model):
     return results
 
 
-def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model):
+def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0):
 
     clf, distributions = init_classifier(model_type=model)
 
-    if model != "XGBC" and model != "LDA":
+    if model != "XGBC" and model != "LDA" and avg == 0:
         outer_cv = LeavePGroupsOut(n_groups=1)  # n_cvgroups)
-        inner_cv = LeavePGroupsOut(n_groups=n_cvgroups)
+        inner_cv = LeavePGroupsOut(n_groups=1)
         best_params_list = []
         acc_score_list = []
         for train_outer, test_outer in outer_cv.split(X, y, groups):
@@ -514,9 +514,12 @@ if __name__ == "__main__":
                             n_cvgroups=n_cvgroups,
                             n_perms=n_perms,
                             model=model,
+                            avg=avg,
                         )
                     else:
-                        result = classif_SKFold(X, y, n_perms=n_perms, model=model)
+                        result = classif_SKFold(
+                            X, y, n_perms=n_perms, model=model, avg=avg
+                        )
                     with open(op.join(savepath, savename), "wb") as f:
                         pickle.dump(result, f)
                     print("Ok.")
@@ -545,9 +548,12 @@ if __name__ == "__main__":
                             n_cvgroups=n_cvgroups,
                             n_perms=n_perms,
                             model=model,
+                            avg=avg,
                         )
                     else:
-                        result = classif_SKFold(X, y, n_perms=n_perms, model=model)
+                        result = classif_SKFold(
+                            X, y, n_perms=n_perms, model=model, avg=avg
+                        )
                     with open(op.join(savepath, savename), "wb") as f:
                         pickle.dump(result, f)
                     print("Ok.")
@@ -576,9 +582,12 @@ if __name__ == "__main__":
                                 n_cvgroups=n_cvgroups,
                                 n_perms=n_perms,
                                 model=model,
+                                avg=avg,
                             )
                         else:
-                            result = classif_SKFold(X, y, n_perms=n_perms, model=model)
+                            result = classif_SKFold(
+                                X, y, n_perms=n_perms, model=model, avg=avg
+                            )
                         with open(op.join(savepath, savename), "wb") as f:
                             pickle.dump(result, f)
                         print("Ok.")
