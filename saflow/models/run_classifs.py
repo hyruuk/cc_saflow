@@ -300,16 +300,28 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0):
         best_fold_params = best_params_list[best_fold_id]
         clf = apply_best_params(best_fold_params, model)
 
-        results = classification(
-            clf, outer_cv, X, y, groups=groups, perm=n_perms, n_jobs=24
+        score, permutation_scores, pvalue = permutation_test_score(
+            clf, X, y, groups=groups, cv=outer_cv, n_permutations=n_perms, n_jobs=24
         )
+        results = {
+            "acc_score": score,
+            "acc_pscores": permutation_scores,
+            "acc_pvalue": pvalue,
+        }
         print("Done")
         print("DA : " + str(results["acc_score"]))
         print("p value : " + str(results["acc_pvalue"]))
 
     else:
         cv = LeaveOneGroupOut()
-        results = classification(clf, cv, X, y, groups=groups, perm=n_perms, n_jobs=24)
+        score, permutation_scores, pvalue = permutation_test_score(
+            clf, X, y, groups=groups, cv=cv, n_permutations=n_perms, n_jobs=24
+        )
+        results = {
+            "acc_score": score,
+            "acc_pscores": permutation_scores,
+            "acc_pvalue": pvalue,
+        }
         print("Done")
         print("DA : " + str(results["acc_score"]))
         print("p value : " + str(results["acc_pvalue"]))
