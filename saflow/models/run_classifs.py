@@ -276,7 +276,8 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0):
 
     if model != "XGBC" and model != "LDA":  # and avg == 0:
         outer_cv = LeavePGroupsOut(n_groups=1)  # n_cvgroups)
-        inner_cv = LeavePGroupsOut(n_groups=4)
+        # outer_cv = GroupShuffleSplit(n_splits=10, test_size=1)
+        inner_cv = GroupShuffleSplit(n_splits=10, test_size=6)
         best_params_list = []
         acc_score_list = []
         for train_outer, test_outer in outer_cv.split(X, y, groups):
@@ -351,6 +352,12 @@ def prepare_data(
         singlefeat = False
     else:
         singlefeat = True
+    if not CHAN:
+        CHAN = [x for x in range(len(FREQS_NAMES))]
+        singlefeat = False
+    # else:
+    # singlefeat = True
+
     # Prepare data
     X = []
     y = []
