@@ -274,7 +274,7 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0):
 
     clf, distributions = init_classifier(model_type=model)
 
-    if model != "XGBC" and model != "LDA":  # and avg == 0:
+    if model != "XGBC" and model != "LDA" and model != "RF":  # and avg == 0:
         outer_cv = LeavePGroupsOut(n_groups=1)  # n_cvgroups)
         # outer_cv = GroupShuffleSplit(n_splits=10, test_size=1)
         inner_cv = GroupShuffleSplit(n_splits=10, test_size=14)
