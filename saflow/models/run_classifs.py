@@ -51,6 +51,13 @@ parser.add_argument(
     help="Subject to process",
 )
 parser.add_argument(
+    "-r",
+    "--run",
+    default=None,
+    type=str,
+    help="Run to process",
+)
+parser.add_argument(
     "-stage",
     "--stage",
     default="PSD",
@@ -436,6 +443,7 @@ if __name__ == "__main__":
     by = args.by
     level = args.level
     stage = args.stage
+    run = args.run
     if args.average == 0:
         avg = False
         average_string = "single-trial"
@@ -462,6 +470,9 @@ if __name__ == "__main__":
     elif level == "subject":
         SUBJ_LIST = [args.subject]
         print(f"Processing subj-{args.subject}")
+    if run is not None:
+        BLOCS_LIST = [run]
+        run = "allruns"
 
     if by == "VTC":
         conds_list = ("IN" + str(split[0]), "OUT" + str(split[1]))
@@ -470,10 +481,10 @@ if __name__ == "__main__":
     elif by == "resp":
         conds_list = ["RESP", "NORESP"]
     if level == "group":
-        foldername = f"{by}_{stage}_{model}_{level}-level_{mfsf_string}_{average_string}_{norm_string}_{n_perms}perm_{split[0]}{split[1]}-split"
+        foldername = f"{by}_{stage}_{model}_{level}-level_{mfsf_string}_{average_string}_{norm_string}_{n_perms}perm_{split[0]}{split[1]}-split_run-{run}"
     elif level == "subject":
         subject = args.subject
-        foldername = f"{by}_{stage}_{model}_{level}-level_{mfsf_string}_{average_string}_{norm_string}_{n_perms}perm_{split[0]}{split[1]}-split_sub-{subject}"
+        foldername = f"{by}_{stage}_{model}_{level}-level_{mfsf_string}_{average_string}_{norm_string}_{n_perms}perm_{split[0]}{split[1]}-split_sub-{subject}_run-{run}"
     savepath = op.join(RESULTS_PATH, foldername)
     os.makedirs(savepath, exist_ok=True)
     print(foldername)
