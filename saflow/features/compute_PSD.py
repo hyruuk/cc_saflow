@@ -66,9 +66,14 @@ if __name__ == "__main__":
                     subj, bloc, os.listdir(LOGS_DIR), inout_bounds=inout_bounds
                 )
 
-                events = mne.find_events(
-                    raw, min_duration=2 / raw.info["sfreq"], verbose=False
-                )
+                try:
+                    events = mne.find_events(
+                        raw, min_duration=1 / raw.info["sfreq"], verbose=False
+                    )
+                except ValueError:
+                    events = mne.find_events(
+                        raw, min_duration=2 / raw.info["sfreq"], verbose=False
+                    )
                 logfile = LOGS_DIR + find_logfile(subj, bloc, os.listdir(LOGS_DIR))
                 events = annotate_events(logfile, events, inout_idx=[INidx, OUTidx])
                 event_id = get_present_events(events)
