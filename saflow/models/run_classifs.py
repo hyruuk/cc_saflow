@@ -6,6 +6,7 @@ from saflow import (
     ZONE_CONDS,
     RESULTS_PATH,
 )
+import saflow
 import pickle
 from saflow.utils import get_SAflow_bids
 import numpy as np
@@ -53,9 +54,9 @@ parser.add_argument(
 parser.add_argument(
     "-r",
     "--run",
-    default=None,
+    default="0",
     type=str,
-    help="Run to process",
+    help="0 for all runs",
 )
 parser.add_argument(
     "-stage",
@@ -284,7 +285,7 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0):
     if model != "XGBC" and model != "LDA" and model != "RF":  # and avg == 0:
         outer_cv = LeavePGroupsOut(n_groups=1)  # n_cvgroups)
         # outer_cv = GroupShuffleSplit(n_splits=10, test_size=1)
-        inner_cv = GroupShuffleSplit(n_splits=10, test_size=14)
+        inner_cv = GroupShuffleSplit(n_splits=10, test_size=2)
         best_params_list = []
         acc_score_list = []
         for train_outer, test_outer in outer_cv.split(X, y, groups):
@@ -470,10 +471,11 @@ if __name__ == "__main__":
     elif level == "subject":
         SUBJ_LIST = [args.subject]
         print(f"Processing subj-{args.subject}")
-    if run is not None:
-        BLOCS_LIST = [run]
-    else:
+    if run == "0":
         run = "allruns"
+        BLOCS_LIST = saflow.BLOCS_LIST
+    else:
+        BLOCS_LIST = [run]
 
     if by == "VTC":
         conds_list = ("IN" + str(split[0]), "OUT" + str(split[1]))
