@@ -472,6 +472,7 @@ if __name__ == "__main__":
         print(f"Processing subj-{args.subject}")
     if run is not None:
         BLOCS_LIST = [run]
+    else:
         run = "allruns"
 
     if by == "VTC":
