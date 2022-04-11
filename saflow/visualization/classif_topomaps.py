@@ -72,7 +72,7 @@ if __name__ == "__main__":
         features_importances_list = []
         pvals_list = []
         permscores_list = []
-        for FREQ in FREQ_NAMES:
+        for FREQ in FREQS_NAMES:
             savename = "freq_{}.pkl".format(FREQS_NAMES[FREQ])
             with open(savepath + savename, "rb") as f:
                 results = pickle.load(f)
@@ -87,11 +87,11 @@ if __name__ == "__main__":
         )
 
         freq_titles = []
-        for idx_pval, pvals in enumerate(pvals_list):
+        for idx_pval, pval in enumerate(pvals_list):
             if pval < alpha:
                 freq_titles.append(FREQS_NAMES[idx_pval] + " *")
             else:
-                freq_titles.append(FREQS_NAMES[idx_val])
+                freq_titles.append(FREQS_NAMES[idx_pval])
 
         titles = freq_titles
 
