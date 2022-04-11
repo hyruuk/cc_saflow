@@ -1,3 +1,3 @@
-for CHAN in {0..270}; do
-  sbatch ./slurm/7_classif_multifeat.sh $CHAN
+for FREQ in delta theta alpha lobeta hibeta gamma1 gamma2 gamma3; do
+  sbatch ./slurm/7_classif_multifeat.sh $FREQ
 done
