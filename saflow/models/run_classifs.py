@@ -483,7 +483,7 @@ if __name__ == "__main__":
             if multifeatures:
                 savename = "freq_{}.pkl".format(FREQS_NAMES[FREQ])
             else:
-                savename = "freq_{}_chan_{}.pkl".format(FREQ, CHAN)
+                savename = "freq_{}_chan_{}.pkl".format(FREQS_NAMES[FREQ], CHAN)
             print(savename)
             X, y, groups = prepare_data(
                 BIDS_PATH,
