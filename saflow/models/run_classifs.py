@@ -113,7 +113,7 @@ parser.add_argument(
 parser.add_argument(
     "-avg",
     "--average",
-    default=0,
+    default=1,
     type=int,
     help="0 for no, 1 for yes",
 )
@@ -141,7 +141,7 @@ parser.add_argument(
 parser.add_argument(
     "-m",
     "--model",
-    default="LR",
+    default="RF",
     type=str,
     help="Classifier to apply",
 )
@@ -156,23 +156,26 @@ def init_classifier(model_type="LDA"):
     elif model == "KNN":
         clf = KNeighborsClassifier()
         distributions = dict(
-            n_neighbors=np.arange(1, 16, 1),
-            weights=["uniform", "distance"],
-            metric=["minkowski", "euclidean", "manhattan"],
+            classifier__n_neighbors=np.arange(1, 16, 1),
+            classifier__weights=["uniform", "distance"],
+            classifier__metric=["minkowski", "euclidean", "manhattan"],
         )
     elif model == "SVM":
         clf = SVC()
         distributions = dict()
     elif model == "DT":
         clf = DecisionTreeClassifier()
-        distributions = dict(criterion=["gini", "entropy"], splitter=["best", "random"])
+        distributions = dict(
+            classifier__criterion=["gini", "entropy"],
+            classifier__splitter=["best", "random"],
+        )
     elif model == "LR":
         clf = LogisticRegression()
         distributions = dict(
-            C=uniform(loc=0, scale=4),
-            penalty=["l2", "l1", "elasticnet", "none"],
-            solver=["newton-cg", "lbfgs", "liblinear", "sag", "saga"],
-            multi_class=["auto", "ovr", "multinomial"],
+            classifier__C=uniform(loc=0, scale=4),
+            classifier__penalty=["l2", "l1", "elasticnet", "none"],
+            classifier__solver=["newton-cg", "lbfgs", "liblinear", "sag", "saga"],
+            classifier__multi_class=["auto", "ovr", "multinomial"],
         )
     elif model == "XGBC":
         clf = XGBClassifier()
@@ -180,10 +183,10 @@ def init_classifier(model_type="LDA"):
     elif model == "RF":
         clf = RandomForestClassifier()
         distributions = {
-            "n_estimators": [10],  # mettre dautres valeurs
-            "max_depth": [1, 2, 4, 8, 12, 16],
-            "min_samples_split": [2, 4, 6, 8, 10, 12, 14, 16],
-            "max_features": [0.25],
+            "classifier__n_estimators": [10],  # mettre dautres valeurs
+            "classifier__max_depth": [1, 2, 4, 8, 12, 16],
+            "classifier__min_samples_split": [2, 4, 6, 8, 10, 12, 14, 16],
+            "classifier__max_features": [0.25],
         }
     return clf, distributions
 
@@ -191,31 +194,31 @@ def init_classifier(model_type="LDA"):
 def apply_best_params(best_params, model):
     # Apply best hyperparameters
     if model == "KNN":
-        metric = best_params["metric"]
-        n_neighbors = best_params["n_neighbors"]
-        weights = best_params["weights"]
+        metric = best_params["classifier__metric"]
+        n_neighbors = best_params["classifier__n_neighbors"]
+        weights = best_params["classifier__weights"]
         clf = KNeighborsClassifier(
             n_neighbors=n_neighbors, metric=metric, weights=weights
         )
     elif model == "SVM":
         clf = SVC(best_params)
     elif model == "DT":
-        criterion = best_params["criterion"]
-        splitter = best_params["splitter"]
+        criterion = best_params["classifier__criterion"]
+        splitter = best_params["classifier__splitter"]
         clf = DecisionTreeClassifier(criterion=criterion, splitter=splitter)
     elif model == "LR":
-        C = best_params["C"]
-        penalty = best_params["penalty"]
-        solver = best_params["solver"]
-        multi_class = best_params["multi_class"]
+        C = best_params["classifier__C"]
+        penalty = best_params["classifier__penalty"]
+        solver = best_params["classifier__solver"]
+        multi_class = best_params["classifier__multi_class"]
         clf = LogisticRegression(
             C=C, penalty=penalty, solver=solver, multi_class=multi_class
         )
     elif model == "RF":
-        max_depth = best_params["max_depth"]
-        max_features = best_params["max_features"]
-        min_samples_split = best_params["min_samples_split"]
-        n_estimators = best_params["n_estimators"]
+        max_depth = best_params["classifier__max_depth"]
+        max_features = best_params["classifier__max_features"]
+        min_samples_split = best_params["classifier__min_samples_split"]
+        n_estimators = best_params["classifier__n_estimators"]
         clf = RandomForestClassifier(
             max_depth=max_depth,
             max_features=max_features,
@@ -230,7 +233,7 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
     clf, distributions = init_classifier(model_type=model)
     if norm == 1:
         scaler = StandardScaler()
-        pipeline = Pipeline([("transformer", scaler), ("estimator", clf)])
+        pipeline = Pipeline([("scaler", scaler), ("classifier", clf)])
     else:
         pipeline = clf
 
@@ -254,7 +257,6 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
                 random_state=0,
                 verbose=1,
             )
-            breakpoint()
             if groups is None:
                 search = rs_obj.fit(X[train_outer], y[train_outer])
             else:
@@ -264,7 +266,7 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
             clf = apply_best_params(best_params, model)
             if norm == 1:
                 scaler = StandardScaler()
-                pipeline = Pipeline([("transformer", scaler), ("classifier", clf)])
+                pipeline = Pipeline([("scaler", scaler), ("classifier", clf)])
             else:
                 pipeline = clf
             pipeline.fit(X[train_outer], y[train_outer])
@@ -279,7 +281,7 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
         clf = apply_best_params(best_fold_params, model)
         if norm == 1:
             scaler = StandardScaler()
-            pipeline = Pipeline([("transformer", scaler), ("estimator", clf)])
+            pipeline = Pipeline([("scaler", scaler), ("classifier", clf)])
         else:
             pipeline = clf
         score, permutation_scores, pvalue = permutation_test_score(
@@ -296,6 +298,8 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
             "acc_pscores": permutation_scores,
             "acc_pvalue": pvalue,
         }
+        if model == "RF":
+            results["feature_importances"] = pipeline["classifier"].feature_importances_
         print("Done")
         print("DA : " + str(results["acc_score"]))
         print("p value : " + str(results["acc_pvalue"]))
@@ -497,7 +501,7 @@ if __name__ == "__main__":
             print(f"X shape : {X.shape}")
             print(f"y shape : {y.shape}")
             print(f"groups shape : {groups.shape}")
-            result = classif_LOGO(
+            results = classif_LOGO(
                 X,
                 y,
                 groups,
@@ -508,5 +512,5 @@ if __name__ == "__main__":
                 norm=normalize,
             )
             with open(op.join(savepath, savename), "wb") as f:
-                pickle.dump(result, f)
+                pickle.dump(results, f)
             print("Ok.")
