@@ -77,7 +77,7 @@ if __name__ == "__main__":
             with open(savepath + savename, "rb") as f:
                 results = pickle.load(f)
             features_importances_list.append(results["feature_importances"])
-            pvals_list.append(results["acc_pvalues"])
+            pvals_list.append(results["acc_pvalue"])
             permscores_list.append(results["acc_pscores"])
         # Correction for multiple comparisons
         # freq_perms = list(itertools.chain.from_iterable(allchans_accperms))
