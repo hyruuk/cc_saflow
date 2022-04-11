@@ -148,5 +148,5 @@ if __name__ == "__main__":
             vmax=vmax_featimp,
             with_mask=False,
             masks=None,
-            cmap="red",
+            cmap="Reds",
         )
