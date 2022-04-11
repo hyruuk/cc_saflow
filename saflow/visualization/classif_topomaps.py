@@ -146,7 +146,7 @@ if __name__ == "__main__":
             figpath=figpath_featimp,
             vmin=0,
             vmax=vmax_featimp,
-            with_mask=True,
+            with_mask=False,
             masks=None,
             cmap="red",
         )
