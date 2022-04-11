@@ -84,7 +84,7 @@ parser.add_argument(
 parser.add_argument(
     "-p",
     "--n_permutations",
-    default=1,
+    default=1000,
     type=int,
     help="Number of permutations",
 )
@@ -271,7 +271,6 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
                 pipeline = clf
             pipeline.fit(X[train_outer], y[train_outer])
             acc_score_outer = pipeline.score(X[test_outer], y[test_outer])
-            breakpoint()
             acc_score_list.append(acc_score_outer)
             best_params_list.append(best_params)
             print("clf done :", acc_score_outer)
