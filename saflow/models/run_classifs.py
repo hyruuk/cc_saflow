@@ -231,62 +231,6 @@ def apply_best_params(best_params, model):
     return clf
 
 
-def classif_SKFold(X, y, n_perms, model, avg=0):
-    # Find best parameters
-    clf, distributions = init_classifier(model_type=model)
-
-    if model != "XGBC" and model != "LDA" and avg == 0:
-        # Optimize HPs
-        outer_cv = StratifiedKFold()
-        inner_cv = StratifiedKFold()
-        best_params_list = []
-        acc_score_list = []
-        for train_outer, test_outer in outer_cv.split(X, y):
-            search = RandomizedSearchCV(
-                clf, distributions, cv=inner_cv, random_state=0
-            ).fit(X[train_outer], y[train_outer])
-            best_params = search.best_params_
-            print("Best params : " + str(best_params))
-            clf = apply_best_params(best_params, model)
-            clf.fit(X[train_outer], y[train_outer])
-            acc_score_outer = clf.score(X[test_outer], y[test_outer])
-            acc_score_list.append(acc_score_outer)
-            best_params_list.append(best_params)
-            print("clf done :", acc_score_outer)
-
-        # obtain hp of best DA
-        best_fold_id = acc_score_list.index(max(acc_score_list))
-        best_fold_params = best_params_list[best_fold_id]
-
-        clf = apply_best_params(best_fold_params, model)
-        score, permutation_scores, pvalue = permutation_test_score(
-            clf, X, y, cv=outer_cv, n_permutations=n_perms, n_jobs=-1
-        )
-        results = {
-            "acc_score": score,
-            "acc_pscores": permutation_scores,
-            "acc_pvalue": pvalue,
-        }
-        print("Done")
-        print("DA : " + str(results["acc_score"]))
-        print("p value : " + str(results["acc_pvalue"]))
-
-    else:
-        cv = StratifiedKFold()
-        score, permutation_scores, pvalue = permutation_test_score(
-            clf, X, y, cv=cv, n_permutations=n_perms, n_jobs=-1
-        )
-        results = {
-            "acc_score": score,
-            "acc_pscores": permutation_scores,
-            "acc_pvalue": pvalue,
-        }
-        print("Done")
-        print("DA : " + str(results["acc_score"]))
-        print("p value : " + str(results["acc_pvalue"]))
-    return results
-
-
 def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
 
     clf, distributions = init_classifier(model_type=model)
@@ -565,7 +509,7 @@ if __name__ == "__main__":
                 n_perms=n_perms,
                 model=model,
                 avg=avg,
-                norm=norm,
+                norm=normalize,
             )
             with open(op.join(savepath, savename), "wb") as f:
                 pickle.dump(result, f)
