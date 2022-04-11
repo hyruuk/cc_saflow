@@ -42,7 +42,7 @@ if __name__ == "__main__":
             allchans_pval = []
             allchans_accperms = []
             for CHAN in range(270):
-                savename = "chan_{}_{}.pkl".format(CHAN, FREQ)
+                savename = "freq_{}_chan_{}.pkl".format(FREQ, CHAN)
                 with open(savepath + savename, "rb") as f:
                     result = pickle.load(f)
                 allchans_acc.append(result["acc_score"])
@@ -68,36 +68,32 @@ if __name__ == "__main__":
 
         titles = FREQS_NAMES
 
-    elif "multifeat" in classif_name:
-        allchans_acc = []
-        allchans_pval = []
-        allchans_accperms = []
-        for CHAN in range(270):
-            savename = "chan_{}.pkl".format(CHAN)
+    elif "_RF_" in classif_name:
+        features_importances_list = []
+        pvals_list = []
+        permscores_list = []
+        for FREQ in FREQ_NAMES:
+            savename = "freq_{}.pkl".format(FREQS_NAMES[FREQ])
             with open(savepath + savename, "rb") as f:
-                result = pickle.load(f)
-            allchans_acc.append(result["acc_score"])
-            allchans_pval.append(result["acc_pvalue"])
-            allchans_accperms.append(result["acc_pscores"])
-
+                results = pickle.load(f)
+        features_importances_list.append(results["feature_importances"])
+        pvals_list.append(results["acc_pvalues"])
+        permscores_list.append(results["acc_pscores"])
         # Correction for multiple comparisons
-        freq_perms = list(itertools.chain.from_iterable(allchans_accperms))
-        corrected_pval = []
-        for acc in allchans_acc:
-            corrected_pval.append(compute_pval(acc[0], freq_perms))
-        pval_mask = create_pval_mask(np.array(corrected_pval), alpha=alpha)
+        # freq_perms = list(itertools.chain.from_iterable(allchans_accperms))
+        toplot_featimp = features_importances_list
+        figpath_featimp = (
+            IMG_DIR + classif_name + "_features_importances" + str(alpha)[2:] + ".png"
+        )
 
-        allfreqs_acc.append(np.array(allchans_acc).squeeze())
-        allfreqs_pval.append(np.array(allchans_pval).squeeze())
-        allmasks.append(pval_mask)
+        freq_titles = []
+        for idx_pval, pvals in enumerate(pvals_list):
+            if pval < alpha:
+                freq_titles.append(FREQS_NAMES[idx_pval] + " *")
+            else:
+                freq_titles.append(FREQS_NAMES[idx_val])
 
-        toplot_pval = allfreqs_pval
-        figpath_pval = IMG_DIR + classif_name + "_pval" + str(alpha)[2:] + ".png"
-
-        toplot_acc = allfreqs_acc
-        figpath_acc = IMG_DIR + classif_name + "_acc" + str(alpha)[2:] + ".png"
-
-        titles = ["All Frequencies"]
+        titles = freq_titles
 
     _, data_fname = get_SAflow_bids(BIDS_PATH, subj="04", run="2", stage="-epo")
     epochs = mne.read_epochs(data_fname)
@@ -105,36 +101,52 @@ if __name__ == "__main__":
         meg=True, ref_meg=False
     ).info  # Find the channel's position
 
-    # Setup the min and max value of the color scale
-    vmax_pval = np.max(np.max(np.asarray(toplot_pval)))
-    vmin_pval = np.min(np.min(np.asarray(toplot_pval)))
-    vmax_acc = np.max(np.max(np.asarray(toplot_acc)))
-    vmin_acc = np.min(np.min(np.asarray(toplot_acc)))
+    if "singlefeat" in classif_name:
+        # Setup the min and max value of the color scale
+        vmax_pval = np.max(np.max(np.asarray(toplot_pval)))
+        vmin_pval = np.min(np.min(np.asarray(toplot_pval)))
+        vmax_acc = np.max(np.max(np.asarray(toplot_acc)))
+        vmin_acc = np.min(np.min(np.asarray(toplot_acc)))
 
-    array_topoplot(
-        toplot_pval,
-        ch_xy,
-        showtitle=True,
-        titles=titles,
-        savefig=True,
-        figpath=figpath_pval,
-        vmin=0,
-        vmax=0.1,
-        with_mask=True,
-        masks=allmasks,
-        cmap="viridis",
-    )
+        array_topoplot(
+            toplot_pval,
+            ch_xy,
+            showtitle=True,
+            titles=titles,
+            savefig=True,
+            figpath=figpath_pval,
+            vmin=0,
+            vmax=0.1,
+            with_mask=True,
+            masks=allmasks,
+            cmap="viridis",
+        )
 
-    array_topoplot(
-        toplot_acc,
-        ch_xy,
-        showtitle=True,
-        titles=titles,
-        savefig=True,
-        figpath=figpath_acc,
-        vmin=vmin_acc,
-        vmax=vmax_acc,
-        with_mask=True,
-        masks=allmasks,
-        cmap="plasma",
-    )
+        array_topoplot(
+            toplot_acc,
+            ch_xy,
+            showtitle=True,
+            titles=titles,
+            savefig=True,
+            figpath=figpath_acc,
+            vmin=vmin_acc,
+            vmax=vmax_acc,
+            with_mask=True,
+            masks=allmasks,
+            cmap="plasma",
+        )
+    else:
+        vmax_featimp = np.max(np.max(np.asarray(toplot_featimp)))
+        array_topoplot(
+            toplot_featimp,
+            ch_xy,
+            showtitle=True,
+            titles=titles,
+            savefig=True,
+            figpath=figpath_featimp,
+            vmin=0,
+            vmax=vmax_featimp,
+            with_mask=True,
+            masks=None,
+            cmap="red",
+        )
