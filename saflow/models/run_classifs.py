@@ -11,6 +11,7 @@ import pickle
 from saflow.utils import get_SAflow_bids
 import numpy as np
 from numpy.random import permutation
+from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import (
     StratifiedShuffleSplit,
     GroupShuffleSplit,
@@ -21,6 +22,7 @@ from sklearn.model_selection import (
     StratifiedKFold,
     permutation_test_score,
 )
+from sklearn.pipeline import Pipeline
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
@@ -52,9 +54,16 @@ parser.add_argument(
     help="Subject to process",
 )
 parser.add_argument(
+    "-f",
+    "--freq",
+    default=None,
+    type=str,
+    help="Freq band to process (ex. alpha)",
+)
+parser.add_argument(
     "-r",
     "--run",
-    default="0",
+    default="4",
     type=str,
     help="0 for all runs",
 )
@@ -75,7 +84,7 @@ parser.add_argument(
 parser.add_argument(
     "-p",
     "--n_permutations",
-    default=1000,
+    default=1,
     type=int,
     help="Number of permutations",
 )
@@ -104,21 +113,21 @@ parser.add_argument(
 parser.add_argument(
     "-avg",
     "--average",
-    default=1,
+    default=0,
     type=int,
     help="0 for no, 1 for yes",
 )
 parser.add_argument(
     "-norm",
     "--normalize",
-    default=1,
+    default=0,
     type=int,
     help="0 for no, 1 for yes",
 )
 parser.add_argument(
     "-mf",
     "--multifeatures",
-    default=0,
+    default=1,
     type=int,
     help="0 for no, 1 for yes",
 )
@@ -132,7 +141,7 @@ parser.add_argument(
 parser.add_argument(
     "-m",
     "--model",
-    default="LDA",
+    default="KNN",
     type=str,
     help="Classifier to apply",
 )
@@ -278,29 +287,49 @@ def classif_SKFold(X, y, n_perms, model, avg=0):
     return results
 
 
-def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0):
+def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
 
     clf, distributions = init_classifier(model_type=model)
+    if norm == 1:
+        scaler = StandardScaler()
+        pipeline = Pipeline([("transformer", scaler), ("estimator", clf)])
+    else:
+        pipeline = clf
 
     if model != "XGBC" and model != "LDA" and model != "RF":  # and avg == 0:
-        outer_cv = LeavePGroupsOut(n_groups=1)  # n_cvgroups)
-        # outer_cv = GroupShuffleSplit(n_splits=10, test_size=1)
-        inner_cv = GroupShuffleSplit(n_splits=10, test_size=2)
+        if groups is None:
+            outer_cv = StratifiedKFold()
+            inner_cv = StratifiedKFold()
+        else:
+            outer_cv = LeavePGroupsOut(n_groups=1)  # n_cvgroups)
+            inner_cv = LeavePGroupsOut(n_groups=1)
+            # outer_cv = GroupShuffleSplit(n_splits=10, test_size=1)
+            # inner_cv = GroupShuffleSplit(n_splits=10, test_size=2)
+
         best_params_list = []
         acc_score_list = []
         for train_outer, test_outer in outer_cv.split(X, y, groups):
-            search = RandomizedSearchCV(
-                clf,
+            rs_obj = RandomizedSearchCV(
+                pipeline,
                 distributions,
                 cv=inner_cv,
                 random_state=0,
                 verbose=1,
-            ).fit(X[train_outer], y[train_outer], groups[train_outer])
+            )
+            if groups is None:
+                search = rs_obj.fit(X[train_outer], y[train_outer])
+            else:
+                search = rs_obj.fit(X[train_outer], y[train_outer], groups[train_outer])
             best_params = search.best_params_
             print("Best params : " + str(best_params))
             clf = apply_best_params(best_params, model)
-            clf.fit(X[train_outer], y[train_outer])
-            acc_score_outer = clf.score(X[test_outer], y[test_outer])
+            if norm == 1:
+                scaler = StandardScaler()
+                pipeline = Pipeline([("transformer", scaler), ("estimator", clf)])
+            else:
+                pipeline = clf
+            pipeline.fit(X[train_outer], y[train_outer])
+            acc_score_outer = pipeline.score(X[test_outer], y[test_outer])
             acc_score_list.append(acc_score_outer)
             best_params_list.append(best_params)
             print("clf done :", acc_score_outer)
@@ -308,9 +337,19 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0):
         best_fold_id = acc_score_list.index(max(acc_score_list))
         best_fold_params = best_params_list[best_fold_id]
         clf = apply_best_params(best_fold_params, model)
-
+        if norm == 1:
+            scaler = StandardScaler()
+            pipeline = Pipeline([("transformer", scaler), ("estimator", clf)])
+        else:
+            pipeline = clf
         score, permutation_scores, pvalue = permutation_test_score(
-            clf, X, y, groups=groups, cv=outer_cv, n_permutations=n_perms, n_jobs=-1
+            pipeline,
+            X,
+            y,
+            groups=groups,
+            cv=outer_cv,
+            n_permutations=n_perms,
+            n_jobs=-1,
         )
         results = {
             "acc_score": score,
@@ -322,9 +361,13 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0):
         print("p value : " + str(results["acc_pvalue"]))
 
     else:
-        cv = LeaveOneGroupOut()
+        if groups is None:
+            cv = StratifiedKFold()
+        else:
+            cv = LeaveOneGroupOut()
+
         score, permutation_scores, pvalue = permutation_test_score(
-            clf, X, y, groups=groups, cv=cv, n_permutations=n_perms, n_jobs=-1
+            pipeline, X, y, groups=groups, cv=cv, n_permutations=n_perms, n_jobs=-1
         )
         results = {
             "acc_score": score,
@@ -354,18 +397,8 @@ def prepare_data(
     balance=False,
     normalize=True,
     avg=False,
+    level="group",
 ):
-    if not FREQ:
-        FREQ = [x for x in range(len(FREQS_NAMES))]
-        singlefeat = False
-    else:
-        singlefeat = True
-    if not CHAN:
-        CHAN = [x for x in range(len(FREQS_NAMES))]
-        singlefeat = False
-    # else:
-    # singlefeat = True
-
     # Prepare data
     X = []
     y = []
@@ -373,7 +406,7 @@ def prepare_data(
     for i_subj, subj in enumerate(SUBJ_LIST):
         for i_cond, cond in enumerate(conds_list):
             X_subj = []
-            for run in BLOCS_LIST:
+            for i_run, run in enumerate(BLOCS_LIST):
                 _, fpath_cond = get_SAflow_bids(
                     BIDS_PATH, subj, run, stage=stage, cond=cond
                 )
@@ -385,59 +418,58 @@ def prepare_data(
                     for x in data[:, CHAN, FREQ]:
                         X.append(x)
                         y.append(i_cond)
-                        groups.append(i_subj)
+                        if level == "group":
+                            groups.append(i_subj)
+                        elif level == "subject":
+                            groups.append(i_run)
             if avg:
                 X.append(np.mean(np.array(X_subj), axis=0))
                 y.append(i_cond)
                 groups.append(i_subj)
     if balance:
-        X_balanced = []
-        y_balanced = []
-        groups_balanced = []
-        # We want to balance the trials across subjects
-        random.seed(10)
-        for subj_idx in np.unique(groups):
-            y_subj = [label for i, label in enumerate(y) if groups[i] == subj_idx]
-            max_trials = min(np.unique(y_subj, return_counts=True)[1])
+        X, y, groups = balance_data(X, y, groups)
 
-            X_subj_0 = [
-                x for i, x in enumerate(X) if groups[i] == subj_idx and y[i] == 0
-            ]
-            X_subj_1 = [
-                x for i, x in enumerate(X) if groups[i] == subj_idx and y[i] == 1
-            ]
-
-            idx_list_0 = [x for x in range(len(X_subj_0))]
-            idx_list_1 = [x for x in range(len(X_subj_1))]
-            picks_0 = random.sample(idx_list_0, max_trials)
-            picks_1 = random.sample(idx_list_1, max_trials)
-
-            for i in range(max_trials):
-                X_balanced.append(X_subj_0[picks_0[i]])
-                y_balanced.append(0)
-                groups_balanced.append(subj_idx)
-                X_balanced.append(X_subj_1[picks_1[i]])
-                y_balanced.append(1)
-                groups_balanced.append(subj_idx)
-        X = X_balanced
-        y = y_balanced
-        groups = groups_balanced
-    if singlefeat:  # Not avg but mf
+    if len(CHAN) == 1 and len(FREQ) == 1:
         X = np.array(X).reshape(-1, 1)
-    else:
-        X = np.array(X).reshape(-1, len(X_balanced[0]))  # ??
+    elif len(CHAN) != 1:  #
+        X = np.array(X).reshape(-1, len(X[0]))  # ??
     y = np.asarray(y)
     groups = np.asarray(groups)
+    return X, y, groups
 
-    if normalize:
-        group_ids = np.unique(groups)
-        for group_id in group_ids:
-            X[groups == group_id] = zscore(X[groups == group_id], axis=0)
+
+def balance_data(X, y, groups, seed=10):
+    X_balanced = []
+    y_balanced = []
+    groups_balanced = []
+    # We want to balance the trials across subjects
+    random.seed(seed)
+    for subj_idx in np.unique(groups):
+        y_subj = [label for i, label in enumerate(y) if groups[i] == subj_idx]
+        max_trials = min(np.unique(y_subj, return_counts=True)[1])
+
+        X_subj_0 = [x for i, x in enumerate(X) if groups[i] == subj_idx and y[i] == 0]
+        X_subj_1 = [x for i, x in enumerate(X) if groups[i] == subj_idx and y[i] == 1]
+
+        idx_list_0 = [x for x in range(len(X_subj_0))]
+        idx_list_1 = [x for x in range(len(X_subj_1))]
+        picks_0 = random.sample(idx_list_0, max_trials)
+        picks_1 = random.sample(idx_list_1, max_trials)
+
+        for i in range(max_trials):
+            X_balanced.append(X_subj_0[picks_0[i]])
+            y_balanced.append(0)
+            groups_balanced.append(subj_idx)
+            X_balanced.append(X_subj_1[picks_1[i]])
+            y_balanced.append(1)
+            groups_balanced.append(subj_idx)
+    X = X_balanced
+    y = y_balanced
+    groups = groups_balanced
     return X, y, groups
 
 
 if __name__ == "__main__":
-    balance = True
     model = args.model
     split = args.split
     n_perms = args.n_permutations
@@ -459,12 +491,6 @@ if __name__ == "__main__":
     elif args.normalize == 1:
         normalize = True
         norm_string = "normalized"
-    if args.multifeatures == 0:
-        multifeatures = False
-        mfsf_string = "singlefeat"
-    elif args.multifeatures == 1:
-        multifeatures = True
-        mfsf_string = "multifeat"
     if level == "group":
         SUBJ_LIST = SUBJ_LIST
         print("Processing all subjects.")
@@ -476,7 +502,24 @@ if __name__ == "__main__":
         BLOCS_LIST = saflow.BLOCS_LIST
     else:
         BLOCS_LIST = [run]
+    if args.channel is not None:
+        CHANS = [args.channel]
+    else:
+        CHANS = [x for x in range(270)]
+    if args.multifeatures == 0:
+        multifeatures = False
+        mfsf_string = "singlefeat"
+    elif args.multifeatures == 1:
+        multifeatures = True
+        mfsf_string = "multifeat"
+        assert args.channel is None, "Channels should be None for multifeatures"
+        CHANS = [CHANS]
+    if args.freq is not None:
+        FREQS = [FREQS_NAMES.index(args.freq)]
+    else:
+        FREQS = [x for x in range(len(FREQS_NAMES))]
 
+    # Generate string names
     if by == "VTC":
         conds_list = ("IN" + str(split[0]), "OUT" + str(split[1]))
     elif by == "odd":
@@ -491,6 +534,44 @@ if __name__ == "__main__":
     savepath = op.join(RESULTS_PATH, foldername)
     os.makedirs(savepath, exist_ok=True)
     print(foldername)
+    for FREQ in FREQS:
+        for CHAN in CHANS:
+            if multifeatures:
+                savename = "freq_{}.pkl".format(FREQS_NAMES[FREQ])
+            else:
+                savename = "freq_{}_chan_{}.pkl".format(FREQ, CHAN)
+            print(savename)
+            X, y, groups = prepare_data(
+                BIDS_PATH,
+                SUBJ_LIST,
+                BLOCS_LIST,
+                conds_list,
+                stage=stage,
+                CHAN=CHAN,
+                FREQ=FREQ,
+                balance=False,
+                avg=avg,
+                normalize=normalize,
+                level=level,
+            )
+            print(f"X shape : {X.shape}")
+            print(f"y shape : {y.shape}")
+            print(f"groups shape : {groups.shape}")
+            result = classif_LOGO(
+                X,
+                y,
+                groups,
+                n_cvgroups=n_cvgroups,
+                n_perms=n_perms,
+                model=model,
+                avg=avg,
+                norm=norm,
+            )
+            with open(op.join(savepath, savename), "wb") as f:
+                pickle.dump(result, f)
+            print("Ok.")
+"""
+    ########################
     if args.channel is not None:
         CHAN = args.channel
         if multifeatures:
@@ -625,3 +706,4 @@ if __name__ == "__main__":
                         with open(op.join(savepath, savename), "wb") as f:
                             pickle.dump(result, f)
                         print("Ok.")
+"""
