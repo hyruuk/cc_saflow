@@ -373,7 +373,7 @@ def prepare_data(
     if balance:
         X, y, groups = balance_data(X, y, groups)
 
-    if len(CHAN) == 1 and len(FREQ) == 1:
+    if type(CHAN) is int and len(FREQ) == 1:
         X = np.array(X).reshape(-1, 1)
     elif len(CHAN) != 1:  #
         X = np.array(X).reshape(-1, len(X[0]))  # ??
