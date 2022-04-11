@@ -120,7 +120,7 @@ parser.add_argument(
 parser.add_argument(
     "-norm",
     "--normalize",
-    default=0,
+    default=1,
     type=int,
     help="0 for no, 1 for yes",
 )
@@ -141,7 +141,7 @@ parser.add_argument(
 parser.add_argument(
     "-m",
     "--model",
-    default="KNN",
+    default="LR",
     type=str,
     help="Classifier to apply",
 )
@@ -180,12 +180,10 @@ def init_classifier(model_type="LDA"):
     elif model == "RF":
         clf = RandomForestClassifier()
         distributions = {
-            "n_estimators": [100, 120, 150],
-            "criterion": ["entropy", "gini"],
-            "max_depth": [None, 1, 3, 5, 7, 9],
-            "max_features": range(1, 11),
-            "min_samples_split": range(2, 10),
-            "min_samples_leaf": [1, 3, 5],
+            "n_estimators": [10],  # mettre dautres valeurs
+            "max_depth": [1, 2, 4, 8, 12, 16],
+            "min_samples_split": [2, 4, 6, 8, 10, 12, 14, 16],
+            "max_features": [0.25],
         }
     return clf, distributions
 
@@ -214,17 +212,13 @@ def apply_best_params(best_params, model):
             C=C, penalty=penalty, solver=solver, multi_class=multi_class
         )
     elif model == "RF":
-        criterion = best_params["criterion"]
         max_depth = best_params["max_depth"]
         max_features = best_params["max_features"]
-        min_samples_leaf = best_params["min_samples_leaf"]
         min_samples_split = best_params["min_samples_split"]
         n_estimators = best_params["n_estimators"]
         clf = RandomForestClassifier(
-            criterion=criterion,
             max_depth=max_depth,
             max_features=max_features,
-            min_samples_leaf=min_samples_leaf,
             min_samples_split=min_samples_split,
             n_estimators=n_estimators,
         )
@@ -240,7 +234,7 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
     else:
         pipeline = clf
 
-    if model != "XGBC" and model != "LDA" and model != "RF":  # and avg == 0:
+    if model != "XGBC" and model != "LDA":  # and avg == 0:
         if groups is None:
             outer_cv = StratifiedKFold()
             inner_cv = StratifiedKFold()
@@ -260,6 +254,7 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
                 random_state=0,
                 verbose=1,
             )
+            breakpoint()
             if groups is None:
                 search = rs_obj.fit(X[train_outer], y[train_outer])
             else:
@@ -269,11 +264,12 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
             clf = apply_best_params(best_params, model)
             if norm == 1:
                 scaler = StandardScaler()
-                pipeline = Pipeline([("transformer", scaler), ("estimator", clf)])
+                pipeline = Pipeline([("transformer", scaler), ("classifier", clf)])
             else:
                 pipeline = clf
             pipeline.fit(X[train_outer], y[train_outer])
             acc_score_outer = pipeline.score(X[test_outer], y[test_outer])
+            breakpoint()
             acc_score_list.append(acc_score_outer)
             best_params_list.append(best_params)
             print("clf done :", acc_score_outer)
@@ -514,140 +510,3 @@ if __name__ == "__main__":
             with open(op.join(savepath, savename), "wb") as f:
                 pickle.dump(result, f)
             print("Ok.")
-"""
-    ########################
-    if args.channel is not None:
-        CHAN = args.channel
-        if multifeatures:
-            savename = "chan_{}.pkl".format(CHAN)
-            print(savename)
-            if not (os.path.isfile(op.join(savepath, savename))):
-                X, y, groups = prepare_data(
-                    BIDS_PATH,
-                    SUBJ_LIST,
-                    BLOCS_LIST,
-                    conds_list,
-                    stage=stage,
-                    CHAN=CHAN,
-                    balance=balance,
-                    avg=avg,
-                    normalize=normalize,
-                )
-                if level == "group":
-                    result = classif_LOGO(
-                        X,
-                        y,
-                        groups,
-                        n_cvgroups=n_cvgroups,
-                        n_perms=n_perms,
-                        model=model,
-                        avg=avg,
-                    )
-                else:
-                    result = classif_SKFold(X, y, n_perms=n_perms, model=model, avg=avg)
-                with open(op.join(savepath, savename), "wb") as f:
-                    pickle.dump(result, f)
-                print("Ok.")
-        else:
-            for FREQ in range(len(FREQS_NAMES)):
-                savename = "chan_{}_{}.pkl".format(CHAN, FREQS_NAMES[FREQ])
-                print(savename)
-                if not (os.path.isfile(op.join(savepath, savename))):
-                    X, y, groups = prepare_data(
-                        BIDS_PATH,
-                        SUBJ_LIST,
-                        BLOCS_LIST,
-                        conds_list,
-                        stage=stage,
-                        CHAN=CHAN,
-                        FREQ=FREQ,
-                        balance=balance,
-                        avg=avg,
-                        normalize=normalize,
-                    )
-                    if level == "group":
-                        result = classif_LOGO(
-                            X,
-                            y,
-                            groups,
-                            n_cvgroups=n_cvgroups,
-                            n_perms=n_perms,
-                            model=model,
-                            avg=avg,
-                        )
-                    else:
-                        result = classif_SKFold(
-                            X, y, n_perms=n_perms, model=model, avg=avg
-                        )
-                    with open(op.join(savepath, savename), "wb") as f:
-                        pickle.dump(result, f)
-                    print("Ok.")
-    else:
-        for CHAN in range(270):
-            if multifeatures:
-                savename = "chan_{}.pkl".format(CHAN)
-                print(savename)
-                if not (os.path.isfile(op.join(savepath, savename))):
-                    X, y, groups = prepare_data(
-                        BIDS_PATH,
-                        SUBJ_LIST,
-                        BLOCS_LIST,
-                        conds_list,
-                        stage=stage,
-                        CHAN=CHAN,
-                        balance=balance,
-                        avg=avg,
-                        normalize=normalize,
-                    )
-                    if level == "group":
-                        result = classif_LOGO(
-                            X,
-                            y,
-                            groups,
-                            n_cvgroups=n_cvgroups,
-                            n_perms=n_perms,
-                            model=model,
-                            avg=avg,
-                        )
-                    else:
-                        result = classif_SKFold(
-                            X, y, n_perms=n_perms, model=model, avg=avg
-                        )
-                    with open(op.join(savepath, savename), "wb") as f:
-                        pickle.dump(result, f)
-                    print("Ok.")
-            else:
-                for FREQ in range(len(FREQS_NAMES)):
-                    savename = "chan_{}_{}.pkl".format(CHAN, FREQS_NAMES[FREQ])
-                    print(savename)
-                    if not (os.path.isfile(op.join(savepath, savename))):
-                        X, y, groups = prepare_data(
-                            BIDS_PATH,
-                            SUBJ_LIST,
-                            BLOCS_LIST,
-                            conds_list,
-                            stage=stage,
-                            CHAN=CHAN,
-                            FREQ=FREQ,
-                            balance=balance,
-                            avg=avg,
-                            normalize=normalize,
-                        )
-                        if level == "group":
-                            result = classif_LOGO(
-                                X,
-                                y,
-                                groups,
-                                n_cvgroups=n_cvgroups,
-                                n_perms=n_perms,
-                                model=model,
-                                avg=avg,
-                            )
-                        else:
-                            result = classif_SKFold(
-                                X, y, n_perms=n_perms, model=model, avg=avg
-                            )
-                        with open(op.join(savepath, savename), "wb") as f:
-                            pickle.dump(result, f)
-                        print("Ok.")
-"""
