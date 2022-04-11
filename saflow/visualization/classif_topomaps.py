@@ -73,12 +73,12 @@ if __name__ == "__main__":
         pvals_list = []
         permscores_list = []
         for FREQ in FREQS_NAMES:
-            savename = "freq_{}.pkl".format(FREQS_NAMES[FREQ])
+            savename = "freq_{}.pkl".format(FREQ)
             with open(savepath + savename, "rb") as f:
                 results = pickle.load(f)
-        features_importances_list.append(results["feature_importances"])
-        pvals_list.append(results["acc_pvalues"])
-        permscores_list.append(results["acc_pscores"])
+            features_importances_list.append(results["feature_importances"])
+            pvals_list.append(results["acc_pvalues"])
+            permscores_list.append(results["acc_pscores"])
         # Correction for multiple comparisons
         # freq_perms = list(itertools.chain.from_iterable(allchans_accperms))
         toplot_featimp = features_importances_list
