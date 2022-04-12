@@ -237,7 +237,7 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
     else:
         pipeline = clf
 
-    if model != "XGBC" and model != "LDA":  # and avg == 0:
+    if model != "XGBC" and model != "LDA" and avg == 0:
         if groups is None:
             outer_cv = StratifiedKFold()
             inner_cv = StratifiedKFold()
