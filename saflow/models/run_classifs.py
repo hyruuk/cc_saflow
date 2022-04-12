@@ -300,6 +300,9 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
         if model == "RF":
             pipeline.fit(X, y)
             results["feature_importances"] = pipeline["classifier"].feature_importances_
+        elif model == "LR":
+            pipeline.fit(X, y)
+            results["feature_importances"] = pipeline["classifier"].coef_
         print("Done")
         print("DA : " + str(results["acc_score"]))
         print("p value : " + str(results["acc_pvalue"]))
