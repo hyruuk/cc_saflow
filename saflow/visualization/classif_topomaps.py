@@ -82,9 +82,7 @@ if __name__ == "__main__":
         # Correction for multiple comparisons
         # freq_perms = list(itertools.chain.from_iterable(allchans_accperms))
         toplot_featimp = features_importances_list
-        figpath_featimp = (
-            IMG_DIR + classif_name + "_features_importances" + str(alpha)[2:] + ".png"
-        )
+        figpath_featimp = IMG_DIR + classif_name + "_features_importances" + ".png"
 
         freq_titles = []
         for idx_pval, pval in enumerate(pvals_list):
