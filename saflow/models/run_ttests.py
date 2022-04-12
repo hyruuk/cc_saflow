@@ -229,7 +229,6 @@ if __name__ == "__main__":
         savename = "PSD_ttest_{}.pkl".format(FREQS_NAMES[FREQ])
         condA_allchans = []
         condB_allchans = []
-        # for CHAN in tqdm(range(270)):
         X, y, groups = prepare_data(
             BIDS_PATH,
             SUBJ_LIST,
@@ -248,15 +247,6 @@ if __name__ == "__main__":
         print(f"cond {conds_list[0]} shape : {condA_allchans.shape}")
         print(f"cond {conds_list[1]} shape : {condB_allchans.shape}")
 
-        # tvals, pvals = ttest_perm(
-        #    condA_allchans,
-        #    condB_allchans,  # cond1 = IN, cond2 = OUT
-        #    n_perm=n_perms + 1,
-        #    n_jobs=8,
-        #    correction=correction,
-        #    paired=False,
-        #    two_tailed=True,
-        # )
         if not avg:
             tvals, pvals = stats.ttest_ind(
                 condA_allchans,
