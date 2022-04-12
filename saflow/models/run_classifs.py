@@ -322,7 +322,6 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
         print("DA : " + str(results["acc_score"]))
         print("DA on train set : " + str(results["DA_train"]))
         print("p value : " + str(results["acc_pvalue"]))
-        breakpoint()
     else:
         if groups is None:
             cv = StratifiedKFold()
@@ -343,7 +342,6 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
         print("DA : " + str(results["acc_score"]))
         print("DA on train set : " + str(results["DA_train"]))
         print("p value : " + str(results["acc_pvalue"]))
-        breakpoint()
     return results
 
 
