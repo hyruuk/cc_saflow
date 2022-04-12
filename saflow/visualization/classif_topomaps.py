@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
         titles = FREQS_NAMES
 
-    elif "_RF_" in classif_name:
+    elif "_RF_" in classif_name or "_LR_" in classif_name:
         features_importances_list = []
         pvals_list = []
         permscores_list = []
@@ -134,6 +134,10 @@ if __name__ == "__main__":
             cmap="plasma",
         )
     else:
+        if "_LR_" in classif_name:
+            vmin = -1
+        elif "_RF_" in classif_name:
+            vmin = 0
         vmax_featimp = np.max(np.max(np.asarray(toplot_featimp)))
         array_topoplot(
             toplot_featimp,
@@ -142,7 +146,7 @@ if __name__ == "__main__":
             titles=titles,
             savefig=True,
             figpath=figpath_featimp,
-            vmin=0,
+            vmin=vmin,
             vmax=vmax_featimp,
             with_mask=False,
             masks=None,
