@@ -113,7 +113,7 @@ parser.add_argument(
 parser.add_argument(
     "-avg",
     "--average",
-    default=1,
+    default=0,
     type=int,
     help="0 for no, 1 for yes",
 )
@@ -141,7 +141,7 @@ parser.add_argument(
 parser.add_argument(
     "-m",
     "--model",
-    default="RF",
+    default="LR",
     type=str,
     help="Classifier to apply",
 )
@@ -176,6 +176,7 @@ def init_classifier(model_type="LDA"):
             classifier__penalty=["l2", "l1", "elasticnet", "none"],
             classifier__solver=["newton-cg", "lbfgs", "liblinear", "sag", "saga"],
             classifier__multi_class=["auto", "ovr", "multinomial"],
+            classifier__max_iter=[100, 200, 300, 400, 500],
         )
     elif model == "XGBC":
         clf = XGBClassifier()
@@ -211,8 +212,13 @@ def apply_best_params(best_params, model):
         penalty = best_params["classifier__penalty"]
         solver = best_params["classifier__solver"]
         multi_class = best_params["classifier__multi_class"]
+        max_iter = best_params["classifier__max_iter"]
         clf = LogisticRegression(
-            C=C, penalty=penalty, solver=solver, multi_class=multi_class
+            C=C,
+            penalty=penalty,
+            solver=solver,
+            multi_class=multi_class,
+            max_iter=max_iter,
         )
     elif model == "RF":
         max_depth = best_params["classifier__max_depth"]
@@ -297,16 +303,26 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
             "acc_pscores": permutation_scores,
             "acc_pvalue": pvalue,
         }
+        pipeline.fit(X, y)
+        results["DA_train"] = pipeline.score(X, y)
+
         if model == "RF":
-            pipeline.fit(X, y)
-            results["feature_importances"] = pipeline["classifier"].feature_importances_
+            if norm == 1:
+                results["feature_importances"] = pipeline[
+                    "classifier"
+                ].feature_importances_
+            else:
+                results["feature_importances"] = pipeline.feature_importances_
         elif model == "LR":
-            pipeline.fit(X, y)
-            results["feature_importances"] = pipeline["classifier"].coef_
+            if norm == 1:
+                results["feature_importances"] = pipeline["classifier"].coef_
+            else:
+                results["feature_importances"] = pipeline.coef_
         print("Done")
         print("DA : " + str(results["acc_score"]))
+        print("DA on train set : " + str(results["DA_train"]))
         print("p value : " + str(results["acc_pvalue"]))
-
+        breakpoint()
     else:
         if groups is None:
             cv = StratifiedKFold()
@@ -321,9 +337,13 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
             "acc_pscores": permutation_scores,
             "acc_pvalue": pvalue,
         }
+        pipeline.fit(X, y)
+        results["DA_train"] = pipeline.score(X, y)
         print("Done")
         print("DA : " + str(results["acc_score"]))
+        print("DA on train set : " + str(results["DA_train"]))
         print("p value : " + str(results["acc_pvalue"]))
+        breakpoint()
     return results
 
 
