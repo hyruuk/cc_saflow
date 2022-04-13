@@ -87,83 +87,18 @@ parser.add_argument(
     type=int,
     help="0 for no, 1 for yes",
 )
-
+parser.add_argument(
+    "-norm",
+    "--normalize",
+    default=1,
+    type=int,
+    help="0 for no, 1 for yes",
+)
 
 args = parser.parse_args()
 
-
-def prepare_data(
-    BIDS_PATH,
-    SUBJ_LIST,
-    BLOCS_LIST,
-    conds_list,
-    stage="PSD",
-    CHAN=0,
-    FREQ=0,
-    balance=False,
-    avg=True,
-):
-    # Prepare data
-    X = []
-    y = []
-    groups = []
-    for i_subj, subj in enumerate(SUBJ_LIST):
-        for i_cond, cond in enumerate(conds_list):
-            X_subj = []
-            for run in BLOCS_LIST:
-                _, fpath_cond = get_SAflow_bids(
-                    BIDS_PATH, subj, run, stage=stage, cond=cond
-                )
-                with open(fpath_cond, "rb") as f:
-                    data = pickle.load(f)
-                if avg:
-                    X_subj.append(np.mean(data[:, CHAN, FREQ], axis=0))
-                else:
-                    for x in data[:, CHAN, FREQ]:
-                        X.append(x)
-                        y.append(i_cond)
-                        groups.append(i_subj)
-            if avg:
-                X.append(np.mean(np.array(X_subj), axis=0))
-                y.append(i_cond)
-                groups.append(i_subj)
-    if balance:
-        X_balanced = []
-        y_balanced = []
-        groups_balanced = []
-        # We want to balance the trials across subjects
-        random.seed(10)
-        for subj_idx in np.unique(groups):
-            y_subj = [label for i, label in enumerate(y) if groups[i] == subj_idx]
-            max_trials = min(np.unique(y_subj, return_counts=True)[1])
-
-            X_subj_0 = [
-                x for i, x in enumerate(X) if groups[i] == subj_idx and y[i] == 0
-            ]
-            X_subj_1 = [
-                x for i, x in enumerate(X) if groups[i] == subj_idx and y[i] == 1
-            ]
-
-            idx_list_0 = [x for x in range(len(X_subj_0))]
-            idx_list_1 = [x for x in range(len(X_subj_1))]
-            picks_0 = random.sample(idx_list_0, max_trials)
-            picks_1 = random.sample(idx_list_1, max_trials)
-
-            for i in range(max_trials):
-                X_balanced.append(X_subj_0[picks_0[i]])
-                y_balanced.append(0)
-                groups_balanced.append(subj_idx)
-                X_balanced.append(X_subj_1[picks_1[i]])
-                y_balanced.append(1)
-                groups_balanced.append(subj_idx)
-
-        X = X_balanced
-        y = y_balanced
-        groups = groups_balanced
-
-    X = np.array(X)
-    return X, y, groups
-
+# Change prepare_data to keep
+from saflow.models.run_classifs import prepare_data
 
 if __name__ == "__main__":
     split = args.split
@@ -171,6 +106,7 @@ if __name__ == "__main__":
     alpha = args.alpha
     by = args.by
     stage = args.stage
+    normalize = args.normalize
     if args.average == 0:
         avg = False
     elif args.average == 1:
@@ -182,7 +118,6 @@ if __name__ == "__main__":
 
     if by == "VTC":
         conds_list = (ZONE_CONDS[0] + str(split[0]), ZONE_CONDS[1] + str(split[1]))
-        balance = False
         savepath = op.join(
             RESULTS_PATH,
             f"VTC_ttest_{stage}_{n_perms}perm_{split[0]}{split[1]}_{correction}_{avg}/",
@@ -201,7 +136,6 @@ if __name__ == "__main__":
         )
     elif by == "odd":
         conds_list = ["FREQhits", "RAREhits"]
-        balance = True
         savepath = op.join(
             RESULTS_PATH, f"odd_ttest_{stage}_{n_perms}perm_{correction}_{avg}/"
         )
@@ -235,11 +169,17 @@ if __name__ == "__main__":
             BLOCS_LIST,
             conds_list,
             stage=stage,
-            FREQ=FREQ,
             CHAN=[x for x in range(270)],
+            FREQ=FREQ,
             balance=True,
             avg=avg,
+            normalize=normalize,
+            level=level,
         )
+
+        if normalize:
+            scaler = StandardScaler()
+            X = scaler.fit_transform(X)
         condA = [x for i, x in enumerate(X) if y[i] == 0]
         condB = [x for i, x in enumerate(X) if y[i] == 1]
         condA_allchans = np.asarray(condA)
