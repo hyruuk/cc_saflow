@@ -113,7 +113,7 @@ parser.add_argument(
 parser.add_argument(
     "-avg",
     "--average",
-    default=0,
+    default=1,
     type=int,
     help="0 for no, 1 for yes",
 )
@@ -149,7 +149,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 
-def init_classifier(model_type="LDA"):
+def init_classifier(model="LDA"):
     if model == "LDA":
         clf = LinearDiscriminantAnalysis()
         distributions = dict()
