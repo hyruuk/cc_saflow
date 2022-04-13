@@ -466,10 +466,10 @@ if __name__ == "__main__":
         average_string = "averaged"
         n_cvgroups = 4
     if args.normalize == 0:
-        normalize = False
+        normalize = 0
         norm_string = "non-normalized"
     elif args.normalize == 1:
-        normalize = True
+        normalize = 1
         norm_string = "normalized"
     if level == "group":
         SUBJ_LIST = SUBJ_LIST
