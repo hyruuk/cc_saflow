@@ -347,7 +347,7 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
                 ].feature_importances_
             else:
                 results["feature_importances"] = pipeline.feature_importances_
-        elif model == "LR":
+        elif model == "LR" or model == "SVM":
             if norm == 1:
                 results["feature_importances"] = pipeline["classifier"].coef_.squeeze()
             else:
