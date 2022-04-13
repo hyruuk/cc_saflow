@@ -236,7 +236,7 @@ def apply_best_params(best_params, model):
 
 def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
 
-    clf, distributions = init_classifier(model_type=model)
+    clf, distributions = init_classifier(model)
     if norm == 1:
         scaler = StandardScaler()
         pipeline = Pipeline([("scaler", scaler), ("classifier", clf)])
@@ -316,6 +316,7 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
         elif model == "LR":
             if norm == 1:
                 results["feature_importances"] = pipeline["classifier"].coef_
+                breakpoint()
             else:
                 results["feature_importances"] = pipeline.coef_
         print("Done")
