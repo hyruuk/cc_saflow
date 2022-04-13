@@ -289,36 +289,8 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
             pipeline = Pipeline([("scaler", scaler), ("classifier", clf)])
         else:
             pipeline = clf
-        score, permutation_scores, pvalue = permutation_test_score(
-            pipeline,
-            X,
-            y,
-            groups=groups,
-            cv=outer_cv,
-            n_permutations=n_perms,
-            n_jobs=-1,
-        )
-        results = {
-            "acc_score": score,
-            "acc_pscores": permutation_scores,
-            "acc_pvalue": pvalue,
-        }
-        pipeline.fit(X, y)
-        results["DA_train"] = pipeline.score(X, y)
 
-        if model == "RF":
-            if norm == 1:
-                results["feature_importances"] = pipeline[
-                    "classifier"
-                ].feature_importances_
-            else:
-                results["feature_importances"] = pipeline.feature_importances_
-        elif model == "LR":
-            if norm == 1:
-                results["feature_importances"] = pipeline["classifier"].coef_.squeeze()
-            else:
-                results["feature_importances"] = pipeline.coef_.squeeze()
-
+        results = final_classif(pipeline, outer_cv, X, y, groups, model, norm)
         print("Done")
         print("DA : " + str(results["acc_score"]))
         print("DA on train set : " + str(results["DA_train"]))
@@ -328,35 +300,36 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
             cv = StratifiedKFold()
         else:
             cv = LeaveOneGroupOut()
-
-        score, permutation_scores, pvalue = permutation_test_score(
-            pipeline, X, y, groups=groups, cv=cv, n_permutations=n_perms, n_jobs=-1
-        )
-        results = {
-            "acc_score": score,
-            "acc_pscores": permutation_scores,
-            "acc_pvalue": pvalue,
-        }
-        pipeline.fit(X, y)
-        results["DA_train"] = pipeline.score(X, y)
-
-        if model == "RF":
-            if norm == 1:
-                results["feature_importances"] = pipeline[
-                    "classifier"
-                ].feature_importances_
-            else:
-                results["feature_importances"] = pipeline.feature_importances_
-        elif model == "LR" or model == "SVM":
-            if norm == 1:
-                results["feature_importances"] = pipeline["classifier"].coef_.squeeze()
-            else:
-                results["feature_importances"] = pipeline.coef_.squeeze()
-
+        results = final_classif(pipeline, cv, X, y, groups, model, norm)
         print("Done")
         print("DA : " + str(results["acc_score"]))
         print("DA on train set : " + str(results["DA_train"]))
         print("p value : " + str(results["acc_pvalue"]))
+    return results
+
+
+def final_classif(pipeline, cv, X, y, groups, model, norm):
+    score, permutation_scores, pvalue = permutation_test_score(
+        clf, X, y, groups=groups, cv=cv, n_permutations=n_perms, n_jobs=-1
+    )
+    results = {
+        "acc_score": score,
+        "acc_pscores": permutation_scores,
+        "acc_pvalue": pvalue,
+    }
+    # Get DA train and feature importance
+    pipeline.fit(X, y)
+    results["DA_train"] = pipeline.score(X, y)
+    if model == "RF":
+        if norm == 1:
+            results["feature_importances"] = pipeline["classifier"].feature_importances_
+        else:
+            results["feature_importances"] = pipeline.feature_importances_
+    elif model == "LR" or model == "SVM":
+        if norm == 1:
+            results["feature_importances"] = pipeline["classifier"].coef_.squeeze()
+        else:
+            results["feature_importances"] = pipeline.coef_.squeeze()
     return results
 
 
