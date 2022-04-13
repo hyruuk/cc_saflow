@@ -318,6 +318,7 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
                 results["feature_importances"] = pipeline["classifier"].coef_.squeeze()
             else:
                 results["feature_importances"] = pipeline.coef_.squeeze()
+
         print("Done")
         print("DA : " + str(results["acc_score"]))
         print("DA on train set : " + str(results["DA_train"]))
@@ -352,7 +353,6 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
             else:
                 results["feature_importances"] = pipeline.coef_.squeeze()
 
-        # breakpoint()
         print("Done")
         print("DA : " + str(results["acc_score"]))
         print("DA on train set : " + str(results["DA_train"]))
