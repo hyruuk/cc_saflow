@@ -310,7 +310,7 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
 
 def final_classif(pipeline, cv, X, y, groups, model, norm):
     score, permutation_scores, pvalue = permutation_test_score(
-        clf, X, y, groups=groups, cv=cv, n_permutations=n_perms, n_jobs=-1
+        pipeline, X, y, groups=groups, cv=cv, n_permutations=n_perms, n_jobs=-1
     )
     results = {
         "acc_score": score,
