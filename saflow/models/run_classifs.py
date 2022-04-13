@@ -141,7 +141,7 @@ parser.add_argument(
 parser.add_argument(
     "-m",
     "--model",
-    default="LR",
+    default="RF",
     type=str,
     help="Classifier to apply",
 )
@@ -315,10 +315,9 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
                 results["feature_importances"] = pipeline.feature_importances_
         elif model == "LR":
             if norm == 1:
-                results["feature_importances"] = pipeline["classifier"].coef_
-                breakpoint()
+                results["feature_importances"] = pipeline["classifier"].coef_.squeeze()
             else:
-                results["feature_importances"] = pipeline.coef_
+                results["feature_importances"] = pipeline.coef_.squeeze()
         print("Done")
         print("DA : " + str(results["acc_score"]))
         print("DA on train set : " + str(results["DA_train"]))
@@ -339,6 +338,21 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
         }
         pipeline.fit(X, y)
         results["DA_train"] = pipeline.score(X, y)
+
+        if model == "RF":
+            if norm == 1:
+                results["feature_importances"] = pipeline[
+                    "classifier"
+                ].feature_importances_
+            else:
+                results["feature_importances"] = pipeline.feature_importances_
+        elif model == "LR":
+            if norm == 1:
+                results["feature_importances"] = pipeline["classifier"].coef_.squeeze()
+            else:
+                results["feature_importances"] = pipeline.coef_.squeeze()
+
+        # breakpoint()
         print("Done")
         print("DA : " + str(results["acc_score"]))
         print("DA on train set : " + str(results["DA_train"]))
