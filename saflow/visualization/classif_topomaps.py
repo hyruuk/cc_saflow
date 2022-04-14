@@ -135,9 +135,10 @@ if __name__ == "__main__":
         )
     else:
         if "_LR_" in classif_name:
-            vmin = -1
+            vmin = 0
         elif "_RF_" in classif_name:
             vmin = 0
+        vmin = 0
         vmax_featimp = np.max(np.max(np.asarray(toplot_featimp)))
         array_topoplot(
             toplot_featimp,
