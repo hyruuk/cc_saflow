@@ -113,7 +113,7 @@ parser.add_argument(
 parser.add_argument(
     "-avg",
     "--average",
-    default=1,
+    default=0,
     type=int,
     help="0 for no, 1 for yes",
 )
@@ -127,7 +127,7 @@ parser.add_argument(
 parser.add_argument(
     "-mf",
     "--multifeatures",
-    default=1,
+    default=0,
     type=int,
     help="0 for no, 1 for yes",
 )
@@ -141,7 +141,7 @@ parser.add_argument(
 parser.add_argument(
     "-m",
     "--model",
-    default="RF",
+    default="SVM",
     type=str,
     help="Classifier to apply",
 )
@@ -163,10 +163,21 @@ def init_classifier(model="LDA"):
     elif model == "SVM":
         clf = SVC()
         distributions = {
-            "classifier__C": uniform(loc=0, scale=100),
-            "classifier__gamma": loguniform(1, 0),
+            "classifier__C": [
+                0.1,
+                0.5,
+                1,
+                3,
+                10,
+                50,
+                100,
+                200,
+                500,
+                1000,
+            ],  # uniform(loc=0, scale=100),
+            "classifier__gamma": [5, 2, 1, 0.01, 0.001, 0.0001, 0.00001],
             "classifier__kernel": ["rbf", "poly", "sigmoid", "linear"],
-            "classifier__max_iter": [100, 200, 300, 400, 500, 1000],
+            "classifier__max_iter": [100, 500, 1000],  # , 200, 300, 400, 500, 1000],
         }
     elif model == "DT":
         clf = DecisionTreeClassifier()
@@ -300,6 +311,7 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
             pipeline = clf
 
         results = final_classif(pipeline, outer_cv, X, y, groups, model, norm)
+        results["best_params"] = best_fold_params
         print("Done")
         print("DA : " + str(results["acc_score"]))
         print("DA on train set : " + str(results["DA_train"]))
