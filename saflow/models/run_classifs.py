@@ -32,7 +32,7 @@ from sklearn.model_selection import RandomizedSearchCV
 from sklearn.ensemble import RandomForestClassifier
 from mlneurotools.ml import classification, StratifiedShuffleGroupSplit
 from xgboost import XGBClassifier
-from scipy.stats import uniform, zscore
+from scipy.stats import uniform, zscore, loguniform
 from itertools import permutations
 import argparse
 import os
@@ -162,7 +162,12 @@ def init_classifier(model="LDA"):
         )
     elif model == "SVM":
         clf = SVC()
-        distributions = dict()
+        distributions = {
+            "classifier__C": uniform(loc=0, scale=100),
+            "classifier__gamma": loguniform(1, 0),
+            "classifier__kernel": ["rbf", "poly", "sigmoid", "linear"],
+            "classifier__max_iter": [100, 200, 300, 400, 500, 1000],
+        }
     elif model == "DT":
         clf = DecisionTreeClassifier()
         distributions = dict(
@@ -176,7 +181,7 @@ def init_classifier(model="LDA"):
             classifier__penalty=["l2", "l1", "elasticnet", "none"],
             classifier__solver=["newton-cg", "lbfgs", "liblinear", "sag", "saga"],
             classifier__multi_class=["auto", "ovr", "multinomial"],
-            classifier__max_iter=[100, 200, 300, 400, 500],
+            classifier__max_iter=[100, 200, 300, 400, 500, 1000],
         )
     elif model == "XGBC":
         clf = XGBClassifier()
@@ -202,7 +207,11 @@ def apply_best_params(best_params, model):
             n_neighbors=n_neighbors, metric=metric, weights=weights
         )
     elif model == "SVM":
-        clf = SVC(best_params)
+        C = best_params["classifier__C"]
+        gamma = best_params["classifier__gamma"]
+        kernel = best_params["classifier__kernel"]
+        max_iter = best_params["classifier__max_iter"]
+        clf = SVC(C=C, gamma=gamma, kernel=kernel, max_iter=max_iter)
     elif model == "DT":
         criterion = best_params["classifier__criterion"]
         splitter = best_params["classifier__splitter"]
