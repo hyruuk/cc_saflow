@@ -13,7 +13,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "-n",
     "--classif_name",
-    default="VTC_LDAsf_LOGO_1perm_2575",
+    default="VTC_PSD_LR_group-level_multifeat_single-trial_normalized_1000perm_5050-split_run-4",
     type=str,
     help="Name of the folder that contains classification results",
 )
@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
         titles = FREQS_NAMES
 
-    elif "_RF_" in classif_name or "_LR_" in classif_name:
+    elif "_RF_" in classif_name or "_LR_" in classif_name or "_SVM_" in classif_name:
         features_importances_list = []
         pvals_list = []
         permscores_list = []
