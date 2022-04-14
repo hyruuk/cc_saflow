@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
         titles = FREQS_NAMES
 
-    elif "_RF_" in classif_name or "_LR_" in classif_name or "_SVM_" in classif_name:
+    elif "multifeat" in classif_name:
         features_importances_list = []
         pvals_list = []
         permscores_list = []
@@ -76,7 +76,7 @@ if __name__ == "__main__":
             savename = "freq_{}.pkl".format(FREQ)
             with open(savepath + savename, "rb") as f:
                 results = pickle.load(f)
-            features_importances_list.append(results["feature_importances"])
+            features_importances_list.append(results["feature_importances"].squeeze())
             pvals_list.append(results["acc_pvalue"])
             permscores_list.append(results["acc_pscores"])
         # Correction for multiple comparisons
