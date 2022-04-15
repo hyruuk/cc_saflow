@@ -113,7 +113,7 @@ parser.add_argument(
 parser.add_argument(
     "-avg",
     "--average",
-    default=0,
+    default=1,
     type=int,
     help="0 for no, 1 for yes",
 )
@@ -127,7 +127,7 @@ parser.add_argument(
 parser.add_argument(
     "-mf",
     "--multifeatures",
-    default=0,
+    default=1,
     type=int,
     help="0 for no, 1 for yes",
 )
@@ -141,7 +141,7 @@ parser.add_argument(
 parser.add_argument(
     "-m",
     "--model",
-    default="SVM",
+    default="RF",
     type=str,
     help="Classifier to apply",
 )
@@ -161,7 +161,7 @@ def init_classifier(model="LDA"):
             classifier__metric=["minkowski", "euclidean", "manhattan"],
         )
     elif model == "SVM":
-        clf = SVC()
+        clf = SVC(kernel="linear")
         distributions = {
             "classifier__C": [
                 0.1,
@@ -176,7 +176,7 @@ def init_classifier(model="LDA"):
                 1000,
             ],  # uniform(loc=0, scale=100),
             "classifier__gamma": [5, 2, 1, 0.01, 0.001, 0.0001, 0.00001],
-            "classifier__kernel": ["rbf", "poly", "sigmoid", "linear"],
+            "classifier__kernel": ["linear"],  # "rbf", "poly", "sigmoid", "linear"],
             "classifier__max_iter": [100, 500, 1000],  # , 200, 300, 400, 500, 1000],
         }
     elif model == "DT":
