@@ -63,9 +63,9 @@ parser.add_argument(
 parser.add_argument(
     "-r",
     "--run",
-    default="4",
+    default="allruns",
     type=str,
-    help="0 for all runs",
+    help="0 for all runs, allruns for all combinations",
 )
 parser.add_argument(
     "-stage",
@@ -127,7 +127,7 @@ parser.add_argument(
 parser.add_argument(
     "-mf",
     "--multifeatures",
-    default=1,
+    default=0,
     type=int,
     help="0 for no, 1 for yes",
 )
@@ -141,7 +141,7 @@ parser.add_argument(
 parser.add_argument(
     "-m",
     "--model",
-    default="RF",
+    default="LDA",
     type=str,
     help="Classifier to apply",
 )
@@ -473,9 +473,12 @@ if __name__ == "__main__":
         print(f"Processing subj-{args.subject}")
     if run == "0":
         run = "allruns"
-        BLOCS_LIST = saflow.BLOCS_LIST
+        BLOCS_LIST = [saflow.BLOCS_LIST]  # if run is 0, compute everything
+    elif run == "all":
+        run = ["allruns", "2", "3", "4", "5", "6", "7"]
+        BLOCS_LIST = [saflow.BLOCS_LIST, "2", "3", "4", "5", "6", "7"]
     else:
-        BLOCS_LIST = [run]
+        BLOCS_LIST = [[run]]
     if args.channel is not None:
         CHANS = [args.channel]
     else:
@@ -500,47 +503,48 @@ if __name__ == "__main__":
         conds_list = ["FREQhits", "RAREhits"]
     elif by == "resp":
         conds_list = ["RESP", "NORESP"]
-    if level == "group":
-        foldername = f"{by}_{stage}_{model}_{level}-level_{mfsf_string}_{average_string}_{norm_string}_{n_perms}perm_{split[0]}{split[1]}-split_run-{run}"
-    elif level == "subject":
-        subject = args.subject
-        foldername = f"{by}_{stage}_{model}_{level}-level_{mfsf_string}_{average_string}_{norm_string}_{n_perms}perm_{split[0]}{split[1]}-split_sub-{subject}_run-{run}"
-    savepath = op.join(RESULTS_PATH, foldername)
-    os.makedirs(savepath, exist_ok=True)
-    print(foldername)
-    for FREQ in FREQS:
-        for CHAN in CHANS:
-            if multifeatures:
-                savename = "freq_{}.pkl".format(FREQS_NAMES[FREQ])
-            else:
-                savename = "freq_{}_chan_{}.pkl".format(FREQS_NAMES[FREQ], CHAN)
-            print(savename)
-            X, y, groups = prepare_data(
-                BIDS_PATH,
-                SUBJ_LIST,
-                BLOCS_LIST,
-                conds_list,
-                stage=stage,
-                CHAN=CHAN,
-                FREQ=FREQ,
-                balance=False,
-                avg=avg,
-                normalize=normalize,
-                level=level,
-            )
-            print(f"X shape : {X.shape}")
-            print(f"y shape : {y.shape}")
-            print(f"groups shape : {groups.shape}")
-            results = classif_LOGO(
-                X,
-                y,
-                groups,
-                n_cvgroups=n_cvgroups,
-                n_perms=n_perms,
-                model=model,
-                avg=avg,
-                norm=normalize,
-            )
-            with open(op.join(savepath, savename), "wb") as f:
-                pickle.dump(results, f)
-            print("Ok.")
+    for run_idx, BLOCS in enumerate(BLOCS_LIST):
+        if level == "group":
+            foldername = f"{by}_{stage}_{model}_{level}-level_{mfsf_string}_{average_string}_{norm_string}_{n_perms}perm_{split[0]}{split[1]}-split_run-{run[run_idx]}"
+        elif level == "subject":
+            subject = args.subject
+            foldername = f"{by}_{stage}_{model}_{level}-level_{mfsf_string}_{average_string}_{norm_string}_{n_perms}perm_{split[0]}{split[1]}-split_sub-{subject}_run-{[run_idx]}"
+        savepath = op.join(RESULTS_PATH, foldername)
+        os.makedirs(savepath, exist_ok=True)
+        print(foldername)
+        for FREQ in FREQS:
+            for CHAN in CHANS:
+                if multifeatures:
+                    savename = "freq_{}.pkl".format(FREQS_NAMES[FREQ])
+                else:
+                    savename = "freq_{}_chan_{}.pkl".format(FREQS_NAMES[FREQ], CHAN)
+                print(savename)
+                X, y, groups = prepare_data(
+                    BIDS_PATH,
+                    SUBJ_LIST,
+                    BLOCS,
+                    conds_list,
+                    stage=stage,
+                    CHAN=CHAN,
+                    FREQ=FREQ,
+                    balance=False,
+                    avg=avg,
+                    normalize=normalize,
+                    level=level,
+                )
+                print(f"X shape : {X.shape}")
+                print(f"y shape : {y.shape}")
+                print(f"groups shape : {groups.shape}")
+                results = classif_LOGO(
+                    X,
+                    y,
+                    groups,
+                    n_cvgroups=n_cvgroups,
+                    n_perms=n_perms,
+                    model=model,
+                    avg=avg,
+                    norm=normalize,
+                )
+                with open(op.join(savepath, savename), "wb") as f:
+                    pickle.dump(results, f)
+                print("Ok.")
