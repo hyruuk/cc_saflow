@@ -120,7 +120,7 @@ if __name__ == "__main__":
         conds_list = (ZONE_CONDS[0] + str(split[0]), ZONE_CONDS[1] + str(split[1]))
         savepath = op.join(
             RESULTS_PATH,
-            f"VTC_ttest_{stage}_{n_perms}perm_{split[0]}{split[1]}_{correction}_{avg}/",
+            f"VTC_ttest_{stage}_{n_perms}perm_{split[0]}{split[1]}_{correction}_avg{avg}/",
         )
         figpath = op.join(
             IMG_DIR,
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     elif by == "odd":
         conds_list = ["FREQhits", "RAREhits"]
         savepath = op.join(
-            RESULTS_PATH, f"odd_ttest_{stage}_{n_perms}perm_{correction}_{avg}/"
+            RESULTS_PATH, f"odd_ttest_{stage}_{n_perms}perm_{correction}_avg{avg}/"
         )
         figpath = op.join(
             IMG_DIR,
