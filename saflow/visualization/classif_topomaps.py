@@ -13,7 +13,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "-n",
     "--classif_name",
-    default="VTC_PSD_LR_group-level_multifeat_single-trial_normalized_1000perm_5050-split_run-4",
+    default="VTC_PSD_SVM_group-level_multifeat_averaged_normalized_1000perm_5050-split_run-allruns",
     type=str,
     help="Name of the folder that contains classification results",
 )
