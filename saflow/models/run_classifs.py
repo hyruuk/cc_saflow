@@ -310,7 +310,9 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
         else:
             pipeline = clf
 
-        results = final_classif(pipeline, outer_cv, X, y, groups, model, norm)
+        results = final_classif(
+            pipeline, outer_cv, X, y, groups, model, norm, n_perms=n_perms
+        )
         results["best_params"] = best_fold_params
         print("Done")
         print("DA : " + str(results["acc_score"]))
@@ -321,7 +323,9 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
             cv = StratifiedKFold()
         else:
             cv = LeaveOneGroupOut()
-        results = final_classif(pipeline, cv, X, y, groups, model, norm)
+        results = final_classif(
+            pipeline, cv, X, y, groups, model, norm, n_perms=n_perms
+        )
         print("Done")
         print("DA : " + str(results["acc_score"]))
         print("DA on train set : " + str(results["DA_train"]))
@@ -329,7 +333,7 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
     return results
 
 
-def final_classif(pipeline, cv, X, y, groups, model, norm):
+def final_classif(pipeline, cv, X, y, groups, model, norm, n_perms=n_perms):
     score, permutation_scores, pvalue = permutation_test_score(
         pipeline, X, y, groups=groups, cv=cv, n_permutations=n_perms, n_jobs=-1
     )
