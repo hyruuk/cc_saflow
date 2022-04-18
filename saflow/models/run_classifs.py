@@ -63,9 +63,9 @@ parser.add_argument(
 parser.add_argument(
     "-r",
     "--run",
-    default="allruns",
+    default="all",
     type=str,
-    help="0 for all runs, allruns for all combinations",
+    help="0 for all runs, all for all combinations",
 )
 parser.add_argument(
     "-stage",
@@ -141,7 +141,7 @@ parser.add_argument(
 parser.add_argument(
     "-m",
     "--model",
-    default="LDA",
+    default="LR",
     type=str,
     help="Classifier to apply",
 )
