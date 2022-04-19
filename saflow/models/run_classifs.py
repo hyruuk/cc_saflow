@@ -99,7 +99,7 @@ parser.add_argument(
 parser.add_argument(
     "-by",
     "--by",
-    default="VTC",
+    default="odd",
     type=str,
     help="Choose the classification problem ('VTC' or 'odd')",
 )
@@ -518,10 +518,20 @@ if __name__ == "__main__":
         print(foldername)
         for FREQ in FREQS:
             for CHAN in CHANS:
-                if multifeatures:
-                    savename = "freq_{}.pkl".format(FREQS_NAMES[FREQ])
-                else:
-                    savename = "freq_{}_chan_{}.pkl".format(FREQS_NAMES[FREQ], CHAN)
+                if level == "group":
+                    if multifeatures:
+                        savename = "freq_{}.pkl".format(FREQS_NAMES[FREQ])
+                    else:
+                        savename = "freq_{}_chan_{}.pkl".format(FREQS_NAMES[FREQ], CHAN)
+                elif level == "subject":
+                    if multifeatures:
+                        savename = "subj-{}_freq_{}.pkl".format(
+                            subject, FREQS_NAMES[FREQ]
+                        )
+                    else:
+                        savename = "subj-{}_freq_{}_chan_{}.pkl".format(
+                            subject, FREQS_NAMES[FREQ], CHAN
+                        )
                 print(savename)
                 X, y, groups = prepare_data(
                     BIDS_PATH,
