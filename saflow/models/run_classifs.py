@@ -99,21 +99,21 @@ parser.add_argument(
 parser.add_argument(
     "-by",
     "--by",
-    default="odd",
+    default="VTC",
     type=str,
     help="Choose the classification problem ('VTC' or 'odd')",
 )
 parser.add_argument(
     "-l",
     "--level",
-    default="group",
+    default="subject",
     type=str,
     help="Choose the classification level ('group' or 'subject')",
 )
 parser.add_argument(
     "-avg",
     "--average",
-    default=1,
+    default=0,
     type=int,
     help="0 for no, 1 for yes",
 )
@@ -141,7 +141,7 @@ parser.add_argument(
 parser.add_argument(
     "-m",
     "--model",
-    default="LR",
+    default="LDA",
     type=str,
     help="Classifier to apply",
 )
