@@ -373,7 +373,6 @@ def prepare_data(
     CHAN=0,
     FREQ=None,
     balance=False,
-    normalize=True,
     avg=False,
     level="group",
 ):
@@ -551,7 +550,6 @@ if __name__ == "__main__":
                         FREQ=FREQ,
                         balance=False,
                         avg=avg,
-                        normalize=normalize,
                         level=level,
                     )
                     print(f"X shape : {X.shape}")

@@ -209,8 +209,7 @@ if __name__ == "__main__":
                     FREQ=FREQ,
                     balance=True,
                     avg=avg,
-                    normalize=normalize,
-                    level="group",
+                    level=level,
                 )
                 print(X[0, 0])
                 if normalize:
