@@ -70,9 +70,16 @@ parser.add_argument(
 parser.add_argument(
     "-by",
     "--by",
-    default="VTC",
+    default="odd",
     type=str,
     help="Choose the classification problem ('VTC' or 'odd')",
+)
+parser.add_argument(
+    "-l",
+    "--level",
+    default="group",
+    type=str,
+    help="Choose the classification level ('group' or 'subject')",
 )
 parser.add_argument(
     "-a",
@@ -113,6 +120,7 @@ if __name__ == "__main__":
     by = args.by
     stage = args.stage
     normalize = args.normalize
+    level = args.level
     if args.average == 0:
         avg = False
     elif args.average == 1:
@@ -131,77 +139,110 @@ if __name__ == "__main__":
     else:
         BLOCS_LIST = [run]
         run_name = [run]
+    if level == "group":
+        SUBJ_LIST = [SUBJ_LIST]
+        print("Processing all subjects.")
+    elif level == "subject":
+        SUBJ_LIST = SUBJ_LIST
+        print(f"Processing subj-{SUBJ_LIST}")
 
     for run_idx, RUNS in enumerate(BLOCS_LIST):
-        if by == "VTC":
-            conds_list = (ZONE_CONDS[0] + str(split[0]), ZONE_CONDS[1] + str(split[1]))
-            savepath = op.join(
-                RESULTS_PATH,
-                f"VTC_ttest_{stage}_{n_perms}perm_{split[0]}{split[1]}_{correction}_avg{avg}_norm{normalize}_run-{run_name[run_idx]}/",
-            )
+        for SUBJ in SUBJ_LIST:
+            if level == "group":
+                if by == "VTC":
+                    conds_list = (
+                        ZONE_CONDS[0] + str(split[0]),
+                        ZONE_CONDS[1] + str(split[1]),
+                    )
+                    savepath = op.join(
+                        RESULTS_PATH,
+                        f"VTC_ttest_{stage}_{n_perms}perm_{split[0]}{split[1]}_{correction}_avg{avg}_norm{normalize}_run-{run_name[run_idx]}/",
+                    )
 
-        elif by == "odd":
-            conds_list = ["FREQhits", "RAREhits"]
-            savepath = op.join(
-                RESULTS_PATH,
-                f"odd_ttest_{stage}_{n_perms}perm_{correction}__norm{normalize}_avg{avg}_run-{run_name[run_idx]}/",
-            )
+                elif by == "odd":
+                    conds_list = ["FREQhits", "RAREhits"]
+                    savepath = op.join(
+                        RESULTS_PATH,
+                        f"odd_ttest_{stage}_{n_perms}perm_{correction}__norm{normalize}_avg{avg}_run-{run_name[run_idx]}/",
+                    )
+                SUBJECTS = SUBJ
+            elif level == "subject":
+                if by == "VTC":
+                    conds_list = (
+                        ZONE_CONDS[0] + str(split[0]),
+                        ZONE_CONDS[1] + str(split[1]),
+                    )
+                    savepath = op.join(
+                        RESULTS_PATH,
+                        f"VTC_ttest_{stage}_{n_perms}perm_{split[0]}{split[1]}_{correction}_avg{avg}_norm{normalize}_subj-{SUBJ}_run-{run_name[run_idx]}/",
+                    )
 
-        if not (os.path.isdir(savepath)):
-            os.makedirs(savepath)
+                elif by == "odd":
+                    conds_list = ["FREQhits", "RAREhits"]
+                    savepath = op.join(
+                        RESULTS_PATH,
+                        f"odd_ttest_{stage}_{n_perms}perm_{correction}__norm{normalize}_avg{avg}_subj-{SUBJ}_run-{run_name[run_idx]}/",
+                    )
+                SUBJECTS = [SUBJ]
+            print(savepath)
+            if not (os.path.isdir(savepath)):
+                os.makedirs(savepath)
 
-        alltvals = []
-        allcontrasts = []
-        masks = []
-        allpvals = []
-        for FREQ in range(len(FREQS_NAMES)):
-            savename = "PSD_ttest_{}.pkl".format(FREQS_NAMES[FREQ])
-            condA_allchans = []
-            condB_allchans = []
-            X, y, groups = prepare_data(
-                BIDS_PATH,
-                SUBJ_LIST,
-                RUNS,
-                conds_list,
-                stage=stage,
-                CHAN=[x for x in range(270)],
-                FREQ=FREQ,
-                balance=True,
-                avg=avg,
-                normalize=normalize,
-                level="group",
-            )
-            print(X[0, 0])
-            if normalize:
-                scaler = StandardScaler()
-                X = scaler.fit_transform(X)
-            print(X[0, 0])
-            condA = [x for i, x in enumerate(X) if y[i] == 0]
-            condB = [x for i, x in enumerate(X) if y[i] == 1]
-            condA_allchans = np.asarray(condA)
-            condB_allchans = np.asarray(condB)
-            print(f"cond {conds_list[0]} shape : {condA_allchans.shape}")
-            print(f"cond {conds_list[1]} shape : {condB_allchans.shape}")
+            print(SUBJ)
+            alltvals = []
+            allcontrasts = []
+            masks = []
+            allpvals = []
+            for FREQ in range(len(FREQS_NAMES)):
 
-            if not avg:
-                tvals, pvals = stats.ttest_ind(
-                    condA_allchans,
-                    condB_allchans,  # cond1 = IN, cond2 = OUT
-                    permutations=n_perms + 1,
+                savename = "PSD_ttest_{}.pkl".format(FREQS_NAMES[FREQ])
+
+                condA_allchans = []
+                condB_allchans = []
+                X, y, groups = prepare_data(
+                    BIDS_PATH,
+                    SUBJECTS,
+                    RUNS,
+                    conds_list,
+                    stage=stage,
+                    CHAN=[x for x in range(270)],
+                    FREQ=FREQ,
+                    balance=True,
+                    avg=avg,
+                    normalize=normalize,
+                    level="group",
                 )
-            else:
-                tvals, pvals = stats.ttest_rel(condA_allchans, condB_allchans)
-            pvals = fdrcorrection(pvals, alpha=alpha)[1]
-            contrast = (condA_allchans - condB_allchans) / condB_allchans
-            contrast = np.mean(contrast, axis=0)
-            results = {"tvals": tvals, "pvals": pvals, "contrast": contrast}
+                print(X[0, 0])
+                if normalize:
+                    scaler = StandardScaler()
+                    X = scaler.fit_transform(X)
+                print(X[0, 0])
+                condA = [x for i, x in enumerate(X) if y[i] == 0]
+                condB = [x for i, x in enumerate(X) if y[i] == 1]
+                condA_allchans = np.asarray(condA)
+                condB_allchans = np.asarray(condB)
+                print(f"cond {conds_list[0]} shape : {condA_allchans.shape}")
+                print(f"cond {conds_list[1]} shape : {condB_allchans.shape}")
 
-            with open(op.join(savepath, savename), "wb") as f:
-                pickle.dump(results, f)
-            print("Ok")
-            print(f"Min pval : {min(pvals)}")
+                if not avg:
+                    tvals, pvals = stats.ttest_ind(
+                        condA_allchans,
+                        condB_allchans,  # cond1 = IN, cond2 = OUT
+                        permutations=n_perms + 1,
+                    )
+                else:
+                    tvals, pvals = stats.ttest_rel(condA_allchans, condB_allchans)
+                pvals = fdrcorrection(pvals, alpha=alpha)[1]
+                contrast = (condA_allchans - condB_allchans) / condB_allchans
+                contrast = np.mean(contrast, axis=0)
+                results = {"tvals": tvals, "pvals": pvals, "contrast": contrast}
 
-            allcontrasts.append(contrast)
-            alltvals.append(results["tvals"])
-            allpvals.append(results["pvals"])
-            masks.append(create_pval_mask(results["pvals"], alpha=alpha))
+                with open(op.join(savepath, savename), "wb") as f:
+                    pickle.dump(results, f)
+                print("Ok")
+                print(f"Min pval : {min(pvals)}")
+
+                allcontrasts.append(contrast)
+                alltvals.append(results["tvals"])
+                allpvals.append(results["pvals"])
+                masks.append(create_pval_mask(results["pvals"], alpha=alpha))
