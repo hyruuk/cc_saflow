@@ -211,11 +211,9 @@ if __name__ == "__main__":
                     avg=avg,
                     level=level,
                 )
-                print(X[0, 0])
                 if normalize:
                     scaler = StandardScaler()
                     X = scaler.fit_transform(X)
-                print(X[0, 0])
                 condA = [x for i, x in enumerate(X) if y[i] == 0]
                 condB = [x for i, x in enumerate(X) if y[i] == 1]
                 condA_allchans = np.asarray(condA)
