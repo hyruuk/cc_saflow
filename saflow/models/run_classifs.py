@@ -462,7 +462,7 @@ if __name__ == "__main__":
     elif args.average == 1:
         avg = True
         average_string = "averaged"
-        n_cvgroups = 4
+        n_cvgroups = 1
     if args.normalize == 0:
         normalize = 0
         norm_string = "non-normalized"
@@ -538,7 +538,10 @@ if __name__ == "__main__":
                 )
                 print(f"X shape : {X.shape}")
                 print(f"y shape : {y.shape}")
+                print(f"n_per_class : {np.unique(y, return_counts=True)}")
                 print(f"groups shape : {groups.shape}")
+                if level == "subject":
+                    groups = None
                 results = classif_LOGO(
                     X,
                     y,
