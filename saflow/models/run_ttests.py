@@ -163,7 +163,7 @@ if __name__ == "__main__":
                     conds_list = ["FREQhits", "RAREhits"]
                     savepath = op.join(
                         RESULTS_PATH,
-                        f"odd_ttest_{stage}_{n_perms}perm_{correction}__norm{normalize}_avg{avg}_run-{run_name[run_idx]}/",
+                        f"odd_ttest_{stage}_{n_perms}perm_{correction}_avg{avg}_norm{normalize}_run-{run_name[run_idx]}/",
                     )
                 SUBJECTS = SUBJ
             elif level == "subject":
@@ -181,7 +181,7 @@ if __name__ == "__main__":
                     conds_list = ["FREQhits", "RAREhits"]
                     savepath = op.join(
                         RESULTS_PATH,
-                        f"odd_ttest_{stage}_{n_perms}perm_{correction}__norm{normalize}_avg{avg}_subj-{SUBJ}_run-{run_name[run_idx]}/",
+                        f"odd_ttest_{stage}_{n_perms}perm_{correction}_avg{avg}_norm{normalize}_subj-{SUBJ}_run-{run_name[run_idx]}/",
                     )
                 SUBJECTS = [SUBJ]
             print(savepath)
