@@ -34,7 +34,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "-stage",
     "--stage",
-    default="PSD4001200",
+    default="PSD",
     type=str,
     help="PSD files to use (PSD or PSD4001200)",
 )
@@ -91,14 +91,14 @@ parser.add_argument(
 parser.add_argument(
     "-avg",
     "--average",
-    default=1,
+    default=0,
     type=int,
     help="0 for no, 1 for yes",
 )
 parser.add_argument(
     "-norm",
     "--normalize",
-    default=1,
+    default=0,
     type=int,
     help="0 for no, 1 for yes",
 )
@@ -137,14 +137,14 @@ if __name__ == "__main__":
             conds_list = (ZONE_CONDS[0] + str(split[0]), ZONE_CONDS[1] + str(split[1]))
             savepath = op.join(
                 RESULTS_PATH,
-                f"VTC_ttest_{stage}_{n_perms}perm_{split[0]}{split[1]}_{correction}_avg{avg}_run-{run_name[run_idx]}/",
+                f"VTC_ttest_{stage}_{n_perms}perm_{split[0]}{split[1]}_{correction}_avg{avg}_norm{normalize}_run-{run_name[run_idx]}/",
             )
 
         elif by == "odd":
             conds_list = ["FREQhits", "RAREhits"]
             savepath = op.join(
                 RESULTS_PATH,
-                f"odd_ttest_{stage}_{n_perms}perm_{correction}_avg{avg}_run-{run_name[run_idx]}/",
+                f"odd_ttest_{stage}_{n_perms}perm_{correction}__norm{normalize}_avg{avg}_run-{run_name[run_idx]}/",
             )
 
         if not (os.path.isdir(savepath)):
@@ -172,9 +172,9 @@ if __name__ == "__main__":
                 level="group",
             )
             print(X[0, 0])
-            # if normalize:
-            scaler = StandardScaler()
-            X = scaler.fit_transform(X)
+            if normalize:
+                scaler = StandardScaler()
+                X = scaler.fit_transform(X)
             print(X[0, 0])
             condA = [x for i, x in enumerate(X) if y[i] == 0]
             condB = [x for i, x in enumerate(X) if y[i] == 1]
@@ -196,7 +196,7 @@ if __name__ == "__main__":
             contrast = np.mean(contrast, axis=0)
             results = {"tvals": tvals, "pvals": pvals, "contrast": contrast}
 
-            with open(savepath + savename, "wb") as f:
+            with open(op.join(savepath, savename), "wb") as f:
                 pickle.dump(results, f)
             print("Ok")
             print(f"Min pval : {min(pvals)}")
