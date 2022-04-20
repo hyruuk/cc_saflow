@@ -473,12 +473,14 @@ if __name__ == "__main__":
         avg = True
         average_string = "averaged"
         n_cvgroups = 1
+
     if args.normalize == 0:
         normalize = 0
         norm_string = "non-normalized"
     elif args.normalize == 1:
         normalize = 1
         norm_string = "normalized"
+
     if level == "group":
         SUBJ_LIST = [SUBJ_LIST]
         print("Processing all subjects.")
@@ -488,6 +490,7 @@ if __name__ == "__main__":
         else:
             SUBJ_LIST = SUBJ_LIST
         print(f"Processing subj-{SUBJ_LIST}")
+
     if run == "0":
         run = "allruns"
         BLOCS_LIST = [saflow.BLOCS_LIST]  # if run is 0, compute everything
@@ -496,10 +499,12 @@ if __name__ == "__main__":
         BLOCS_LIST = [saflow.BLOCS_LIST, "2", "3", "4", "5", "6", "7"]
     else:
         BLOCS_LIST = [[run]]
+
     if args.channel is not None:
         CHANS = [args.channel]
     else:
         CHANS = [x for x in range(270)]
+
     if args.multifeatures == 0:
         multifeatures = False
         mfsf_string = "singlefeat"
@@ -508,6 +513,7 @@ if __name__ == "__main__":
         mfsf_string = "multifeat"
         assert args.channel is None, "Channels should be None for multifeatures"
         CHANS = [CHANS]
+
     if args.freq is not None:
         FREQS = [FREQS_NAMES.index(args.freq)]
     else:
@@ -516,7 +522,9 @@ if __name__ == "__main__":
     # Generate string names
     if by == "VTC":
         conds_list = ("IN" + str(split[0]), "OUT" + str(split[1]))
+        balance = False
     elif by == "odd":
+        balance = True
         conds_list = ["FREQhits", "RAREhits"]
     elif by == "resp":
         conds_list = ["RESP", "NORESP"]
@@ -548,7 +556,7 @@ if __name__ == "__main__":
                         stage=stage,
                         CHAN=CHAN,
                         FREQ=FREQ,
-                        balance=False,
+                        balance=balance,
                         avg=avg,
                         level=level,
                     )
