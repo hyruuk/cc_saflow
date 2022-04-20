@@ -1,3 +1,13 @@
-for CHAN in {0..270}; do
-  sbatch ./slurm/6_classif_singlefeat.sh $CHAN
+
+sbatch ./slurm/6_classif_singlefeat.sh VTC 50 50 group 04
+sbatch ./slurm/6_classif_singlefeat.sh VTC 25 75 group 04
+sbatch ./slurm/6_classif_singlefeat.sh VTC 10 90 group 04
+sbatch ./slurm/6_classif_singlefeat.sh odd 50 50 group 04
+
+for SUBJ in 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 28 29 30 31 32 33 34 35 36 37 38; do
+sbatch ./slurm/6_classif_singlefeat.sh VTC 50 50 subject $SUBJ
+sbatch ./slurm/6_classif_singlefeat.sh VTC 25 75 subject $SUBJ
+sbatch ./slurm/6_classif_singlefeat.sh VTC 10 90 subject $SUBJ
+
+sbatch ./slurm/6_classif_singlefeat.sh odd 50 50 subject $SUBJ
 done
