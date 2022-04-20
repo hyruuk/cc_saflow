@@ -28,12 +28,18 @@ if __name__ == "__main__":
     tmax = 1.2
     for bloc in BLOCS_LIST:
         # Generate filenames
-        _, epopath = get_SAflow_bids(BIDS_PATH, subj, bloc, stage="-epo", cond=None)
+        _, epopath = get_SAflow_bids(
+            BIDS_PATH, subj, bloc, stage="-epo4001200", cond=None
+        )
         _, rawpath = get_SAflow_bids(
             BIDS_PATH, subj, bloc, stage="preproc_raw", cond=None
         )
-        _, ARpath = get_SAflow_bids(BIDS_PATH, subj, bloc, stage="ARlog", cond=None)
-        _, PSDpath = get_SAflow_bids(BIDS_PATH, subj, bloc, stage="PSD", cond=None)
+        _, ARpath = get_SAflow_bids(
+            BIDS_PATH, subj, bloc, stage="ARlog4001200", cond=None
+        )
+        _, PSDpath = get_SAflow_bids(
+            BIDS_PATH, subj, bloc, stage="PSD4001200", cond=None
+        )
 
         # Load files
         epochs = mne.read_epochs(epopath)
@@ -62,6 +68,7 @@ if __name__ == "__main__":
                     OUT_mask,
                     performance_dict,
                     df_response_out,
+                    RT_to_VTC,
                 ) = get_VTC_from_file(
                     subj, bloc, os.listdir(LOGS_DIR), inout_bounds=inout_bounds
                 )
