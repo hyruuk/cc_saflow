@@ -37,6 +37,9 @@ def get_behavior_dict(files_list, SUBJ_LIST, BLOCS_LIST=[2, 3, 4, 5, 6, 7]):
         "commission_correct": [],
         "omission_correct": [],
     }
+    RT_preCE_list = []
+    RT_preOC_list = []
+    RT_preCC_list = []
 
     for subject in SUBJ_LIST:
         for bloc in BLOCS_LIST:
@@ -71,6 +74,32 @@ def get_behavior_dict(files_list, SUBJ_LIST, BLOCS_LIST=[2, 3, 4, 5, 6, 7]):
                 omission_correct = [
                     x for x in performance_dict["correct_omission"] if x in inout_idx
                 ]
+
+                preCE = [
+                    x - 1
+                    for x in performance_dict["commission_error"]
+                    if x in inout_idx
+                    if x >> 0
+                    if x - 1 in performance_dict["correct_commission"]
+                ]
+                preOC = [
+                    x - 1
+                    for x in performance_dict["correct_omission"]
+                    if x in inout_idx
+                    if x >> 0
+                    if x - 1 in performance_dict["correct_commission"]
+                ]
+                preCC = [
+                    x - 1
+                    for x in performance_dict["correct_commission"]
+                    if x in inout_idx
+                    if x >> 0
+                    if x - 1 in performance_dict["correct_commission"]
+                ]
+                RT_preCE = RT_to_VTC[preCE]
+                RT_preOC = RT_to_VTC[preOC]
+                RT_preCC = RT_to_VTC[preCC]
+
                 # Compute rates
                 try:
                     lapse_rate = len(commission_error) / (
@@ -92,6 +121,9 @@ def get_behavior_dict(files_list, SUBJ_LIST, BLOCS_LIST=[2, 3, 4, 5, 6, 7]):
                 splitperf_dict["omission_error"].append(len(omission_error))
                 splitperf_dict["commission_correct"].append(len(commission_correct))
                 splitperf_dict["omission_correct"].append(len(omission_correct))
+                RT_preCE_list.append(np.nanmean(np.array(RT_preCE)))
+                RT_preOC_list.append(np.nanmean(np.array(RT_preOC)))
+                RT_preCC_list.append(np.nanmean(np.array(RT_preCC)))
                 if loop_idx == 0:
                     cond_list.append("IN")
                 else:
@@ -105,6 +137,9 @@ def get_behavior_dict(files_list, SUBJ_LIST, BLOCS_LIST=[2, 3, 4, 5, 6, 7]):
             "omission_error": splitperf_dict["omission_error"],
             "commission_correct": splitperf_dict["commission_correct"],
             "omission_correct": splitperf_dict["omission_correct"],
+            "RT_preCE": RT_preCE_list,
+            "RT_preOC": RT_preOC_list,
+            "RT_preCC": RT_preCC_list,
             "n_rare": n_rares_list,
             "subject": subject_list,
             "bloc": bloc_list,
