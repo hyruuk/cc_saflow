@@ -6,6 +6,9 @@ from scipy import signal
 import numpy as np
 import os.path as op
 from saflow import LOGS_DIR
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 def find_logfile(subj, bloc, log_files):
@@ -18,6 +21,97 @@ def find_logfile(subj, bloc, log_files):
         if file[7:9] == subj and int(file[10]) == int(bloc) - 1:
             break
     return file
+
+
+def get_behavior_dict(files_list, SUBJ_LIST, BLOCS_LIST=[2, 3, 4, 5, 6, 7]):
+    # Get behaviour
+    lapse_rates = []
+    omission_error_rates = []
+    n_rares_list = []
+    bloc_list = []
+    subject_list = []
+    cond_list = []
+    splitperf_dict = {
+        "commission_error": [],
+        "omission_error": [],
+        "commission_correct": [],
+        "omission_correct": [],
+    }
+
+    for subject in SUBJ_LIST:
+        for bloc in BLOCS_LIST:
+            (
+                IN_idx,
+                OUT_idx,
+                VTC_raw,
+                VTC_filtered,
+                IN_mask,
+                OUT_mask,
+                performance_dict,
+                df_response,
+                RT_to_VTC,
+            ) = get_VTC_from_file(
+                subject,
+                bloc,
+                files_list,
+                inout_bounds=inout_bounds,
+                filt_cutoff=filt_cutoff,
+            )
+            for loop_idx, inout_idx in enumerate([IN_idx, OUT_idx]):
+                # Split behavior into IN/OUT
+                commission_error = [
+                    x for x in performance_dict["commission_error"] if x in inout_idx
+                ]
+                omission_error = [
+                    x for x in performance_dict["omission_error"] if x in inout_idx
+                ]
+                commission_correct = [
+                    x for x in performance_dict["correct_commission"] if x in inout_idx
+                ]
+                omission_correct = [
+                    x for x in performance_dict["correct_omission"] if x in inout_idx
+                ]
+                # Compute rates
+                try:
+                    lapse_rate = len(commission_error) / (
+                        len(omission_correct) + len(commission_error)
+                    )
+                except ZeroDivisionError:
+                    lapse_rate = np.nan
+                omission_error_rate = len(omission_error) / (
+                    len(commission_correct) + len(omission_error)
+                )
+
+                # Pass to lists to pass to dict (sounds dumb ? it is)
+                n_rares_list.append((len(omission_correct) + len(commission_error)))
+                lapse_rates.append(lapse_rate)
+                omission_error_rates.append(omission_error_rate)
+                bloc_list.append(bloc)
+                subject_list.append(subject)
+                splitperf_dict["commission_error"].append(len(commission_error))
+                splitperf_dict["omission_error"].append(len(omission_error))
+                splitperf_dict["commission_correct"].append(len(commission_correct))
+                splitperf_dict["omission_correct"].append(len(omission_correct))
+                if loop_idx == 0:
+                    cond_list.append("IN")
+                else:
+                    cond_list.append("OUT")
+
+    plot_df = pd.DataFrame(
+        {
+            "lapse_rate": lapse_rates,
+            "omission_error_rate": omission_error_rates,
+            "commission_error": splitperf_dict["commission_error"],
+            "omission_error": splitperf_dict["omission_error"],
+            "commission_correct": splitperf_dict["commission_correct"],
+            "omission_correct": splitperf_dict["omission_correct"],
+            "n_rare": n_rares_list,
+            "subject": subject_list,
+            "bloc": bloc_list,
+            "cond": cond_list,
+        }
+    )
+    return plot_df
 
 
 def interpolate_RT(RT_raw):
@@ -197,66 +291,241 @@ def get_VTC_from_file(
         OUT_mask,
         performance_dict,
         df_response_out,
+        RT_to_VTC,
     )
 
 
-def plot_VTC(VTC_filtered, VTC_raw, IN_mask, OUT_mask, subject="?", bloc="?"):
+def plot_VTC(
+    VTC_filtered,
+    VTC_raw,
+    IN_mask,
+    OUT_mask,
+    performance_dict,
+    subject_name="?",
+    bloc="?",
+    subgrid_axes=None,
+    fig=None,
+):
+    if subgrid_axes == None:
+        fig = plt.figure(figsize=(8, 5))
+        gs = fig.add_gridspec(4, hspace=0, wspace=0)
+        ax_vtc = fig.add_subplot(gs[:3])
+        ax_odd = fig.add_subplot(gs[3])
+    else:
+        subgrid_axes.set_xticks([])
+        subgrid_axes.set_yticks([])
+        gs_inner = gridspec.GridSpecFromSubplotSpec(
+            4, 1, hspace=0, wspace=0, subplot_spec=subgrid_axes
+        )
+        ax_vtc = fig.add_subplot(gs_inner[:3])
+        ax_odd = fig.add_subplot(gs_inner[3])
+
+    # VTC plot
     x = np.arange(0, len(VTC_raw))
-    fig = plt.figure()
-    raw = plt.plot(x, VTC_raw)
+    raw = ax_vtc.plot(x, VTC_raw)
     plt.setp(raw, linewidth=0.5, color="black")
-    lines = plt.plot(x, IN_mask, x, OUT_mask)
+    lines = ax_vtc.plot(x, IN_mask, x, OUT_mask)
     plt.setp(lines[0], linewidth=2, color="blue")
     plt.setp(lines[1], linewidth=2, color="orange")
+    ax_vtc.legend(("VTC", "IN zone", "OUT zone"), loc="upper right")
+    ax_vtc.set_title(f"VTC plot (sub-{subject_name}, run-0{bloc})")
+    ax_vtc.set_ylabel("Standardized variance")
 
-    plt.legend(("VTC", "IN zone", "OUT zone"), loc="upper right")
-    plt.title(f"VTC plot (sub-{subject}, run-0{bloc})")
+    # Oddball plot
+    commission_error = performance_dict["commission_error"]
+    correct_omission = performance_dict["correct_omission"]
+    omission_error = performance_dict["omission_error"]
+    comerr = ax_odd.plot(
+        commission_error, np.zeros(len(commission_error)), "*", color="red"
+    )
+    corrom = ax_odd.plot(
+        correct_omission, np.zeros(len(correct_omission)) + 1, "*", color="green"
+    )
+    # omierr = ax_odd.plot(omission_error, np.zeros(len(omission_error))+2, '*', color='purple')
+    ax_odd.set_ylim(-1, 8)
+    ax_odd.tick_params(left=False, labelleft=False)
+    ax_odd.legend(("Commission error", "Correct omission", "Omission error"))
+    ax_odd.set_xlabel("Trial")
 
-    # TODO : add lapses and correct target detection
+    return fig, subgrid_axes
 
+
+def subject_plot_VTC(
+    subject, cpt_blocs=[2, 3, 4, 5, 6, 7], inout_bounds=[25, 75], filt_cutoff=0.05
+):
+    fig = plt.figure(figsize=(20, 15))
+    gs_outer = fig.add_gridspec(3, 2)
+    for idx, grid in enumerate(gs_outer):
+        subgrid_axes = fig.add_subplot(grid)
+        (
+            IN_idx,
+            OUT_idx,
+            VTC_raw,
+            VTC_filtered,
+            IN_mask,
+            OUT_mask,
+            performance_dict,
+            df_response,
+            RT_to_VTC,
+        ) = get_VTC_from_file(
+            subject,
+            cpt_blocs[idx],
+            files_list,
+            inout_bounds=inout_bounds,
+            filt_cutoff=filt_cutoff,
+        )
+        plot_VTC(
+            VTC_filtered,
+            VTC_raw,
+            IN_mask,
+            OUT_mask,
+            performance_dict,
+            subject_name=subject,
+            bloc=cpt_blocs[idx],
+            subgrid_axes=subgrid_axes,
+            fig=fig,
+        )
     return fig
 
 
-def compute_VTC(RT_array, subj_mean, subj_std):
-    """Computes the raw (unfiltered) VTC.
+def performance_plots(
+    files_list, SUBJ_LIST, BLOCS_LIST, inout_bounds, filt_cutoff, stats="ks2samp"
+):
+    # Set stats
+    if stats == "ks2samp":
+        custom_long_name = "Kolmogorov-Smirnov test for goodness of fit"
+        custom_short_name = "Kolmogorov-Smirnov"
+        custom_func = ks_2samp
+        pairs = [(("IN", "OUT"))]
+        custom_test = StatTest(custom_func, custom_long_name, custom_short_name)
 
-    Parameters
-    ----------
-    RT_array : np.array
-        Array of reaction times after interpolation.
-    subj_mean : float
-        Mean reaction time of a subject across all runs.
-    subj_std : float
-        Standard deviation of reaction times of a subject across all runs.
+    plot_df = get_behavior_dict(files_list, SUBJ_LIST, BLOCS_LIST=BLOCS_LIST)
 
-    Returns
-    -------
-    np.array
-        Array containing VTC values, should be the same length as the RT array.
+    # Set variables to plot
+    variables = [
+        "n_rare",
+        "lapse_rate",
+        "omission_error_rate",
+        "commission_error",
+        "omission_correct",
+        "commission_correct",
+    ]
+    variables_names = [
+        "Number of rares",
+        "Lapse/Commission error (rate)",
+        "Omission error (rate)",
+        "Commission error",
+        "Correct omission",
+        "Correct commission",
+    ]
 
-    """
-    return abs((RT_array - subj_mean) / subj_std)
+    fig, axes = plt.subplots(3, 2, figsize=(10, 12))
+    figtitle = f" <{inout_bounds[0]} = IN; >{inout_bounds[1]} = (OUT); f_cutoff = {filt_cutoff}"
+    fig.suptitle(figtitle, fontsize=20)
+    for idx, ax in enumerate(axes.flat):
+        variable = variables[idx]
+        ax = sns.barplot(x="cond", y=variable, data=plot_df, ax=ax)
+        ax.set_title(f"{variables_names[idx]}")
+        ax.xaxis.set_label_coords(0.5, -0.035)
+        annot = Annotator(ax, pairs, data=plot_df, x="cond", y=variable)
+        annot.configure(
+            test=custom_test, comparisons_correction="fdr_bh", text_format="star"
+        ).apply_test().annotate()
+
+    fig.savefig(f"../reports/figures/behav_barplots_{inout_bounds}_{filt_cutoff}.png")
+    return fig
 
 
-def old_plot_VTC(VTC, figpath=None, save=False, INOUT=True):
-    x = np.arange(0, len(VTC))
-    if INOUT:
-        OUT_mask = np.ma.masked_where(VTC >= np.median(VTC), VTC)
-        IN_mask = np.ma.masked_where(VTC <= np.median(VTC), VTC)
-        lines = plt.plot(x, OUT_mask, x, IN_mask)
-        fig = plt.plot()
-        plt.setp(lines[0], linewidth=2)
-        plt.setp(lines[1], linewidth=2)
-        plt.legend(("IN zone", "OUT zone"), loc="upper right")
-        plt.title("IN vs OUT zone")
-    else:
-        line = plt.plot(x, VTC)
-        fig = plt.plot()
-        plt.setp(line, linewidth=2)
-        plt.title("VTC")
-    if save == True:
-        plt.savefig(figpath)
-    plt.show()
+def full_behavior_plot(
+    files_list,
+    SUBJ_LIST,
+    inout_bounds,
+    filt_cutoff,
+    BLOCS_LIST=[2, 3, 4, 5, 6, 7],
+    stats="ks2samp",
+    subject="32",
+    bloc=2,
+):
+    if stats == "ks2samp":
+        # Set stats
+        custom_long_name = "Kolmogorov-Smirnov test for goodness of fit"
+        custom_short_name = "Kolmogorov-Smirnov"
+        custom_func = ks_2samp
+        pairs = [(("IN", "OUT"))]
+        custom_test = StatTest(custom_func, custom_long_name, custom_short_name)
+
+    # Get Subject VTC
+    (
+        IN_idx,
+        OUT_idx,
+        VTC_raw,
+        VTC_filtered,
+        IN_mask,
+        OUT_mask,
+        performance_dict,
+        df_response,
+        RT_to_VTC,
+    ) = get_VTC_from_file(
+        subject, bloc, files_list, inout_bounds=inout_bounds, filt_cutoff=filt_cutoff
+    )
+    plot_df = get_behavior_dict(files_list, SUBJ_LIST, BLOCS_LIST=BLOCS_LIST)
+
+    # Start plotting
+    fig = plt.figure(figsize=(20, 10))
+    gs_outer = fig.add_gridspec(3, 4)
+    subgrid_axes_vtc = fig.add_subplot(gs_outer[:2, :3])
+    plot_VTC(
+        VTC_filtered,
+        VTC_raw,
+        IN_mask,
+        OUT_mask,
+        performance_dict,
+        subject_name=subject,
+        bloc=bloc,
+        subgrid_axes=subgrid_axes_vtc,
+        fig=fig,
+    )
+
+    subgrid_ax_lapse_rate = fig.add_subplot(gs_outer[2, 0])
+    subgrid_ax_omierr_rate = fig.add_subplot(gs_outer[2, 1])
+    subgrid_ax_comerr = fig.add_subplot(gs_outer[2, 2])
+
+    subgrid_ax_lapse_rate = sns.barplot(
+        x="cond", y="lapse_rate", data=plot_df, ax=subgrid_ax_lapse_rate
+    )
+    annot = Annotator(
+        subgrid_ax_lapse_rate, pairs, data=plot_df, x="cond", y="lapse_rate"
+    )
+    annot.configure(
+        test=custom_test, comparisons_correction="fdr_bh", text_format="star"
+    ).apply_test().annotate()
+
+    subgrid_ax_omierr_rate = sns.barplot(
+        x="cond", y="omission_error_rate", data=plot_df, ax=subgrid_ax_omierr_rate
+    )
+    annot = Annotator(
+        subgrid_ax_omierr_rate, pairs, data=plot_df, x="cond", y="omission_error_rate"
+    )
+    annot.configure(
+        test=custom_test, comparisons_correction="fdr_bh", text_format="star"
+    ).apply_test().annotate()
+
+    subgrid_ax_comerr = sns.barplot(
+        x="cond", y="commission_error", data=plot_df, ax=subgrid_ax_comerr
+    )
+    annot = Annotator(
+        subgrid_ax_comerr, pairs, data=plot_df, x="cond", y="commission_error"
+    )
+    annot.configure(
+        test=custom_test, comparisons_correction="fdr_bh", text_format="star"
+    ).apply_test().annotate()
+
+    figtitle = (
+        f" <{inout_bounds[0]} = IN; >{inout_bounds[1]} = OUT; f_cutoff = {filt_cutoff}"
+    )
+    fig.suptitle(figtitle, fontsize=16, y=0.94, x=0.42)
+    fig.savefig(f"../reports/figures/behav_fullplot_{inout_bounds}_{filt_cutoff}.jpg")
+    return fig
 
 
 ### SDT
