@@ -23,7 +23,7 @@ if __name__ == "__main__":
             BIDS_PATH, subj, bloc, stage="preproc_raw", cond=None
         )
         epoched_path, epoched_filename = get_SAflow_bids(
-            BIDS_PATH, subj, bloc, stage="-epo", cond=None
+            BIDS_PATH, subj, bloc, stage="-epo4001200", cond=None
         )
         ARlog_path, ARlog_filename = get_SAflow_bids(
             BIDS_PATH, subj, bloc, stage="ARlog4001200", cond=None
