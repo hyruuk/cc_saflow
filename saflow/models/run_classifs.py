@@ -106,7 +106,7 @@ parser.add_argument(
 parser.add_argument(
     "-l",
     "--level",
-    default="subject",
+    default="group",
     type=str,
     help="Choose the classification level ('group' or 'subject')",
 )
