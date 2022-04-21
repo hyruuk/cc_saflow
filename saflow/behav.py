@@ -23,7 +23,13 @@ def find_logfile(subj, bloc, log_files):
     return file
 
 
-def get_behavior_dict(files_list, SUBJ_LIST, BLOCS_LIST=[2, 3, 4, 5, 6, 7]):
+def get_behavior_dict(
+    files_list,
+    SUBJ_LIST,
+    BLOCS_LIST=[2, 3, 4, 5, 6, 7],
+    inout_bounds=[50, 50],
+    filt_cutoff=0.05,
+):
     # Get behaviour
     lapse_rates = []
     omission_error_rates = []
