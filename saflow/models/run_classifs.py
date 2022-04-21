@@ -351,7 +351,7 @@ def final_classif(pipeline, cv, X, y, groups, model, norm, n_perms=1000):
     }
     # Get DA train and feature importance
     pipeline.fit(X, y)
-    results["DA_train"] = pipeline.roc_auc_score(X, y)
+    results["DA_train"] = pipeline.score(X, y)
     if model == "RF":
         if norm == 1:
             results["feature_importances"] = pipeline["classifier"].feature_importances_
