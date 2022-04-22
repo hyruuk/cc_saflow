@@ -553,36 +553,36 @@ if __name__ == "__main__":
                         savename = "freq_{}.pkl".format(FREQS_NAMES[FREQ])
                     else:
                         savename = "freq_{}_chan_{}.pkl".format(FREQS_NAMES[FREQ], CHAN)
-
-                    print(savename)
-                    X, y, groups = prepare_data(
-                        BIDS_PATH,
-                        SUBJ,
-                        BLOCS,
-                        conds_list,
-                        stage=stage,
-                        CHAN=CHAN,
-                        FREQ=FREQ,
-                        balance=balance,
-                        avg=avg,
-                        level=level,
-                    )
-                    print(f"X shape : {X.shape}")
-                    print(f"y shape : {y.shape}")
-                    print(f"n_per_class : {np.unique(y, return_counts=True)}")
-                    print(f"groups shape : {groups.shape}")
-                    if level == "subject":
-                        groups = None
-                    results = classif_LOGO(
-                        X,
-                        y,
-                        groups,
-                        n_cvgroups=n_cvgroups,
-                        n_perms=n_perms,
-                        model=model,
-                        avg=avg,
-                        norm=normalize,
-                    )
-                    with open(op.join(savepath, savename), "wb") as f:
-                        pickle.dump(results, f)
-                    print("Ok.")
+                    if not op.isfile(op.join(savepath, savename)):
+                        print(savename)
+                        X, y, groups = prepare_data(
+                            BIDS_PATH,
+                            SUBJ,
+                            BLOCS,
+                            conds_list,
+                            stage=stage,
+                            CHAN=CHAN,
+                            FREQ=FREQ,
+                            balance=balance,
+                            avg=avg,
+                            level=level,
+                        )
+                        print(f"X shape : {X.shape}")
+                        print(f"y shape : {y.shape}")
+                        print(f"n_per_class : {np.unique(y, return_counts=True)}")
+                        print(f"groups shape : {groups.shape}")
+                        if level == "subject":
+                            groups = None
+                        results = classif_LOGO(
+                            X,
+                            y,
+                            groups,
+                            n_cvgroups=n_cvgroups,
+                            n_perms=n_perms,
+                            model=model,
+                            avg=avg,
+                            norm=normalize,
+                        )
+                        with open(op.join(savepath, savename), "wb") as f:
+                            pickle.dump(results, f)
+                        print("Ok.")
