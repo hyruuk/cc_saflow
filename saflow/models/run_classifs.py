@@ -583,6 +583,13 @@ if __name__ == "__main__":
                             avg=avg,
                             norm=normalize,
                         )
+                        results["info"] = {
+                            "model": model,
+                            "n_per_class": np.unique(y, return_counts=True)[1],
+                            "X_shape": X.shape,
+                            "y_shape": y.shape,
+                            "groups_shape": groups.shape,
+                        }
                         with open(op.join(savepath, savename), "wb") as f:
                             pickle.dump(results, f)
                         print("Ok.")
