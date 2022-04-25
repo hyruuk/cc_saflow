@@ -106,7 +106,7 @@ parser.add_argument(
 parser.add_argument(
     "-l",
     "--level",
-    default="subject",
+    default="group",
     type=str,
     help="Choose the classification level ('group' or 'subject')",
 )
@@ -335,7 +335,14 @@ def classif_LOGO(X, y, groups, n_cvgroups, n_perms, model, avg=0, norm=1):
 
 def final_classif(pipeline, cv, X, y, groups, model, norm, n_perms=1000):
     score, permutation_scores, pvalue = permutation_test_score(
-        pipeline, X, y, groups=groups, cv=cv, n_permutations=n_perms, n_jobs=-1
+        pipeline,
+        X,
+        y,
+        groups=groups,
+        cv=cv,
+        n_permutations=n_perms,
+        n_jobs=-1,
+        scoring="roc_auc",
     )
     results = {
         "acc_score": score,
@@ -546,36 +553,43 @@ if __name__ == "__main__":
                         savename = "freq_{}.pkl".format(FREQS_NAMES[FREQ])
                     else:
                         savename = "freq_{}_chan_{}.pkl".format(FREQS_NAMES[FREQ], CHAN)
-
-                    print(savename)
-                    X, y, groups = prepare_data(
-                        BIDS_PATH,
-                        SUBJ,
-                        BLOCS,
-                        conds_list,
-                        stage=stage,
-                        CHAN=CHAN,
-                        FREQ=FREQ,
-                        balance=balance,
-                        avg=avg,
-                        level=level,
-                    )
-                    print(f"X shape : {X.shape}")
-                    print(f"y shape : {y.shape}")
-                    print(f"n_per_class : {np.unique(y, return_counts=True)}")
-                    print(f"groups shape : {groups.shape}")
-                    if level == "subject":
-                        groups = None
-                    results = classif_LOGO(
-                        X,
-                        y,
-                        groups,
-                        n_cvgroups=n_cvgroups,
-                        n_perms=n_perms,
-                        model=model,
-                        avg=avg,
-                        norm=normalize,
-                    )
-                    with open(op.join(savepath, savename), "wb") as f:
-                        pickle.dump(results, f)
-                    print("Ok.")
+                    if not op.isfile(op.join(savepath, savename)):
+                        print(savename)
+                        X, y, groups = prepare_data(
+                            BIDS_PATH,
+                            SUBJ,
+                            BLOCS,
+                            conds_list,
+                            stage=stage,
+                            CHAN=CHAN,
+                            FREQ=FREQ,
+                            balance=balance,
+                            avg=avg,
+                            level=level,
+                        )
+                        print(f"X shape : {X.shape}")
+                        print(f"y shape : {y.shape}")
+                        print(f"n_per_class : {np.unique(y, return_counts=True)}")
+                        print(f"groups shape : {groups.shape}")
+                        if level == "subject":
+                            groups = None
+                        results = classif_LOGO(
+                            X,
+                            y,
+                            groups,
+                            n_cvgroups=n_cvgroups,
+                            n_perms=n_perms,
+                            model=model,
+                            avg=avg,
+                            norm=normalize,
+                        )
+                        results["info"] = {
+                            "model": model,
+                            "n_per_class": np.unique(y, return_counts=True)[1],
+                            "X_shape": X.shape,
+                            "y_shape": y.shape,
+                            "groups_shape": groups.shape,
+                        }
+                        with open(op.join(savepath, savename), "wb") as f:
+                            pickle.dump(results, f)
+                        print("Ok.")
