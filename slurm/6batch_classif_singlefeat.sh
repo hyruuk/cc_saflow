@@ -1,7 +1,7 @@
 
-for MODEL in LDA LR; do
+for FREQ in theta alpha lobeta hibeta gamma1 gamma2 gamma3; do
 for RUN in 0 2 3 4 5 6 7; do
-sbatch ./slurm/6_classif_singlefeat.sh VTC 50 50 group 04 $RUN $MODEL
+sbatch ./slurm/6_classif_singlefeat.sh VTC 50 50 group 04 $RUN LR $FREQ
 done
 done
 
