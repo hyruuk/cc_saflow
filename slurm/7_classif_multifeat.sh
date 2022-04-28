@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --account=def-kjerbi
-#SBATCH --time=48:00:00
+#SBATCH --time=168:00:00
 #SBATCH --job-name=safMultiFeatures
 #SBATCH --mem=32G
 #SBATCH --nodes=1
