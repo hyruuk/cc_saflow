@@ -8,6 +8,9 @@ import argparse
 from saflow import *
 import mne
 import numpy as np
+from saflow.behav import get_VTC_from_file, plot_VTC, find_logfile
+import os
+from saflow.neuro import annotate_events, get_present_events
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -38,6 +41,28 @@ parser.add_argument(
 args = parser.parse_args()
 
 
+def annotate_precursor_events(BIDS_PATH, subj, bloc):
+
+    _, epopath = get_SAflow_bids(BIDS_PATH, subj, bloc, stage="-epo4001200", cond=None)
+    epochs = mne.read_epochs(epopath)
+    # find events
+    events = epochs.events
+    logfile = LOGS_DIR + find_logfile(subj, bloc, os.listdir(LOGS_DIR))
+    events = annotate_events(logfile, events, inout_idx=[IN_idx, OUT_idx])
+    event_id = get_present_events(events)
+
+    events_precursor = []
+    for idx, ev in enumerate(events):
+        if ev[2] == 310:
+            if events[idx - 1][2] == 2111 or events[idx - 1][2] == 2110:
+                events_precursor.append(events[idx - 1])
+    events_precursor = np.array(events_precursor)
+
+    epochs.events = events_precursor
+    epochs.event_id = event_id
+    return epochs
+
+
 def new_split_trials(subj, run, by="VTC", inout_bounds=None):
     condA = []
     condB = []
@@ -56,6 +81,12 @@ def new_split_trials(subj, run, by="VTC", inout_bounds=None):
 
         epochs = mne.read_epochs(PSDpath)
         if by == "VTC":
+            condA_epochs = epochs["FreqIN"]
+            condB_epochs = epochs["FreqOUT"]
+        elif by == "VTCprec":
+            epochs_prec = annotate_precursor_events(BIDS_PATH, subj, bloc)
+            epochs.events = epochs_prec.events
+            epochs.event_id = epochs_prec.event_id
             condA_epochs = epochs["FreqIN"]
             condB_epochs = epochs["FreqOUT"]
         elif by == "odd":
@@ -79,6 +110,9 @@ if __name__ == "__main__":
                 INepochs, OUTepochs = new_split_trials(
                     subj=subj, run=run, by="VTC", inout_bounds=CONDS_LIST
                 )
+                precINepochs, precOUTepochs = new_split_trials(
+                    subj=subj, run=run, by="VTCprec", inout_bounds=CONDS_LIST
+                )
                 VTCepochs_path, VTCepochs_filename = get_SAflow_bids(
                     BIDS_PATH,
                     subj=subj,
@@ -100,11 +134,29 @@ if __name__ == "__main__":
                     stage=stage,
                     cond="OUT{}".format(CONDS_LIST[1]),
                 )
+                _, precINepochs_filename = get_SAflow_bids(
+                    BIDS_PATH,
+                    subj=subj,
+                    run=run,
+                    stage=stage,
+                    cond="precIN{}".format(CONDS_LIST[0]),
+                )
+                _, precOUTepochs_filename = get_SAflow_bids(
+                    BIDS_PATH,
+                    subj=subj,
+                    run=run,
+                    stage=stage,
+                    cond="precOUT{}".format(CONDS_LIST[1]),
+                )
 
                 with open(INepochs_filename, "wb") as fp:
                     pickle.dump(INepochs, fp)
                 with open(OUTepochs_filename, "wb") as fp:
                     pickle.dump(OUTepochs, fp)
+                with open(precINepochs_filename, "wb") as fp:
+                    pickle.dump(precINepochs, fp)
+                with open(precOUTepochs_filename, "wb") as fp:
+                    pickle.dump(precOUTepochs, fp)
                 with open(VTCepochs_filename, "wb") as fp:
                     pickle.dump([INepochs, OUTepochs], fp)
 
