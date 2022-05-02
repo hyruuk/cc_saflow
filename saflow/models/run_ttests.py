@@ -156,7 +156,7 @@ if __name__ == "__main__":
                     )
                     savepath = op.join(
                         RESULTS_PATH,
-                        f"VTC_ttest_{level}-level_{stage}_{n_perms}perm_{split[0]}{split[1]}_{correction}_avg{avg}_norm{normalize}_run-{run_name[run_idx]}/",
+                        f"precVTC_ttest_{level}-level_{stage}_{n_perms}perm_{split[0]}{split[1]}_{correction}_avg{avg}_norm{normalize}_run-{run_name[run_idx]}/",
                     )
 
                 elif by == "odd":
