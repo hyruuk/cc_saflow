@@ -99,6 +99,7 @@ def new_split_trials(subj, run, by="VTC", inout_bounds=None):
             epochs_prec = annotate_precursor_events(BIDS_PATH, subj, run)
             epochs.events = epochs_prec.events
             epochs.event_id = epochs_prec.event_id
+            print(epochs.events)
             condA_epochs = epochs["FreqIN"]
             condB_epochs = epochs["FreqOUT"]
         elif by == "odd":
