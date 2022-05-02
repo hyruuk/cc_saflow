@@ -68,7 +68,7 @@ def new_split_trials(subj, run, by="VTC", inout_bounds=None):
     condB = []
     if by == "odd":
         cond = "5050"
-    elif by == "VTC":
+    elif by == "VTC" or by == "VTCprec":
         cond = f"{inout_bounds[0]}{inout_bounds[1]}"
     for idx_freq, freq_bounds in enumerate(FREQS):
         _, PSDpath = get_SAflow_bids(
