@@ -47,7 +47,19 @@ def annotate_precursor_events(BIDS_PATH, subj, bloc):
     epochs = mne.read_epochs(epopath)
     # find events
     events = epochs.events
-    logfile = LOGS_DIR + find_logfile(subj, bloc, os.listdir(LOGS_DIR))
+    files_list = os.listdir(LOGS_DIR)
+    logfile = LOGS_DIR + find_logfile(subj, bloc, files_list)
+    (
+        IN_idx,
+        OUT_idx,
+        VTC_raw,
+        VTC_filtered,
+        IN_mask,
+        OUT_mask,
+        performance_dict,
+        df_response,
+        RT_to_VTC,
+    ) = get_VTC_from_file(subj, bloc, files_list, inout_bounds=[50, 50])
     events = annotate_events(logfile, events, inout_idx=[IN_idx, OUT_idx])
     event_id = get_present_events(events)
 
