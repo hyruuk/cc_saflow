@@ -151,8 +151,8 @@ if __name__ == "__main__":
             if level == "group":
                 if by == "VTC":
                     conds_list = (
-                        ZONE_CONDS[0] + str(split[0]),
-                        ZONE_CONDS[1] + str(split[1]),
+                        "prec" + ZONE_CONDS[0] + str(split[0]),
+                        "prec" + ZONE_CONDS[1] + str(split[1]),
                     )
                     savepath = op.join(
                         RESULTS_PATH,
