@@ -99,7 +99,6 @@ def new_split_trials(subj, run, by="VTC", inout_bounds=None):
             epochs_prec = annotate_precursor_events(BIDS_PATH, subj, run)
             epochs.events = epochs_prec.events
             epochs.event_id = epochs_prec.event_id
-            print(epochs.events)
             condA_epochs = epochs["FreqIN"]
             condB_epochs = epochs["FreqOUT"]
         elif by == "odd":
@@ -107,8 +106,8 @@ def new_split_trials(subj, run, by="VTC", inout_bounds=None):
             condB_epochs = epochs["RareHit"]
         condA.append(condA_epochs.get_data())
         condB.append(condB_epochs.get_data())
-    print(condA.shape)
-    print(condB.shape)
+    print(len(condA))
+    print(len(condB))
     condA = np.mean(np.array(condA), axis=3).transpose(1, 2, 0)
     condB = np.mean(np.array(condB), axis=3).transpose(1, 2, 0)
     return condA, condB
