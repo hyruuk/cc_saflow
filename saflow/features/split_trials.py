@@ -106,10 +106,13 @@ def new_split_trials(subj, run, by="VTC", inout_bounds=None):
             condB_epochs = epochs["RareHit"]
         condA.append(condA_epochs.get_data())
         condB.append(condB_epochs.get_data())
-    print(np.array(condA).shape)
-    print(np.array(condB).shape)
-    condA = np.mean(np.array(condA), axis=3).transpose(1, 2, 0)
-    condB = np.mean(np.array(condB), axis=3).transpose(1, 2, 0)
+    try:
+        print(np.array(condA).shape)
+        print(np.array(condB).shape)
+        condA = np.mean(np.array(condA), axis=3).transpose(1, 2, 0)
+        condB = np.mean(np.array(condB), axis=3).transpose(1, 2, 0)
+    except:
+        breakpoint()
     return condA, condB
 
 
