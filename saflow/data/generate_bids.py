@@ -71,7 +71,9 @@ for rec_date in recording_folders:  # folders are named by date in format YYYYMM
                 raw_fname = op.join(ACQ_PATH, rec_date, file)
                 raw = mne.io.read_raw_ctf(raw_fname, preload=False)
                 if task == "gradCPT":
-                    events = mne.find_events(raw, min_duration=2 / raw.info["sfreq"])
+                    events = mne.find_events(
+                        raw, min_duration=2 / raw.info["sfreq"]
+                    )  # refaire le trick avec 1 VS 2 sample
                     write_raw_bids(
                         raw,
                         bidspath,
