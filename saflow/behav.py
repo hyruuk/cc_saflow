@@ -385,7 +385,7 @@ def plot_VTC(
     # omierr = ax_odd.plot(omission_error, np.zeros(len(omission_error))+2, '*', color='purple')
     ax_odd.set_ylim(-1, 8)
     ax_odd.tick_params(left=False, labelleft=False)
-    ax_odd.legend(("Commission error", "Correct omission", "Omission error"))
+    ax_odd.legend(("Lapse", "Correct omission", "Omission error"))
     ax_odd.set_xlabel("Trial")
 
     return fig, subgrid_axes
