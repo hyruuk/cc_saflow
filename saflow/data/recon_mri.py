@@ -6,6 +6,7 @@
 import argparse
 import os
 import os.path as op
+import mne
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -45,6 +46,7 @@ def main():
 
                         os.system(f"recon-all -i {first_frame} -subjid {sub}")
                         os.system(f"recon-all -all -subjid {sub}")
+                        mne.bem.make_watershed_bem(sub)
                         break
 
 
