@@ -279,12 +279,13 @@ def get_VTC_from_file(
     # Find the logfiles belonging to a subject
     subject_logfiles = []
     for logfile in sorted(files_list):
-        if logfile.split('_')[2] == subject and logfile.split('_')[3] != 0:
+        if logfile.split('_')[2] == subject and logfile.split('_')[3] != '0':
             subject_logfiles.append(op.join(LOGS_DIR, logfile))
     
     # Load and clean RT arrays
     RT_arrays = []
     RT_to_VTC = []
+
     for idx_file, logfile in enumerate(subject_logfiles):
         data = loadmat(logfile)
         df_response = pd.DataFrame(data["response"])
@@ -295,7 +296,6 @@ def get_VTC_from_file(
         RT_raw = np.array([x if x != 0 else np.nan for x in RT_raw])  # zeros to nans
         # RT_interpolated = interpolate_RT(RT_raw)
         RT_arrays.append(RT_raw)
-        print(cpt_blocs[idx_file], run)
         if int(cpt_blocs[idx_file]) == int(run):
             RT_to_VTC = RT_raw
             performance_dict = perf_dict.copy()
