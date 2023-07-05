@@ -10,19 +10,6 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-
-def find_logfile(subj, bloc, log_files):
-    ### Find the right logfile for a specific subject and bloc in a list of log_files
-    # (typically the list of files in the log folder, obtained by "os.listdir(LOGS_DIR)")
-    """
-    Be careful, because the logfile number 1 corresponds to the recording number 2 etc...
-    """
-    for file in log_files:
-        if file[7:9] == subj and int(file[10]) == int(bloc) - 1:
-            break
-    return file
-
-
 def get_behavior_dict(
     files_list,
     SUBJ_LIST,
@@ -242,6 +229,7 @@ def fwhm2sigma(fwhm):
     return fwhm / np.sqrt(8 * np.log(2))
 
 
+
 def get_VTC_from_file(
     subject,
     run,
@@ -251,34 +239,49 @@ def get_VTC_from_file(
     filt_cutoff=0.05,
     filt_type="gaussian",
 ):
-    """Short summary.
+    """
+    This function loads the logfiles belonging to a subject and extracts the RT arrays for a specific run.
+    It then computes the VTC (Variability of Reaction Times) for the run and applies a Gaussian or Butterworth filter to it.
+    The function returns the indices of the IN and OUT VTC values, the raw and filtered VTC arrays, the IN and OUT masks, 
+    the performance dictionary, the response dataframe and the RT array for the run.
 
     Parameters
     ----------
-    subject : type
-        Description of parameter `subject`.
-    run : type
-        Description of parameter `run`.
-    files_list : type
-        Description of parameter `files_list`.
-    cpt_blocs : type
-        Description of parameter `cpt_blocs`.
-    inout_bounds : type
-        Description of parameter `inout_bounds`.
+    subject : str
+        The name of the subject.
+    run : int
+        The number of the run.
+    files_list : list
+        A list of logfiles.
+    cpt_blocs : list, optional
+        A list of the blocs numbers, by default [2, 3, 4, 5, 6, 7].
+    inout_bounds : list, optional
+        A list of two values representing the lower and upper bounds of the IN VTC values, by default [25, 75].
+    filt_cutoff : float, optional
+        The cutoff frequency for the Butterworth filter, by default 0.05.
+    filt_type : str, optional
+        The type of filter to apply, either 'gaussian' or 'butterworth', by default 'gaussian'.
 
     Returns
     -------
-    type
-        Description of returned object.
-
+    tuple
+        A tuple containing the following elements:
+        - IN_idx: the indices of the IN VTC values
+        - OUT_idx: the indices of the OUT VTC values
+        - VTC_raw: the raw VTC array
+        - VTC_filtered: the filtered VTC array
+        - IN_mask: the IN mask
+        - OUT_mask: the OUT mask
+        - performance_dict: the performance dictionary
+        - df_response_out: the response dataframe
+        - RT_to_VTC: the RT array for the run
     """
     # Find the logfiles belonging to a subject
     subject_logfiles = []
-    for bloc in cpt_blocs:
-        subject_logfiles.append(
-            op.join(LOGS_DIR, find_logfile(subject, bloc, files_list))
-        )
-
+    for logfile in sorted(files_list):
+        if logfile.split('_')[2] == subject and logfile.split('_')[3] != 0:
+            subject_logfiles.append(op.join(LOGS_DIR, logfile))
+    
     # Load and clean RT arrays
     RT_arrays = []
     RT_to_VTC = []
@@ -292,6 +295,7 @@ def get_VTC_from_file(
         RT_raw = np.array([x if x != 0 else np.nan for x in RT_raw])  # zeros to nans
         # RT_interpolated = interpolate_RT(RT_raw)
         RT_arrays.append(RT_raw)
+        print(cpt_blocs[idx_file], run)
         if int(cpt_blocs[idx_file]) == int(run):
             RT_to_VTC = RT_raw
             performance_dict = perf_dict.copy()
