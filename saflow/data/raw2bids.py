@@ -7,7 +7,7 @@ import os
 import glob
 import json
 import argparse
-
+from mne import Annotations
 import mne
 from mne.datasets import sample
 from typing import Tuple, List
@@ -273,7 +273,7 @@ if __name__ == "__main__":
     ds_files = glob.glob(op.join(meg_folder, "*", "*.ds"))
     for ds_file in sorted(ds_files):
         fname = ds_file.split("/")[-1]
-        if fname.split('_')[0][2:] =="11":#in SUBJ_LIST:
+        if fname.split('_')[0][2:] in SUBJ_LIST:
             # Handle noise files
             if "NOISE1Trial5min" in fname:
                 write_noise_file(ds_file, bids_root)
@@ -283,6 +283,7 @@ if __name__ == "__main__":
 
                 if task == "gradCPT":
                     events_mne, event_id = get_events(raw)
+                    raw.set_annotations(Annotations([], [], []))
                     write_raw_bids(
                         raw,
                         bidspath,
