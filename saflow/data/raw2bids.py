@@ -1,6 +1,6 @@
 import mne
 from mne_bids import write_raw_bids, BIDSPath
-from heudiconv.cli.run import main as heudiconv_main
+#from heudiconv.cli.run import main as heudiconv_main
 import scipy.io as sio
 import os.path as op
 import os
@@ -154,7 +154,7 @@ def add_trial_idx(events_bids: pd.DataFrame) -> pd.DataFrame:
             trial_idx_list.append(current_trial_idx)
             current_trial_idx += 1
         else:
-            trial_idx_list.append(np.nan)
+            trial_idx_list.append(-1)
     events_bids['trial_idx'] = np.array(trial_idx_list).astype(int)
     return events_bids
 
@@ -208,9 +208,9 @@ def add_behav_info(events_bids: pd.DataFrame, VTC_raw: List[float], RT_to_VTC: L
             RT_list.append(RT_to_VTC[trial_idx])
             task_list.append(find_trial_in_dict(performance_dict, trial_idx))
         else:
-            VTC_list.append(np.nan)
-            RT_list.append(np.nan)
-            task_list.append(np.nan)
+            VTC_list.append('n/a')
+            RT_list.append(0)
+            task_list.append('n/a')
     events_bids['VTC'] = VTC_list
     events_bids['RT'] = RT_list
     events_bids['task'] = task_list
@@ -257,7 +257,7 @@ def add_in_out_zone(events_bids: pd.DataFrame, bidspath: BIDSPath, files_list: L
             if event.trial_type in ['Freq', 'Rare']:
                 inout_list.append(find_trial_in_dict(inout_dict, event.trial_idx))
             else:
-                inout_list.append(np.nan)
+                inout_list.append('n/a')
         events_bids[f'INOUT_{bounds[0]}_{bounds[1]}'] = inout_list
     return events_bids
 
