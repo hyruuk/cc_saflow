@@ -127,10 +127,10 @@ def get_events(raw: mne.io.Raw):
         A tuple containing the events found and their corresponding event IDs.
     """
     event_id = {"Freq": 21, "Rare": 31, "Resp": 99, "BlocStart": 10}
-    try:
-        events_mne = mne.find_events(raw, min_duration=1 / raw.info["sfreq"], verbose=False)
-    except ValueError:
-        events_mne = mne.find_events(raw, min_duration=2 / raw.info["sfreq"], verbose=False)
+    #try:
+    events_mne = mne.find_events(raw, verbose=False)
+    #except ValueError:
+    #    events_mne = mne.find_events(raw, min_duration=2 / raw.info["sfreq"], verbose=False)
     return events_mne, event_id
 
 def add_trial_idx(events_bids: pd.DataFrame) -> pd.DataFrame:
