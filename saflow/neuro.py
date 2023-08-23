@@ -12,7 +12,7 @@ from mne.io import read_raw_fif, read_raw_ctf
 
 # from hytools.meg_utils import get_ch_pos
 from saflow.utils import get_SAflow_bids
-from saflow.behav import find_logfile, get_VTC_from_file
+from saflow.behav import get_VTC_from_file
 import random
 from matplotlib.pyplot import close
 from mne.time_frequency import psd_multitaper, psd_welch
