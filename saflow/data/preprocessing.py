@@ -1,7 +1,7 @@
 import os
 import os.path as op
 from saflow.utils import get_SAflow_bids
-from saflow.neuro import saflow_preproc, find_rawfile
+from saflow.neuro import saflow_preproc
 from saflow import BIDS_PATH, SUBJ_LIST, BLOCS_LIST
 import argparse
 
