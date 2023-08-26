@@ -4,7 +4,7 @@ import os.path as op
 
 from saflow import BIDS_PATH, SUBJ_LIST, BLOCS_LIST
 import argparse
-from mne_bids import BIDSPath
+from mne_bids import BIDSPath, write_raw_bids
 from mne.preprocessing import ICA, create_ecg_epochs, create_eog_epochs
 from autoreject import AutoReject
 import mne
@@ -21,15 +21,24 @@ parser.add_argument(
     help="Subject to process",
 )
 parser.add_argument(
-	"-i",
-	"--ica",
-	default = True,
-	type = bool,
-	help="Preprocessing with or without ica"
+    "-i",
+    "--ica",
+    default=True,
+    type=bool,
+    help="Preprocessing with or without ica"
 )
 args = parser.parse_args()
 
-def saflow_preproc(filepath, savepath, reportpath, ica=True):
+def saflow_preproc(filepath, ica=True):
+    # Build output names
+    report_path = str(input_path.copy().update(root=str(input_path.root) + '/derivatives/preprocessed/',
+                                               description='report', 
+                                               processing='clean', 
+                                               suffix='meg')).replace('.fif', '.html')
+    output_path = input_path.copy().update(root=str(input_path.root) + '/derivatives/preprocessed/',
+                                               processing='clean', 
+                                               suffix='meg')
+    # Load raw data
     report = mne.Report(verbose=True)
     raw_data = read_raw_fif(filepath, preload=True)
     raw_data = raw_data.apply_gradient_compensation(
@@ -58,8 +67,8 @@ def saflow_preproc(filepath, savepath, reportpath, ica=True):
     report.add_figure(fig, title="PSD filtered")
     close(fig)
     if ica == False:
-        report.save(reportpath, open_browser=False, overwrite=True)
-        raw_data.save(savepath, overwrite=True)
+        write_raw_bids(raw_data, output_path, allow_preload=True, format='FIF', overwrite=True)
+        report.save(report_path, open_browser=False, overwrite=True)
         del report
         del raw_data
         del fig
@@ -122,35 +131,30 @@ def saflow_preproc(filepath, savepath, reportpath, ica=True):
         report.add_figure(fig, title="After filtering + ICA")
         close(fig)
         ## SAVE PREPROCESSED FILE
-        report.save(reportpath, open_browser=False, overwrite=True)
-        raw_data.save(savepath, overwrite=True)
+        write_raw_bids(raw_data, output_path, allow_preload=True, format='FIF', overwrite=True)
+        report.save(report_path, open_browser=False, overwrite=True)
         del ica
         del report
         del raw_data
         del fig
 
 if __name__ == "__main__":
-	#for subj in SUBJ_LIST:
-	subj = args.subject
-	ica = args.ica
-	for bloc in BLOCS_LIST:
-		#file_path = get_SAflow_bids(BIDS_PATH, subj=subj, run=bloc, stage='raw')[1]
-		#save_path = get_SAflow_bids(BIDS_PATH, subj=subj, run=bloc, stage='preproc_raw')[1]
-		#report_path = get_SAflow_bids(BIDS_PATH, subj=subj, run=bloc, stage='preproc_report')[1]
+    #for subj in SUBJ_LIST:
+    subj = args.subject
+    ica = args.ica
+    for bloc in BLOCS_LIST:
+        #file_path = get_SAflow_bids(BIDS_PATH, subj=subj, run=bloc, stage='raw')[1]
+        #save_path = get_SAflow_bids(BIDS_PATH, subj=subj, run=bloc, stage='preproc_raw')[1]
+        #report_path = get_SAflow_bids(BIDS_PATH, subj=subj, run=bloc, stage='preproc_report')[1]
 
-		input_path = BIDSPath(subject=subj,
-					task="gradCPT",
-					run='0'+bloc,
-					datatype="meg",
-					extension=".fif",
-					root=BIDS_PATH)
-		output_path = BIDSPath(subject=subj,
-			task="gradCPT",
-			run='0'+bloc,
-			datatype="meg",
-			description='cleaned',
-			extension=".fif",
-			root=BIDS_PATH)
-		report_path = str(input_path.fpath).replace('meg.fif', 'report.html')
-		output_path = str(output_path.fpath) + '.fif'
-		saflow_preproc(input_path, output_path, report_path, ica=ica)
+        input_path = BIDSPath(subject=subj,
+                    task="gradCPT",
+                    run='0'+bloc,
+                    datatype="meg",
+                    processing=None,
+                    description=None,
+                    extension=".fif",
+                    root=BIDS_PATH)
+
+                
+        saflow_preproc(input_path, ica=ica)
