@@ -15,7 +15,7 @@ from saflow.utils import get_SAflow_bids
 from saflow.behav import get_VTC_from_file
 import random
 from matplotlib.pyplot import close
-from mne.time_frequency import psd_multitaper, psd_welch
+#from mne.time_frequency import psd_array_multitaper, psd_welch
 import pickle
 import os.path as op
 import os
@@ -464,27 +464,6 @@ def get_VTC_epochs(
 def compute_PSD(epochs, freqlist=FREQS, method="multitaper", tmin=0, tmax=0.8):
     epochs_psds = []
 
-    # Compute PSD
-    if method == "multitaper":
-        psds, freqs = psd_multitaper(
-            epochs, fmin=min(min(freqlist)), fmax=max(max(freqlist)), n_jobs=1
-        )
-    if method == "pwelch":
-        psds, freqs = psd_welch(
-            epochs,
-            average="median",
-            fmin=min(min(freqlist)),
-            fmax=max(max(freqlist)),
-            n_jobs=1,
-        )
-    if method == "pwelch" or method == "multitaper":
-        psds = 10.0 * np.log10(psds)  # Convert power to dB scale.
-        # Average in freq bands
-        for low, high in freqlist:
-            freq_idx = [i for i, x in enumerate(freqs) if x >= low and x <= high]
-            psd = np.mean(psds[:, :, freq_idx], axis=2)
-            epochs_psds.append(psd)
-        epochs_psds = np.array(epochs_psds).swapaxes(2, 0).swapaxes(1, 0)
 
         # TODO : compute via hilbert
     if method == "hilbert":
