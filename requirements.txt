@@ -15,7 +15,7 @@ matplotlib
 pandas
 autoreject
 joblib
-sklearn
+scikit-learn
 str2bool
 mlneurotools
 xgboost
