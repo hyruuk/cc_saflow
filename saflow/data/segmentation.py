@@ -45,8 +45,8 @@ def segment_files(bids_filepath, tmin=0, tmax=0.8):
         picks=picks,
         preload=True,
     )
-    epochs = epochs[:10] # just for debugging, to remove
-    ar = AutoReject()
+    #epochs = epochs[:10] # just for debugging, to remove
+    ar = AutoReject(n_jobs=24)
     epochs_clean, autoreject_log = ar.fit_transform(epochs, return_log=True)
     return epochs_clean, autoreject_log
 
