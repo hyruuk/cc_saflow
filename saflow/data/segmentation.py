@@ -76,7 +76,7 @@ if __name__ == "__main__":
         #ARlog_file = str(input_file.copy().update(processing='epo', description='ARlog')).replace('.fif', '.pkl')
 
         #if not os.path.isfile(epoch_file):
-        epochs_clean, AR_log = segment_files(input_file, tmin=0.512, tmax=1.532)
+        epochs_clean, AR_log = segment_files(input_file, tmin=0.426, tmax=1.278)
         write_raw_bids(read_raw_bids(input_file), epoch_file)
         epoch_file = str(epoch_file.fpath)
         ARlog_file = epoch_file.replace('meg.fif', 'ARlog.pkl')
