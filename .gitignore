@@ -1,5 +1,6 @@
 # Data
-./data/
+data/
+data/*
 
 # Params file
 #src/saflow_params.py
