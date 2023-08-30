@@ -112,7 +112,7 @@ for subject in SUBJ_LIST:
             return_residual=True,
             verbose=True,
         )
-        
+
         # Save stc
         stc_bidspath = BIDSPath(subject=subject,
                                 task='gradCPT',
@@ -120,11 +120,11 @@ for subject in SUBJ_LIST:
                                 datatype='meg',
                                 processing='source',
                                 root=BIDS_PATH + '/derivatives/minimum-norm-estimate/')
-        stc_fullpath = str(stc_bidspath.fpath) + '.fif'
+        stc_fullpath = str(stc_bidspath.fpath) + '.h5'
         stc.save(stc_fullpath)
 
         # Save residual as json
-        residual_fullpath = stc_fullpath.replace('source', 'residual').replace('.fif', '.json')
+        residual_fullpath = stc_fullpath.replace('source', 'residual').replace('.h5', '.json')
         with open(residual_fullpath, 'w') as f:
             json.dump(residual, f)
         
