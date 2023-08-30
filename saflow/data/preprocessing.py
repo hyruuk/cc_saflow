@@ -8,7 +8,7 @@ from mne_bids import BIDSPath, write_raw_bids
 from mne.preprocessing import ICA, create_ecg_epochs, create_eog_epochs
 from autoreject import AutoReject
 import mne
-from mne.io import read_raw_fif
+from mne.io import read_raw_ctf
 from matplotlib.pyplot import close
 import numpy as np
 
@@ -41,7 +41,7 @@ def saflow_preproc(filepath, ica=True):
                                                extension='.fif')
     # Load raw data
     report = mne.Report(verbose=True)
-    raw_data = read_raw_fif(filepath, preload=True)
+    raw_data = read_raw_ctf(filepath, preload=True)
     raw_data = raw_data.apply_gradient_compensation(
         grade=3
     )  # required for source reconstruction
@@ -148,6 +148,7 @@ if __name__ == "__main__":
                     task="gradCPT",
                     run='0'+bloc,
                     datatype="meg",
+                    extension='.ds',
                     processing=None,
                     description=None,
                     root=BIDS_PATH)
