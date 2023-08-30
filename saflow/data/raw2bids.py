@@ -23,14 +23,14 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "-i",
     "--input",
-    default="/media/hyruuk/CoCoLabYANN/coco_data/saflow/raw",#'./data/raw',
+    default= '/scratch/hyruuk/saflow2023/bids/sourcedata',#"/media/hyruuk/CoCoLabYANN/coco_data/saflow/raw",#'./data/raw',
     type=str,
-    help="Path to the raw data folder",
+    help="Path to the sourcedata folder",
 )
 parser.add_argument(
 	"-o",
 	"--output",
-	default = "/media/hyruuk/CoCoLabYANN/coco_data/saflow/bids",#"./data/bids",
+	default = '/scratch/hyruuk/saflow2023/bids', #"/media/hyruuk/CoCoLabYANN/coco_data/saflow/bids",#"./data/bids",
 	type = str,
 	help="Path to the output BIDS folder"
 )
@@ -77,9 +77,9 @@ def write_noise_file(ds_file: str, bids_root: str) -> None:
                             session=er_date,
                             task='noise', 
                             datatype="meg",
-                            extension=".fif",
                             root=bids_root)
-    write_raw_bids(er_raw, er_bids_path, format="FIF", overwrite=True)
+    print(f"Writing {er_bids_path}...")
+    write_raw_bids(er_raw, er_bids_path, format="auto", overwrite=True)
 
 
 def load_recording(fname: str, bids_root: str) -> Tuple[mne.io.Raw, BIDSPath, str]:
@@ -103,7 +103,6 @@ def load_recording(fname: str, bids_root: str) -> Tuple[mne.io.Raw, BIDSPath, st
                         task=task,
                         run=run,
                         datatype="meg",
-                        extension=".fif",
                         root=bids_root)
     raw = mne.io.read_raw_ctf(ds_file)
     raw.info['line_freq'] = 60
@@ -127,10 +126,10 @@ def get_events(raw: mne.io.Raw):
         A tuple containing the events found and their corresponding event IDs.
     """
     event_id = {"Freq": 21, "Rare": 31, "Resp": 99, "BlocStart": 10}
-    #try:
-    events_mne = mne.find_events(raw, verbose=False)
-    #except ValueError:
-    #    events_mne = mne.find_events(raw, min_duration=2 / raw.info["sfreq"], verbose=False)
+    try:
+        events_mne = mne.find_events(raw, verbose=False)
+    except ValueError:
+        events_mne = mne.find_events(raw, min_duration=2 / raw.info["sfreq"], verbose=False)
     return events_mne, event_id
 
 def add_trial_idx(events_bids: pd.DataFrame) -> pd.DataFrame:
@@ -154,7 +153,7 @@ def add_trial_idx(events_bids: pd.DataFrame) -> pd.DataFrame:
             trial_idx_list.append(current_trial_idx)
             current_trial_idx += 1
         else:
-            trial_idx_list.append(-1)
+            trial_idx_list.append(np.nan)
     events_bids['trial_idx'] = np.array(trial_idx_list).astype(int)
     return events_bids
 
@@ -271,14 +270,14 @@ if __name__ == "__main__":
     # List MEG files
     meg_folder = op.join(raw_folder, "meg")
     ds_files = glob.glob(op.join(meg_folder, "*", "*.ds"))
+
     for ds_file in sorted(ds_files):
         fname = ds_file.split("/")[-1]
-        if fname.split('_')[0][2:] in SUBJ_LIST:
-            # Handle noise files
-            if "NOISE1Trial5min" in fname:
-                write_noise_file(ds_file, bids_root)
+        if "NOISE1Trial5min" in fname:
+            write_noise_file(ds_file, bids_root)
+        elif fname.split('_')[0][2:] in SUBJ_LIST:
             # Then recording files
-            elif "SA" in fname and not "procedure" in fname:
+            if "SA" in fname and not "procedure" in fname:
                 raw, bidspath, task = load_recording(fname, bids_root)
 
                 if task == "gradCPT":
@@ -290,7 +289,6 @@ if __name__ == "__main__":
                         events=events_mne,
                         event_id=event_id,
                         overwrite=True,
-                        format="FIF"
                     )
                     # Get bids events to enrich them
                     events_bids_fname = bidspath.copy().update(suffix='events', extension='.tsv')
@@ -319,5 +317,5 @@ if __name__ == "__main__":
                 else:
                     write_raw_bids(raw, 
                                 bidspath, 
-                                format="FIF", 
+                                format="auto", 
                                 overwrite=True)
