@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "-s",
     "--subject",
-    default='04',
+    default='06',
     type=str,
     help="Subject to process",
 )
@@ -34,10 +34,11 @@ def saflow_preproc(filepath, ica=True):
     report_path = str(input_path.copy().update(root=str(input_path.root) + '/derivatives/preprocessed/',
                                                description='report', 
                                                processing='clean', 
-                                               suffix='meg')).replace('.fif', '.html')
+                                               suffix='meg')).replace('.ds', '.html')
     output_path = input_path.copy().update(root=str(input_path.root) + '/derivatives/preprocessed/',
                                                processing='clean', 
-                                               suffix='meg')
+                                               suffix='meg',
+                                               extension='.fif')
     # Load raw data
     report = mne.Report(verbose=True)
     raw_data = read_raw_fif(filepath, preload=True)
@@ -143,17 +144,12 @@ if __name__ == "__main__":
     subj = args.subject
     ica = args.ica
     for bloc in BLOCS_LIST:
-        #file_path = get_SAflow_bids(BIDS_PATH, subj=subj, run=bloc, stage='raw')[1]
-        #save_path = get_SAflow_bids(BIDS_PATH, subj=subj, run=bloc, stage='preproc_raw')[1]
-        #report_path = get_SAflow_bids(BIDS_PATH, subj=subj, run=bloc, stage='preproc_report')[1]
-
         input_path = BIDSPath(subject=subj,
                     task="gradCPT",
                     run='0'+bloc,
                     datatype="meg",
                     processing=None,
                     description=None,
-                    extension=".fif",
                     root=BIDS_PATH)
 
                 
