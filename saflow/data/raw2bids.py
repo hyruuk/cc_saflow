@@ -108,9 +108,12 @@ def load_recording(fname: str, bids_root: str) -> Tuple[mne.io.Raw, BIDSPath, st
                         root=bids_root)
     raw = mne.io.read_raw_ctf(ds_file)
     raw.info['line_freq'] = 60
-    mne.rename_channels(raw.info,{'EEG057':'ECG', 
+    mne.rename_channels(raw.info,{'EEG057':'vEOG', 
                                   'EEG058':'hEOG', 
-                                  'EEG059': 'vEOG'})
+                                  'EEG059': 'ECG'})
+    raw.set_channel_types({'ECG':'ecg',
+                            'hEOG':'eog',
+                            'vEOG':'eog',})
     return raw, bidspath, task
 
 def get_events(raw: mne.io.Raw):
