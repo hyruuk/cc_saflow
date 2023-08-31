@@ -4,7 +4,7 @@ import os.path as op
 
 from saflow import BIDS_PATH, SUBJ_LIST, BLOCS_LIST
 import argparse
-from mne_bids import BIDSPath, write_raw_bids
+from mne_bids import BIDSPath, write_raw_bids, read_raw_bids
 from mne.preprocessing import ICA, create_ecg_epochs, create_eog_epochs
 from autoreject import AutoReject
 import mne
@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "-s",
     "--subject",
-    default='06',
+    default='05',
     type=str,
     help="Subject to process",
 )
@@ -41,17 +41,17 @@ def saflow_preproc(filepath, ica=True):
                                                extension='.fif')
     # Load raw data
     report = mne.Report(verbose=True)
-    raw_data = read_raw_ctf(filepath, preload=True)
+    raw_data = read_raw_bids(filepath, extra_params={'preload':True})
     raw_data = raw_data.apply_gradient_compensation(
         grade=3
     )  # required for source reconstruction
     picks = mne.pick_types(raw_data.info, meg=True, eog=True, exclude="bads")
     fig = raw_data.plot(show=False)
     report.add_figure(fig, title="Time series")
-    close(fig)
+    #close(fig)
     fig = raw_data.plot_psd(average=False, picks=picks, show=False)
     report.add_figure(fig, title="PSD")
-    close(fig)
+    #close(fig)
 
     ## Filtering
     high_cutoff = 200
@@ -66,7 +66,7 @@ def saflow_preproc(filepath, ica=True):
     )
     fig = raw_data.plot_psd(average=False, picks=picks, fmax=120, show=False)
     report.add_figure(fig, title="PSD filtered")
-    close(fig)
+    #close(fig)
     if ica == False:
         write_raw_bids(raw_data, output_path, allow_preload=True, format='FIF', overwrite=True)
         report.save(report_path, open_browser=False, overwrite=True)
@@ -74,12 +74,17 @@ def saflow_preproc(filepath, ica=True):
         del raw_data
         del fig
 
+
     elif ica == True:
+        record_date = raw_data.info['meas_date'].strftime('%Y%m%d')
+        noise_cov = load_noise_cov(record_date)
         ## ICA
-        ica = ICA(n_components=20, random_state=0).fit(raw_data, decim=3)
+        ica = ICA(n_components=20, 
+                  random_state=0, 
+                  noise_cov=noise_cov).fit(raw_data.copy().filter(1, None), decim=3)
         fig = ica.plot_sources(raw_data, show=False)
         report.add_figure(fig, title="Independent Components")
-        close(fig)
+        #close(fig)
 
         ## FIND ECG COMPONENTS
         ecg_threshold = 0.50
@@ -89,7 +94,7 @@ def saflow_preproc(filepath, ica=True):
         )
         fig = ica.plot_scores(ecg_scores, ecg_inds, show=False)
         report.add_figure(fig, title="Correlation with ECG")
-        close(fig)
+        #close(fig)
         fig = list()
         try:
             fig = ica.plot_properties(
@@ -97,7 +102,7 @@ def saflow_preproc(filepath, ica=True):
             )
             for i, figure in enumerate(fig):
                 report.add_figure(figure, title="Detected component " + str(i))
-                close(figure)
+                #close(figure)
         except:
             print("No component to remove")
 
@@ -110,7 +115,7 @@ def saflow_preproc(filepath, ica=True):
         # TODO : if eog_inds == [] then eog_inds = [index(max(abs(eog_scores)))]
         fig = ica.plot_scores(eog_scores, eog_inds, show=False)
         report.add_figure(fig, title="Correlation with vEOG")
-        close(fig)
+        #close(fig)
         fig = list()
         try:
             fig = ica.plot_properties(
@@ -118,7 +123,7 @@ def saflow_preproc(filepath, ica=True):
             )
             for i, figure in enumerate(fig):
                 report.add_figure(figure, title="Detected component " + str(i))
-                close(figure)
+                #close(figure)
         except:
             print("No component to remove")
 
@@ -130,7 +135,7 @@ def saflow_preproc(filepath, ica=True):
         fig = raw_data.plot(show=False)
         # Plot the clean signal.
         report.add_figure(fig, title="After filtering + ICA")
-        close(fig)
+        #close(fig)
         ## SAVE PREPROCESSED FILE
         write_raw_bids(raw_data, output_path, allow_preload=True, format='FIF', overwrite=True)
         report.save(report_path, open_browser=False, overwrite=True)
@@ -138,6 +143,31 @@ def saflow_preproc(filepath, ica=True):
         del report
         del raw_data
         del fig
+
+def load_noise_cov(er_date, bids_root=BIDS_PATH):
+    # Noise covariance matrix
+    noise_cov_bidspath = BIDSPath(subject='emptyroom', 
+                    session=er_date,
+                    task='noise', 
+                    datatype="meg",
+                    processing='noisecov',
+                    root=bids_root + '/derivatives/noise_cov/')
+    noise_cov_fullpath = str(noise_cov_bidspath.fpath) + '.fif'
+    if not os.path.isfile(noise_cov_fullpath):
+        er_raw = read_raw_bids(BIDSPath(subject='emptyroom', 
+                    session=er_date,
+                    task='noise', 
+                    datatype="meg",
+                    root=bids_root + '/raw/'))
+        os.makedirs(os.path.dirname(noise_cov_bidspath.fpath), exist_ok=True)
+        noise_cov = mne.compute_raw_covariance(
+                    er_raw, method=["shrunk", "empirical"], rank=None, verbose=True
+                )
+        noise_cov.save(noise_cov_bidspath)
+    else:
+        noise_cov = mne.read_cov(noise_cov_fullpath)
+    return noise_cov
+
 
 if __name__ == "__main__":
     #for subj in SUBJ_LIST:

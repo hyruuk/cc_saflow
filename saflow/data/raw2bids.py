@@ -81,19 +81,6 @@ def write_noise_file(ds_file: str, bids_root: str) -> None:
                             root=bids_root)
     print(f"Writing {er_bids_path}...")
     write_raw_bids(er_raw, er_bids_path, format="auto", overwrite=True)
-
-    # Noise covariance matrix
-    noise_cov_bidspath = BIDSPath(subject='emptyroom', 
-                    session=er_date,
-                    task='noise', 
-                    datatype="meg",
-                    processing='noisecov',
-                    root=bids_root + '/derivatives/noise_cov/')
-    os.makedirs(os.path.dirname(noise_cov_bidspath.fpath), exist_ok=True)
-    noise_cov = mne.compute_raw_covariance(
-                er_raw, method=["shrunk", "empirical"], rank=None, verbose=True
-            )
-    noise_cov.save(str(noise_cov_bidspath.fpath) + '.fif')
     
 
 
@@ -296,9 +283,6 @@ if __name__ == "__main__":
                 raw, bidspath, task = load_recording(fname, bids_root)
                 # Re-add some info
                 raw.info['line_freq'] = 60
-                mne.rename_channels(raw.info,{'EEG057':'ECG', 
-                                            'EEG058':'hEOG', 
-                                            'EEG059': 'vEOG'})
                 if task == "gradCPT":
                     events_mne, event_id = get_events(raw)
                     raw.set_annotations(Annotations([], [], []))
