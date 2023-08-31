@@ -8,4 +8,4 @@
 
 module load python/3.7.0
 
-$HOME/python_envs/cc_saflow/bin/python $HOME/projects/def-kjerbi/hyruuk/cc_saflow/saflow/data/generate_bids.py
+$HOME/python_envs/saflow/bin/python $HOME/projects/def-kjerbi/hyruuk/cc_saflow/saflow/data/raw2bids.py
