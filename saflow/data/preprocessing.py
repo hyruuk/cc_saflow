@@ -158,7 +158,7 @@ def load_noise_cov(er_date, bids_root=BIDS_PATH):
                     session=er_date,
                     task='noise', 
                     datatype="meg",
-                    root=bids_root + '/raw/'))
+                    root=bids_root))
         os.makedirs(os.path.dirname(noise_cov_bidspath.fpath), exist_ok=True)
         noise_cov = mne.compute_raw_covariance(
                     er_raw, method=["shrunk", "empirical"], rank=None, verbose=True
