@@ -33,7 +33,7 @@ def segment_files(bids_filepath, tmin=0, tmax=0.8):
         events = mne.find_events(raw, min_duration=1 / raw.info["sfreq"], verbose=False)
     except ValueError:
         events = mne.find_events(raw, min_duration=2 / raw.info["sfreq"], verbose=False)
-    event_id = {"Freq": 21, "Rare": 31}
+    event_id = {"Freq": 21, "Rare": 31, "Resp":99}
     epochs = mne.Epochs(
         raw,
         events=events,
@@ -48,7 +48,10 @@ def segment_files(bids_filepath, tmin=0, tmax=0.8):
     #epochs = epochs[:10] # just for debugging, to remove
     ar = AutoReject(n_jobs=24)
     epochs_clean, autoreject_log = ar.fit_transform(epochs, return_log=True)
-    return epochs_clean, autoreject_log
+
+    # Update preproc file with the AR log
+    raw.info["bads"] = autoreject_log.bad_epochs
+    return epochs_clean, autoreject_log, raw
 
 if __name__ == "__main__":
     subj = args.subject
@@ -72,12 +75,9 @@ if __name__ == "__main__":
             suffix='meg',
             extension='.fif'
         )
-        #epoch_file = str(input_file.copy().update(processing='epo'))
-        #ARlog_file = str(input_file.copy().update(processing='epo', description='ARlog')).replace('.fif', '.pkl')
-
-        #if not os.path.isfile(epoch_file):
-        epochs_clean, AR_log = segment_files(input_file, tmin=0.426, tmax=1.278)
-        write_raw_bids(read_raw_bids(input_file), epoch_file)
+        epochs_clean, AR_log, preproc = segment_files(input_file, tmin=0.426, tmax=1.278)
+        write_raw_bids(preproc, input_file) # rewrite preproc with AR log
+        write_raw_bids(read_raw_bids(input_file), epoch_file) # prepare bids structure
         epoch_file = str(epoch_file.fpath)
         ARlog_file = epoch_file.replace('meg.fif', 'ARlog.pkl')
         epochs_clean.save(epoch_file, overwrite=True)
@@ -85,6 +85,3 @@ if __name__ == "__main__":
         print(ARlog_file)
         with open(ARlog_file, "wb") as fp:
             pickle.dump(AR_log, fp)
-            
-        #else:
-        #    print("{} {} File already exists".format(subj, bloc))
