@@ -192,7 +192,7 @@ if __name__ == "__main__":
 
 
         ## First, run AR on the filtered data
-        ar = AutoReject(picks='meg', n_jobs=-1)
+        ar = AutoReject(picks='mag', n_jobs=-1)
         ar.fit(epochs_filt)
         autoreject_log = ar.get_reject_log(epochs)
         print(autoreject_log.bad_epochs)
