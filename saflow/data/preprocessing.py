@@ -1,6 +1,6 @@
 import os
 import os.path as op
-#from saflow.utils import get_SAflow_bids
+import pickle
 
 from saflow import BIDS_PATH, SUBJ_LIST, BLOCS_LIST
 import argparse
@@ -16,106 +16,235 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "-s",
     "--subject",
-    default='05',
+    default='28',
     type=str,
     help="Subject to process",
 )
-parser.add_argument(
-    "-i",
-    "--ica",
-    default=True,
-    type=bool,
-    help="Preprocessing with or without ica"
-)
-args = parser.parse_args()
 
-def saflow_preproc(filepath, ica=True):
-    # Build output names
-    report_path = str(input_path.copy().update(root=str(input_path.root) + '/derivatives/preprocessed/',
-                                               description='report', 
-                                               processing='clean', 
-                                               suffix='meg')).replace('.ds', '.html')
-    output_path = input_path.copy().update(root=str(input_path.root) + '/derivatives/preprocessed/',
-                                               processing='clean', 
-                                               suffix='meg',
-                                               extension='.fif')
-    # Load raw data
-    report = mne.Report(verbose=True)
-    raw_data = read_raw_bids(filepath, extra_params={'preload':True})
-    raw_data = raw_data.apply_gradient_compensation(
-        grade=3
-    )  # required for source reconstruction
-    picks = mne.pick_types(raw_data.info, meg=True, eog=True, exclude="bads")
-    fig = raw_data.plot(show=False)
-    report.add_figure(fig, title="Time series")
-    #close(fig)
-    fig = raw_data.plot_psd(average=False, picks=picks, show=False)
-    report.add_figure(fig, title="PSD")
-    #close(fig)
+def create_fnames(subject, bloc, bids_root = BIDS_PATH):
+    # Setup input files
+    raw_bidspath = BIDSPath(subject=subject, 
+                            task='gradCPT', 
+                            run=bloc, 
+                            datatype='meg', 
+                            suffix='meg',
+                            extension='.ds',
+                            root=BIDS_PATH)
+    
+    preproc_bidspath = BIDSPath(subject=subject, 
+                            task='gradCPT', 
+                            run=bloc, 
+                            datatype='meg', 
+                            suffix='meg',
+                            processing='clean',
+                            root=BIDS_PATH + '/derivatives/preprocessed/')
+    
+    ARlog_bidspath = BIDSPath(subject=subject, 
+                            task='gradCPT', 
+                            run=bloc, 
+                            datatype='meg',
+                            suffix='meg',
+                            description='ARlog',
+                            root=BIDS_PATH + '/derivatives/preprocessed/')
+    
+    report_bidspath = BIDSPath(subject=subject, 
+                            task='gradCPT', 
+                            run=bloc, 
+                            datatype='meg',
+                            suffix='meg',
+                            description='report',
+                            root=BIDS_PATH + '/derivatives/preprocessed/')
 
-    ## Filtering
-    high_cutoff = 200
-    low_cutoff = 0.5
-    raw_data.filter(low_cutoff, high_cutoff, fir_design="firwin")
-    raw_data.notch_filter(
-        np.arange(60, high_cutoff + 1, 60),
-        picks=picks,
-        filter_length="auto",
-        phase="zero",
-        fir_design="firwin",
-    )
-    fig = raw_data.plot_psd(average=False, picks=picks, fmax=120, show=False)
-    report.add_figure(fig, title="PSD filtered")
-    #close(fig)
-    if ica == False:
-        write_raw_bids(raw_data, output_path, allow_preload=True, format='FIF', overwrite=True)
-        report.save(report_path, open_browser=False, overwrite=True)
-        del report
-        del raw_data
-        del fig
+    epoch_bidspath = BIDSPath(subject=subject, 
+                            task='gradCPT', 
+                            run=bloc, 
+                            datatype='meg', 
+                            processing='epo',
+                            root=BIDS_PATH + '/derivatives/epochs/')
+    
+    return {'raw':raw_bidspath,
+            'preproc':preproc_bidspath,
+            'epoch':epoch_bidspath,
+            'ARlog':ARlog_bidspath,
+            'report':report_bidspath}
+
+def load_noise_cov(er_date, bids_root=BIDS_PATH):
+    # Noise covariance matrix
+    noise_cov_bidspath = BIDSPath(subject='emptyroom', 
+                    session=er_date,
+                    task='noise', 
+                    datatype="meg",
+                    processing='noisecov',
+                    root=bids_root + '/derivatives/noise_cov/')
+    noise_cov_fullpath = str(noise_cov_bidspath.fpath)
+    if not os.path.isfile(noise_cov_fullpath):
+        er_raw = read_raw_bids(BIDSPath(subject='emptyroom', 
+                    session=er_date,
+                    task='noise', 
+                    datatype="meg",
+                    root=bids_root))
+        os.makedirs(os.path.dirname(noise_cov_bidspath.fpath), exist_ok=True)
+        noise_cov = mne.compute_raw_covariance(
+                    er_raw, method=["shrunk", "empirical"], rank=None, verbose=True
+                )
+        noise_cov.save(noise_cov_fullpath)
+    else:
+        noise_cov = mne.read_cov(noise_cov_fullpath)
+    return noise_cov
+
+def preproc_pipeline(filepaths, tmin, tmax):
+    print('na')
+    return #epochs, preproc, autoreject_log, report
+
+if __name__ == "__main__":
+    args = parser.parse_args()
+    subj = args.subject
+    bloc = '0'+'3'
+
+    tmin=-0.426 
+    tmax=1.278
+
+    for bloc in BLOCS_LIST:
+        # Create filenames
+        filepaths = create_fnames(subj, bloc)
+
+        # Init report
+        report = mne.Report(verbose=True)
+        # Load raw data
+        raw = read_raw_bids(filepaths['raw'], {'preload':True})
+        picks = mne.pick_types(raw.info, meg=True, eog=True, ecg=True)
+        raw.set_channel_types({'ECG':'ecg',
+                                'hEOG':'eog',
+                                'vEOG':'eog',})# a rajouter dans raw2bids
+        raw = raw.apply_gradient_compensation(grade=3)  # required for source reconstruction
+        
+        # Plot raw signal
+        report.add_raw(raw, title="Raw data")
+        #report.add_events(mne.events_from_annotations(raw)[0], title="Events")
+        fig = raw.plot(duration=20, start=50, show=False)
+        report.add_figure(fig, title="Time series")
+        fig = raw.plot_psd(average=False, picks=picks, show=False)
+        report.add_figure(fig, title="PSD")
 
 
-    elif ica == True:
-        record_date = raw_data.info['meas_date'].strftime('%Y%m%d')
+        ## Filtering
+        high_cutoff = 200
+        low_cutoff = 0.1
+        preproc = raw.copy().filter(low_cutoff, high_cutoff, picks=picks, fir_design="firwin")
+        preproc.notch_filter(
+            np.arange(60, high_cutoff + 1, 60),
+            picks=picks,
+            filter_length="auto",
+            phase="zero",
+            fir_design="firwin",
+        )
+        # Create filtered copy for Autoreject and ICA fitting
+        raw_filt = preproc.copy().filter(1, None)
+
+        ## Plot filtered signal
+        report.add_raw(preproc, title="Filtered data")
+        fig = preproc.plot(duration=20, start=50, show=False)
+        report.add_figure(fig, title="Time series (filtered)")
+        fig = preproc.plot_psd(average=False, picks=picks, show=False)
+        report.add_figure(fig, title="PSD (filtered)")
+        
+        report.add_raw(raw_filt, title="Filtered data (for AR)")
+        fig = raw_filt.plot(duration=20, start=50, show=False)
+        report.add_figure(fig, title="Time series (filtered for AR)")
+        fig = raw_filt.plot_psd(average=False, picks=picks, show=False)
+        report.add_figure(fig, title="PSD (filtered for AR)")
+
+        ## Epoching for Autoreject
+        events, event_id = mne.events_from_annotations(raw)
+        epochs_filt = mne.Epochs(
+            raw_filt,
+            events=events,
+            event_id=event_id,
+            tmin=tmin, 
+            tmax=tmax,
+            baseline=(None,0),
+            reject=None,
+            picks=picks,
+            preload=True,
+        )
+        ## Epoching for save
+        epochs = mne.Epochs(
+            preproc,
+            events=events,
+            event_id=event_id,
+            tmin=tmin, 
+            tmax=tmax,
+            baseline=(None,0),
+            reject=None,
+            picks=picks,
+            preload=True,
+        )
+        ## Plot evoked for each condition
+        evokeds = []
+        for cond in ['Freq', 'Rare', 'Resp']:
+            evoked = epochs[cond].average()
+            fig = evoked.plot(show=False)
+            report.add_figure(fig, title="Evoked ({})".format(cond))
+            fig = evoked.plot_joint(show=False)
+            report.add_figure(fig, title="Evoked ({}) - Joint".format(cond))
+            evokeds.append(evoked)
+        report.add_evokeds(evokeds, titles=["Evoked (Freq)", "Evoked (Rare)", "Evoked (Resp)"])
+
+
+        ## First, run AR on the filtered data
+        ar = AutoReject(picks='meg', n_jobs=-1)
+        ar.fit(epochs_filt)
+        autoreject_log = ar.get_reject_log(epochs)
+        print(autoreject_log.bad_epochs)
+        
+        fig = epochs[autoreject_log.bad_epochs].plot()
+        report.add_figure(fig, title="Bad epochs")
+        fig = autoreject_log.plot('horizontal')
+        report.add_figure(fig, title="Autoreject decisions")
+
+
+
+        ## Then, run ICA on the filtered data
+        record_date = raw.info['meas_date'].strftime('%Y%m%d')
         noise_cov = load_noise_cov(record_date)
-        ## ICA
-        ica = ICA(n_components=20, 
-                  random_state=0, 
-                  noise_cov=noise_cov).fit(raw_data.copy().filter(1, None), decim=3)
-        fig = ica.plot_sources(raw_data, show=False)
-        report.add_figure(fig, title="Independent Components")
-        #close(fig)
+        report.add_covariance(noise_cov, info=preproc.info, title="Noise covariance matrix")
 
-        ## FIND ECG COMPONENTS
+        ## Fit ICA without bad epochs
+        ica = ICA(n_components=20, 
+                    random_state=0,#).fit(raw_filt, decim=3)
+                    noise_cov=noise_cov).fit(epochs_filt[~autoreject_log.bad_epochs], decim=3)
+        fig = ica.plot_sources(preproc, show=True)
+        report.add_figure(fig, title="ICA sources")
+
+        ## Find ECG components
         ecg_threshold = 0.50
-        ecg_epochs = create_ecg_epochs(raw_data, ch_name="ECG")
+        ecg_epochs = create_ecg_epochs(preproc, ch_name="ECG")
         ecg_inds, ecg_scores = ica.find_bads_ecg(
             ecg_epochs, ch_name="ECG", method="ctps", threshold=ecg_threshold
         )
+        if ecg_inds == []:
+            ecg_inds = [list(abs(ecg_scores)).index(max(abs(ecg_scores)))]
         fig = ica.plot_scores(ecg_scores, ecg_inds, show=False)
-        report.add_figure(fig, title="Correlation with ECG")
-        #close(fig)
-        fig = list()
+        report.add_figure(fig, title="ECG scores")
         try:
             fig = ica.plot_properties(
                 ecg_epochs, picks=ecg_inds, image_args={"sigma": 1.0}, show=False
             )
             for i, figure in enumerate(fig):
                 report.add_figure(figure, title="Detected component " + str(i))
-                #close(figure)
         except:
             print("No component to remove")
 
-        ## FIND EOG COMPONENTS
+        ## Find EOG components
         eog_threshold = 4
-        eog_epochs = create_eog_epochs(raw_data, ch_name="vEOG")
+        eog_epochs = create_eog_epochs(preproc, ch_name="vEOG")
         eog_inds, eog_scores = ica.find_bads_eog(
             eog_epochs, ch_name="vEOG", threshold=eog_threshold
         )
-        # TODO : if eog_inds == [] then eog_inds = [index(max(abs(eog_scores)))]
+        if eog_inds == []:
+            eog_inds = [list(abs(eog_scores)).index(max(abs(eog_scores)))]
         fig = ica.plot_scores(eog_scores, eog_inds, show=False)
-        report.add_figure(fig, title="Correlation with vEOG")
-        #close(fig)
+        report.add_figure(fig, title="EOG scores")
         fig = list()
         try:
             fig = ica.plot_properties(
@@ -127,61 +256,54 @@ def saflow_preproc(filepath, ica=True):
         except:
             print("No component to remove")
 
-        ## EXCLUDE COMPONENTS
-        ica.exclude = ecg_inds
-        ica.apply(raw_data)
-        ica.exclude = eog_inds
-        ica.apply(raw_data)
-        fig = raw_data.plot(show=False)
-        # Plot the clean signal.
-        report.add_figure(fig, title="After filtering + ICA")
-        #close(fig)
-        ## SAVE PREPROCESSED FILE
-        write_raw_bids(raw_data, output_path, allow_preload=True, format='FIF', overwrite=True)
-        report.save(report_path, open_browser=False, overwrite=True)
-        del ica
-        del report
-        del raw_data
-        del fig
+        ## Exclude components
+        to_remove = ecg_inds + eog_inds
+        ica.exclude = to_remove
+        preproc = ica.apply(preproc)
+        epochs = ica.apply(epochs)
 
-def load_noise_cov(er_date, bids_root=BIDS_PATH):
-    # Noise covariance matrix
-    noise_cov_bidspath = BIDSPath(subject='emptyroom', 
-                    session=er_date,
-                    task='noise', 
-                    datatype="meg",
-                    processing='noisecov',
-                    root=bids_root + '/derivatives/noise_cov/')
-    noise_cov_fullpath = str(noise_cov_bidspath.fpath) + '.fif'
-    if not os.path.isfile(noise_cov_fullpath):
-        er_raw = read_raw_bids(BIDSPath(subject='emptyroom', 
-                    session=er_date,
-                    task='noise', 
-                    datatype="meg",
-                    root=bids_root))
-        os.makedirs(os.path.dirname(noise_cov_bidspath.fpath), exist_ok=True)
-        noise_cov = mne.compute_raw_covariance(
-                    er_raw, method=["shrunk", "empirical"], rank=None, verbose=True
-                )
-        noise_cov.save(noise_cov_bidspath)
-    else:
-        noise_cov = mne.read_cov(noise_cov_fullpath)
-    return noise_cov
+        ## Transform data with autoreject thresholds
+        epochs = ar.transform(epochs)
 
+        ## Plot cleaned signal
+        fig = preproc.plot(duration=20, start=50, show=False)
+        report.add_figure(fig, title="Time series (cleaned)")
+        fig = preproc.plot_psd(average=False, picks=picks, show=False)
+        report.add_figure(fig, title="PSD (cleaned)")
+        fig = epochs.plot(show=False)
+        report.add_figure(fig, title="Epochs (cleaned)")
+        fig = epochs.plot_psd(average=False, picks="mag", show=False)
+        report.add_figure(fig, title="PSD (cleaned)")
+        
+        ## Plot evoked for each cond
+        evokeds = []
+        for cond in ['Freq', 'Rare', 'Resp']:
+            evoked = epochs[~autoreject_log.bad_epochs][cond].average()
+            fig = evoked.plot(show=False)
+            report.add_figure(fig, title="Evoked ({})".format(cond))
+            fig = evoked.plot_joint(show=False)
+            report.add_figure(fig, title="Evoked ({}) - Joint".format(cond))
+            evokeds.append(evoked)
+        ## Plot difference waves Rare - Freq
+        evoked_diff = mne.combine_evoked([epochs[~autoreject_log.bad_epochs]['Rare'].average(), 
+                                        -epochs[~autoreject_log.bad_epochs]['Freq'].average()], 
+                                        weights='equal')
+        fig = evoked_diff.plot(show=False)
+        report.add_figure(fig, title="Evoked (Rare - Freq)")
+        fig = evoked_diff.plot_joint(show=False)
+        report.add_figure(fig, title="Evoked (Rare - Freq) - Joint")
+        evokeds.append(evoked_diff)
+        report.add_evokeds(evokeds, titles=["Evoked (Freq)", "Evoked (Rare)", "Evoked (Resp)", "Evoked (Rare - Freq)"])
 
-if __name__ == "__main__":
-    #for subj in SUBJ_LIST:
-    subj = args.subject
-    ica = args.ica
-    for bloc in BLOCS_LIST:
-        input_path = BIDSPath(subject=subj,
-                    task="gradCPT",
-                    run='0'+bloc,
-                    datatype="meg",
-                    extension='.ds',
-                    processing=None,
-                    description=None,
-                    root=BIDS_PATH)
+        ## Save preproc
+        write_raw_bids(preproc, filepaths['preproc'], format='FIF', overwrite=True, allow_preload=True)
+        ## Save epochs
+        write_raw_bids(preproc, filepaths['epoch'], format='FIF', overwrite=True, allow_preload=True) # Init bids structure
+        epochs.save(filepaths['epoch'].fpath, overwrite=True)
+        
+        ## Save AR log
+        with open(str(filepaths['ARlog'].fpath)+'.pkl', 'wb') as f:
+            pickle.dump(autoreject_log, f)
 
-                
-        saflow_preproc(input_path, ica=ica)
+        ## Save report
+        report.save(str(filepaths['report'].fpath)+'.html', open_browser=False, overwrite=True)
