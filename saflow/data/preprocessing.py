@@ -179,11 +179,14 @@ def preproc_pipeline(filepaths, tmin, tmax):
     ## First, run AR on the filtered data
     ar = AutoReject(picks='mag', n_jobs=-1)
     ar.fit(epochs_filt)
-    autoreject_log = ar.get_reject_log(epochs)
-    print(autoreject_log.bad_epochs)
+    autoreject_log = ar.get_reject_log(epochs_filt)
+    print(np.sum(autoreject_log.bad_epochs))
     
-    fig = epochs[autoreject_log.bad_epochs].plot()
-    report.add_figure(fig, title="Bad epochs")
+    try:
+        fig = epochs[autoreject_log.bad_epochs].plot()
+        report.add_figure(fig, title="Bad epochs")
+    except:
+        print("No bad epochs")
     fig = autoreject_log.plot('horizontal')
     report.add_figure(fig, title="Autoreject decisions")
 
