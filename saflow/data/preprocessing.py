@@ -105,6 +105,7 @@ if __name__ == "__main__":
     tmax=1.278
 
     for bloc in BLOCS_LIST:
+        bloc = '0'+bloc
         # Create filenames
         filepaths = create_fnames(subj, bloc)
 
