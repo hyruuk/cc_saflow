@@ -99,7 +99,6 @@ def preproc_pipeline(filepaths, tmin, tmax):
 if __name__ == "__main__":
     args = parser.parse_args()
     subj = args.subject
-    bloc = '0'+'3'
 
     tmin=0.426 
     tmax=1.278
