@@ -29,7 +29,7 @@ def create_fnames(subject, bloc, bids_root = BIDS_PATH):
                             datatype='meg', 
                             suffix='meg',
                             extension='.ds',
-                            root=BIDS_PATH)
+                            root=bids_root)
     
     preproc_bidspath = BIDSPath(subject=subject, 
                             task='gradCPT', 
@@ -37,7 +37,7 @@ def create_fnames(subject, bloc, bids_root = BIDS_PATH):
                             datatype='meg', 
                             suffix='meg',
                             processing='clean',
-                            root=BIDS_PATH + '/derivatives/preprocessed/')
+                            root=bids_root + '/derivatives/preprocessed/')
     
     ARlog_bidspath = BIDSPath(subject=subject, 
                             task='gradCPT', 
@@ -45,7 +45,7 @@ def create_fnames(subject, bloc, bids_root = BIDS_PATH):
                             datatype='meg',
                             suffix='meg',
                             description='ARlog',
-                            root=BIDS_PATH + '/derivatives/preprocessed/')
+                            root=bids_root + '/derivatives/preprocessed/')
     
     report_bidspath = BIDSPath(subject=subject, 
                             task='gradCPT', 
@@ -53,14 +53,14 @@ def create_fnames(subject, bloc, bids_root = BIDS_PATH):
                             datatype='meg',
                             suffix='meg',
                             description='report',
-                            root=BIDS_PATH + '/derivatives/preprocessed/')
+                            root=bids_root + '/derivatives/preprocessed/')
 
     epoch_bidspath = BIDSPath(subject=subject, 
                             task='gradCPT', 
                             run=bloc, 
                             datatype='meg', 
                             processing='epo',
-                            root=BIDS_PATH + '/derivatives/epochs/')
+                            root=bids_root + '/derivatives/epochs/')
     
     return {'raw':raw_bidspath,
             'preproc':preproc_bidspath,
@@ -101,7 +101,7 @@ if __name__ == "__main__":
     subj = args.subject
     bloc = '0'+'3'
 
-    tmin=-0.426 
+    tmin=0.426 
     tmax=1.278
 
     for bloc in BLOCS_LIST:
@@ -162,7 +162,7 @@ if __name__ == "__main__":
             event_id=event_id,
             tmin=tmin, 
             tmax=tmax,
-            baseline=(None,0),
+            baseline=(None,None),
             reject=None,
             picks=picks,
             preload=True,
@@ -174,7 +174,7 @@ if __name__ == "__main__":
             event_id=event_id,
             tmin=tmin, 
             tmax=tmax,
-            baseline=(None,0),
+            baseline=(None,None),
             reject=None,
             picks=picks,
             preload=True,
@@ -263,7 +263,7 @@ if __name__ == "__main__":
         epochs = ica.apply(epochs)
 
         ## Transform data with autoreject thresholds
-        epochs = ar.transform(epochs)
+        epochs = ar.fit_transform(epochs)
 
         ## Plot cleaned signal
         fig = preproc.plot(duration=20, start=50, show=False)
@@ -278,15 +278,15 @@ if __name__ == "__main__":
         ## Plot evoked for each cond
         evokeds = []
         for cond in ['Freq', 'Rare', 'Resp']:
-            evoked = epochs[~autoreject_log.bad_epochs][cond].average()
+            evoked = epochs[cond].average()
             fig = evoked.plot(show=False)
             report.add_figure(fig, title="Evoked ({})".format(cond))
             fig = evoked.plot_joint(show=False)
             report.add_figure(fig, title="Evoked ({}) - Joint".format(cond))
             evokeds.append(evoked)
         ## Plot difference waves Rare - Freq
-        evoked_diff = mne.combine_evoked([epochs[~autoreject_log.bad_epochs]['Rare'].average(), 
-                                        -epochs[~autoreject_log.bad_epochs]['Freq'].average()], 
+        evoked_diff = mne.combine_evoked([epochs['Rare'].average(), 
+                                        -epochs['Freq'].average()], 
                                         weights='equal')
         fig = evoked_diff.plot(show=False)
         report.add_figure(fig, title="Evoked (Rare - Freq)")
