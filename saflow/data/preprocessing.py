@@ -184,7 +184,7 @@ def preproc_pipeline(filepaths, tmin, tmax):
     
     try:
         fig = epochs[autoreject_log.bad_epochs].plot()
-        report.add_figure(fig, title="Bad epochs")
+        report.add_figure(fig, title="Bad pochs")
     except:
         print("No bad epochs")
     fig = autoreject_log.plot('horizontal')
@@ -293,7 +293,7 @@ if __name__ == "__main__":
         bloc = '0'+bloc
         # Create filenames
         filepaths = create_fnames(subj, bloc)
-
+        epochs, preproc, autoreject_log, report = preproc_pipeline(filepaths, tmin, tmax)
         ## Save preproc
         write_raw_bids(preproc, filepaths['preproc'], format='FIF', overwrite=True, allow_preload=True)
         ## Save epochs
