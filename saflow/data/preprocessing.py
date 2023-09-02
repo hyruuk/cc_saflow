@@ -281,6 +281,10 @@ def preproc_pipeline(filepaths, tmin, tmax):
     report.add_figure(fig, title="Evoked (Rare - Freq) - Joint")
     evokeds.append(evoked_diff)
     report.add_evokeds(evokeds, titles=["Evoked (Freq)", "Evoked (Rare)", "Evoked (Resp)", "Evoked (Rare - Freq)"])
+    del ar
+    del ica
+    del raw
+    del raw_filt
     return epochs, preproc, autoreject_log, report
 
 if __name__ == "__main__":
@@ -307,3 +311,7 @@ if __name__ == "__main__":
 
         ## Save report
         report.save(str(filepaths['report'].fpath)+'.html', open_browser=False, overwrite=True)
+        del epochs
+        del preproc
+        del autoreject_log
+        del report
