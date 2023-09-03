@@ -294,16 +294,17 @@ if __name__ == "__main__":
         bloc = '0'+bloc
         # Create filenames
         filepaths = create_fnames(subj, bloc)
-        epochs, preproc, autoreject_log, report = preproc_pipeline(filepaths, tmin, tmax)
-        ## Save preproc
-        write_raw_bids(preproc, filepaths['preproc'], format='FIF', overwrite=True, allow_preload=True)
-        ## Save epochs
-        write_raw_bids(preproc, filepaths['epoch'], format='FIF', overwrite=True, allow_preload=True) # Init bids structure
-        epochs.save(filepaths['epoch'].fpath, overwrite=True)
-        
-        ## Save AR log
-        with open(str(filepaths['ARlog'].fpath)+'.pkl', 'wb') as f:
-            pickle.dump(autoreject_log, f)
+        if not os.path.isfile(str(filepaths['preproc'].fpath)):
+            epochs, preproc, autoreject_log, report = preproc_pipeline(filepaths, tmin, tmax)
+            ## Save preproc
+            write_raw_bids(preproc, filepaths['preproc'], format='FIF', overwrite=True, allow_preload=True)
+            ## Save epochs
+            write_raw_bids(preproc, filepaths['epoch'], format='FIF', overwrite=True, allow_preload=True) # Init bids structure
+            epochs.save(filepaths['epoch'].fpath, overwrite=True)
+            
+            ## Save AR log
+            with open(str(filepaths['ARlog'].fpath)+'.pkl', 'wb') as f:
+                pickle.dump(autoreject_log, f)
 
-        ## Save report
-        report.save(str(filepaths['report'].fpath)+'.html', open_browser=False, overwrite=True)
+            ## Save report
+            report.save(str(filepaths['report'].fpath)+'.html', open_browser=False, overwrite=True)
