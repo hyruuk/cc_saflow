@@ -5,7 +5,7 @@ import mne
 from mne.minimum_norm import make_inverse_operator, apply_inverse, apply_inverse_epochs
 import os
 import os.path as op
-from mne_bids import BIDSPath
+from mne_bids import BIDSPath, read_raw_bids
 import json
 import argparse
 parser = argparse.ArgumentParser()
@@ -57,6 +57,7 @@ def create_fnames(subject, bloc):
                         session=er_date,
                         task='noise', 
                         datatype="meg",
+                        processing='noise_cov',
                         root=BIDS_PATH)
     
     # Setup output files
@@ -66,7 +67,7 @@ def create_fnames(subject, bloc):
                             datatype='meg',
                             processing='bem',
                             root=BIDS_PATH + '/derivatives/bem/')
-    os.makedirs(os.path.dirname(bem_bidspath.fpath), exist_ok=True)
+    bem_bidspath.mkdir(exist_ok=True)
     
     # Coregistration transform
     trans_bidspath = BIDSPath(subject=subject, 
@@ -75,7 +76,7 @@ def create_fnames(subject, bloc):
                             datatype='meg', 
                             processing='trans',
                             root=BIDS_PATH + '/derivatives/trans/')
-    os.makedirs(os.path.dirname(trans_bidspath.fpath), exist_ok=True)
+    trans_bidspath.mkdir(exist_ok=True)
 
     # Forward solution
     fwd_bidspath = BIDSPath(subject=subject,
@@ -84,7 +85,7 @@ def create_fnames(subject, bloc):
                             datatype='meg',
                             processing='forward',
                             root=BIDS_PATH + '/derivatives/fwd/')
-    os.makedirs(os.path.dirname(fwd_bidspath.fpath), exist_ok=True)
+    fwd_bidspath.mkdir(exist_ok=True)
 
     # Noise covariance matrix
     noise_cov_bidspath = BIDSPath(subject='emptyroom', 
@@ -92,7 +93,7 @@ def create_fnames(subject, bloc):
                     task='noise', 
                     datatype="meg",
                     root=BIDS_PATH + '/derivatives/noise_cov/')
-    os.makedirs(os.path.dirname(noise_cov_bidspath.fpath), exist_ok=True)
+    noise_cov_bidspath.mkdir(exist_ok=True)
 
     # Sources
     stc_bidspath = BIDSPath(subject=subject,
@@ -103,7 +104,6 @@ def create_fnames(subject, bloc):
                             description='sources',
                             root=BIDS_PATH + '/derivatives/minimum-norm-estimate/')
     
-
     # Morph
     morph_bidspath = BIDSPath(subject=subject,
                             task='gradCPT',
@@ -113,7 +113,7 @@ def create_fnames(subject, bloc):
                             description='morphed',
                             root=BIDS_PATH + '/derivatives/minimum-norm-estimate/')
 
-    return {'raw':str(raw_bidspath.fpath),
+    return {'raw':raw_bidspath,
             'preproc':str(preproc_bidspath.fpath) + '.fif',
             'epoch':str(epoch_bidspath.fpath) + '.fif',
             'bem':str(bem_bidspath.fpath) + '.h5',
@@ -125,7 +125,8 @@ def create_fnames(subject, bloc):
             'morph':str(morph_bidspath.fpath) + '.h5'}
 
 def get_coregistration(filepath, subject, subjects_dir=FS_SUBJDIR):
-    info = mne.io.read_info(filepath['raw'])
+    raw = read_raw_bids(filepath['raw'])
+    info = raw.info
     coreg = mne.coreg.Coregistration(info, subject, subjects_dir, fiducials="estimated")
     coreg.fit_icp(n_iterations=6, nasion_weight=2.0, verbose=True)
     coreg.omit_head_shape_points(distance=5.0 / 1000)
