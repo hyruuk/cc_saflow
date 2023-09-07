@@ -2,7 +2,7 @@
 from saflow import FS_SUBJDIR, SUBJ_LIST, BLOCS_LIST, BIDS_PATH, invsol_params
 
 import mne
-from mne.minimum_norm import make_inverse_operator, apply_inverse, apply_inverse_epochs
+from mne.minimum_norm import make_inverse_operator, apply_inverse_raw, apply_inverse_epochs
 import os
 import os.path as op
 from mne_bids import BIDSPath, read_raw_bids
@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "-s",
     "--subject",
-    default='04',
+    default='13',
     type=str,
     help="Subject to process",
 )
@@ -57,7 +57,6 @@ def create_fnames(subject, bloc):
                         session=er_date,
                         task='noise', 
                         datatype="meg",
-                        processing='noise_cov',
                         root=BIDS_PATH)
     
     # Setup output files
@@ -103,62 +102,77 @@ def create_fnames(subject, bloc):
                             processing='clean',
                             description='sources',
                             root=BIDS_PATH + '/derivatives/minimum-norm-estimate/')
-    
-    # Morph
+    stc_bidspath.mkdir(exist_ok=True)
+
     morph_bidspath = BIDSPath(subject=subject,
                             task='gradCPT',
                             run=bloc,
                             datatype='meg',
                             processing='clean',
                             description='morphed',
-                            root=BIDS_PATH + '/derivatives/minimum-norm-estimate/')
+                            root=BIDS_PATH + '/derivatives/morphed_sources/')
+    morph_bidspath.mkdir(exist_ok=True)
+    
 
     return {'raw':raw_bidspath,
-            'preproc':str(preproc_bidspath.fpath) + '.fif',
-            'epoch':str(epoch_bidspath.fpath) + '.fif',
-            'bem':str(bem_bidspath.fpath) + '.h5',
-            'noise':str(noise_bidspath.fpath) + '.ds',
-            'trans':str(trans_bidspath.fpath) + '.fif',
-            'fwd':str(fwd_bidspath.fpath) + '.fif',
-            'noise_cov':str(noise_cov_bidspath.fpath) + '.fif',
-            'stc':str(stc_bidspath.fpath) + '.h5',
-            'morph':str(morph_bidspath.fpath) + '.h5'}
+            'preproc':preproc_bidspath,
+            'epoch':epoch_bidspath,
+            'bem':bem_bidspath,
+            'noise':noise_bidspath,
+            'trans':trans_bidspath,
+            'fwd':fwd_bidspath,
+            'noise_cov':noise_cov_bidspath,
+            'stc':stc_bidspath,
+            'morph':morph_bidspath}
 
-def get_coregistration(filepath, subject, subjects_dir=FS_SUBJDIR):
+def get_coregistration(filepath, subject, subjects_dir=FS_SUBJDIR, mri_available=False):
     raw = read_raw_bids(filepath['raw'])
     info = raw.info
+    if mri_available:
+        subject = 'sub-' + str(subject)
+    else:
+        subject = 'fsaverage'
+
     coreg = mne.coreg.Coregistration(info, subject, subjects_dir, fiducials="estimated")
     coreg.fit_icp(n_iterations=6, nasion_weight=2.0, verbose=True)
     coreg.omit_head_shape_points(distance=5.0 / 1000)
     coreg.fit_icp(n_iterations=20, nasion_weight=10.0, verbose=True)
     os.makedirs(op.dirname(filepath['trans']), exist_ok=True)
-    mne.write_trans(filepath['trans'], coreg.trans, overwrite=True)
+    mne.write_trans(str(filepath['trans'].fpath)+'.fif', coreg.trans, overwrite=True)
 
     return coreg
 
-def get_source_space(subject, subjects_dir=FS_SUBJDIR):
+def get_source_space(subject, subjects_dir=FS_SUBJDIR, mri_available=False):
     # Compute Source Space
-    return mne.setup_source_space(
-                subject, spacing="oct6", add_dist="patch", subjects_dir=subjects_dir
-            )
+    if mri_available:
+        return mne.setup_source_space(
+                    'sub-' + str(subject), spacing="oct6", add_dist="patch", subjects_dir=subjects_dir
+                )
+    else:
+        return mne.setup_source_space(
+                    'fsaverage', spacing="oct6", add_dist="patch", subjects_dir=subjects_dir)
 
-def get_bem(subject):
+def get_bem(subject, subjects_dir=FS_SUBJDIR, mri_available=False):
+    if mri_available:
+        subject = 'sub-' + str(subject)
+    else:
+        subject = 'fsaverage'
     conductivity = (0.3,)  # for single layer
     # conductivity = (0.3, 0.006, 0.3)  # for three layers (EEG)
     model = mne.make_bem_model(
-        subject=subject, ico=4, conductivity=conductivity, subjects_dir=subjects_dir
+        subject=subject, ico=5, conductivity=conductivity, subjects_dir=subjects_dir
     )
     return mne.make_bem_solution(model)
 
 def get_forward(filepath, src, bem):
     return mne.make_forward_solution(
-                filepath['preproc'],
-                trans=filepath['trans'],
+                str(filepath['preproc'].fpath),
+                trans=str(filepath['trans'].fpath),
                 src=src,
                 bem=bem,
                 meg=True,
                 eeg=False,
-                mindist=5.0,
+                mindist=0.0,
                 n_jobs=-1,
                 verbose=True,
             )
@@ -174,62 +188,68 @@ def get_inverse_epochs(filepath, fwd, noise_cov):
     epoch = mne.read_epochs(filepath['epoch'], preload=True)
     info = epoch.info
     inverse_operator = make_inverse_operator(info, fwd, noise_cov, loose=0.2, depth=0.8)
-    stcs, residual = apply_inverse_epochs(
+    stcs = apply_inverse_epochs(
                 epoch,
                 inverse_operator,
                 lambda2=invsol_params['lambda2'],
                 method=invsol_params['method'],
                 pick_ori=None,
-                return_residual=False,
                 verbose=True,
             )
     # Save sources as hdf5
     for idx, stc in enumerate(stcs):
-        filename = filepath['stc'].replace('clean', 'epo').replace('.h5', '_{}.h5'.format(idx))
-        stc.save(filename)
+        filename = str(filepath['stc'].fpath).replace('clean', 'epo') + f'_epoch{idx}'
+        stc.save(filename, ftype='h5', overwrite=True)
     # Save residual as json
-    residual_fullpath = filepath['stc'].replace('clean', 'epo').replace('source', 'residual').replace('.h5', '.json')
-    with open(residual_fullpath, 'w') as f:
-        json.dump(residual, f)
-    return stcs, residual
+    #residual_fullpath = str(filepath['stc'].fpath).replace('clean', 'epo').replace('source', 'residual').replace('.h5', '.json')
+    #with open(residual_fullpath, 'w') as f:
+    #    json.dump(residual, f)
+    return stcs
     
 
 def get_inverse(filepath, fwd, noise_cov):
     preproc = mne.io.read_raw_fif(filepath['preproc'], preload=True)
     info = preproc.info
     inverse_operator = make_inverse_operator(info, fwd, noise_cov, loose=0.2, depth=0.8)
-    stc, residual =  apply_inverse(
+    stc =  apply_inverse_raw(
                 preproc,
                 inverse_operator,
                 lambda2=invsol_params['lambda2'],
                 method=invsol_params['method'],
                 pick_ori=None,
-                return_residual=False,
                 verbose=True,
             )
     # Save sources as hdf5
-    stc.save(filepath['stc'])
+    stc.save(filepath['stc'], ftype='h5', overwrite=True)
     # Save residual as json
-    residual_fullpath = filepath['stc'].replace('source', 'residual').replace('.h5', '.json')
-    with open(residual_fullpath, 'w') as f:
-        json.dump(residual, f)
-    return stc, residual
+    #residual_fullpath = filepath['stc'].replace('source', 'residual').replace('.h5', '.json')
+    #with open(residual_fullpath, 'w') as f:
+    #    json.dump(residual, f)
+    return stc
 
-def get_morphed(filepath, stcs, subjects_dir=FS_SUBJDIR):
-    fsaverage_fpath = ''
+def get_morphed(filepath, subject, stcs, src, subjects_dir=FS_SUBJDIR):
+    fsaverage_fpath = op.join(FS_SUBJDIR, 'fsaverage', 'bem', 'fsaverage-ico-5-src.fif')
     src_to = mne.read_source_spaces(fsaverage_fpath)
     morphed = []
+    subject = 'sub-' + str(subject)
+    if len(stcs) > 1:
+        fname_mrp = filepath['morph'].update(processing='epo')
+    else:
+        fname_mrp = filepath['morph'].update(processing='clean')
     # Morph each source estimate and save
     for idx, stc in enumerate(stcs):
         morph = mne.compute_source_morph(
-            stc,
+            src,
             subject_from=subject,
             subject_to="fsaverage",
-            src_to=src_to,
             subjects_dir=subjects_dir,
         ).apply(stc)
-        filename = os.path.join(fname_mrp, f'{idx}_{method}_morph')
-        morph.save(filename)
+        fname_mrp = filepath['morph']
+        if len(stcs) > 1:
+            filename = str(fname_mrp.update(processing='epo').fpath) + f'_epoch{idx}'
+        else:
+            filename = str(fname_mrp.update(processing='clean').fpath)
+        morph.save(filename, ftype='h5', overwrite=True)
         morphed.append(morph)
     return
 
@@ -238,20 +258,28 @@ if __name__ == "__main__":
     args = parser.parse_args()
     subject = args.subject
     bloc = args.run
-    
+
+    # Check if subject in FS_SUBJDIR
+    if not os.path.exists(FS_SUBJDIR + '/sub-' + str(subject)):
+        mri_available = False
+    else:
+        mri_available = True
+
+    # Create filenames
     filepath = create_fnames(subject, bloc)
     print(filepath)
 
+    # Start processing
     if not os.path.exists(filepath['trans']):
-        coreg = get_coregistration(filepath)
+        coreg = get_coregistration(filepath, subject, mri_available=mri_available)
 
-    src = get_source_space(subject)
+    src = get_source_space(subject, mri_available=mri_available)
 
     if not os.path.exists(filepath['fwd']):
-        bem = get_bem(subject)
+        bem = get_bem(subject, mri_available=mri_available)
         fwd = get_forward(filepath, src, bem)
         os.makedirs(os.path.dirname(filepath['fwd']), exist_ok=True)
-        fwd.save(filepath['fwd'])
+        mne.write_forward_solution(filepath['fwd'], fwd, overwrite=True)
     else:
         fwd = mne.read_forward_solution(filepath['fwd'])
 
@@ -262,12 +290,17 @@ if __name__ == "__main__":
     else:
         noise_cov = mne.read_cov(filepath['noise_cov'])    
 
-    # Apply inverse on preprocessed data (without AR #TODO: add AR -> from segmentation script)
-    stc, residual = get_inverse(filepath, fwd, noise_cov)
+    # Apply inverse on preprocessed data
+    stc = get_inverse(filepath, fwd, noise_cov)
 
     # Apply inverse on epochs
-    stcs, residual = get_inverse_epochs(filepath, fwd, noise_cov)
+    stcs = get_inverse_epochs(filepath, fwd, noise_cov)
         
     # Morph to fsaverage
-    morphed_preproc = get_morphed(filepath, [stc], src)[0]
-    morphed_epoch = get_morphed(filepath, stcs, src)
+    if mri_available:
+        morphed_preproc = get_morphed(filepath, subject, [stc], src)
+        morphed_epoch = get_morphed(filepath, subject, stcs, src)
+    else:
+        stc.save(str(filepath['morph'].update(processing='clean')), ftype='h5', overwrite=True)
+        for idx, stc in enumerate(stcs):
+            stc.save(str(filepath['morph'].update(processing='epo').fpath), ftype='h5', overwrite=True)
