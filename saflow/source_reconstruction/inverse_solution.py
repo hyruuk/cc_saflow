@@ -50,7 +50,8 @@ def create_fnames(subject, bloc):
                             root=BIDS_PATH + '/derivatives/epochs/')
     
     # Find date for noise file
-    info = mne.io.read_info(preproc_bidspath.fpath)
+    raw = read_raw_bids(raw_bidspath)
+    info = raw.info
     er_date = info['meas_date'].strftime('%Y%m%d')
     # Noise file
     noise_bidspath = BIDSPath(subject='emptyroom', 
