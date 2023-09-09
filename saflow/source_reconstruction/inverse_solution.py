@@ -292,16 +292,16 @@ if __name__ == "__main__":
         noise_cov = mne.read_cov(filepath['noise_cov'])    
 
     # Apply inverse on preprocessed data
-    stc = get_inverse(filepath, fwd, noise_cov)
+    #stc = get_inverse(filepath, fwd, noise_cov)
 
     # Apply inverse on epochs
     stcs = get_inverse_epochs(filepath, fwd, noise_cov)
         
     # Morph to fsaverage
     if mri_available:
-        morphed_preproc = get_morphed(filepath, subject, [stc], src)
+        #morphed_preproc = get_morphed(filepath, subject, [stc], src)
         morphed_epoch = get_morphed(filepath, subject, stcs, src)
     else:
-        stc.save(str(filepath['morph'].update(processing='clean')), ftype='h5', overwrite=True)
+        #stc.save(str(filepath['morph'].update(processing='clean')), ftype='h5', overwrite=True)
         for idx, stc in enumerate(stcs):
             stc.save(str(filepath['morph'].update(processing='epo').fpath), ftype='h5', overwrite=True)
