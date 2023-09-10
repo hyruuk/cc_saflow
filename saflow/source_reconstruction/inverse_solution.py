@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "-s",
     "--subject",
-    default='13',
+    default='11',
     type=str,
     help="Subject to process",
 )
@@ -221,7 +221,7 @@ def get_inverse(filepath, fwd, noise_cov):
                 verbose=True,
             )
     # Save sources as hdf5
-    stc.save(filepath['stc'], ftype='h5', overwrite=True)
+    #stc.save(filepath['stc'], ftype='h5', overwrite=True)
     # Save residual as json
     #residual_fullpath = filepath['stc'].replace('source', 'residual').replace('.h5', '.json')
     #with open(residual_fullpath, 'w') as f:
@@ -279,8 +279,7 @@ if __name__ == "__main__":
     if not os.path.exists(filepath['fwd']):
         bem = get_bem(subject, mri_available=mri_available)
         fwd = get_forward(filepath, src, bem)
-        os.makedirs(os.path.dirname(filepath['fwd']), exist_ok=True)
-        mne.write_forward_solution(filepath['fwd'], fwd, overwrite=True)
+        mne.write_forward_solution(str(filepath['fwd'].fpath) + '.fif', fwd, overwrite=True)
     else:
         fwd = mne.read_forward_solution(filepath['fwd'])
 
