@@ -251,7 +251,7 @@ def get_morphed(filepath, subject, stcs, src, subjects_dir=FS_SUBJDIR):
         else:
             filename = str(fname_mrp.update(processing='clean').fpath)
         morph.save(filename, ftype='h5', overwrite=True)
-        morphed.append(morph)
+        #morphed.append(morph)
     return
 
 
@@ -299,7 +299,7 @@ if __name__ == "__main__":
     # Morph to fsaverage
     if mri_available:
         #morphed_preproc = get_morphed(filepath, subject, [stc], src)
-        morphed_epoch = get_morphed(filepath, subject, stcs, src)
+        get_morphed(filepath, subject, stcs, src)
     else:
         #stc.save(str(filepath['morph'].update(processing='clean')), ftype='h5', overwrite=True)
         for idx, stc in enumerate(stcs):
