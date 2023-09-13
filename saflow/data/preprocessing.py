@@ -285,6 +285,8 @@ def preproc_pipeline(filepaths, tmin, tmax):
     del ica
     del raw
     del raw_filt
+    epochs = epochs.resample(600)
+    preproc = preproc.resample(600)
     return epochs, preproc, autoreject_log, report
 
 if __name__ == "__main__":
