@@ -286,15 +286,18 @@ if __name__ == "__main__":
                 raw, bidspath, task = load_recording(fname, bids_root)
                 # Re-add some info
                 raw.info['line_freq'] = 60
+                #raw = raw.resample(600, npad="auto")
                 if task == "gradCPT":
                     events_mne, event_id = get_events(raw)
+                    #annotations = mne.annotations_from_events(events_mne, event_desc={v: k for k, v in event_id.items()}, sfreq=raw.info['sfreq'])
                     raw.set_annotations(Annotations([], [], []))
                     write_raw_bids(
                         raw,
                         bidspath,
                         events=events_mne,
                         event_id=event_id,
-                        overwrite=True,
+                        format='auto',
+                        overwrite=True
                     )
                     # Get bids events to enrich them
                     events_bids_fname = bidspath.copy().update(suffix='events', extension='.tsv')

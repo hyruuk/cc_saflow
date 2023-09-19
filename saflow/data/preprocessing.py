@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "-s",
     "--subject",
-    default='28',
+    default='05',
     type=str,
     help="Subject to process",
 )
@@ -95,13 +95,12 @@ def load_noise_cov(er_date, bids_root=BIDS_PATH):
 def preproc_pipeline(filepaths, tmin, tmax):
     # Init report
     report = mne.Report(verbose=True)
-    
     # Load raw data
     raw = read_raw_bids(filepaths['raw'], {'preload':True})
+    events, event_id = mne.events_from_annotations(raw)
+    raw, events = raw.resample(600, events=events)
     picks = mne.pick_types(raw.info, meg=True, eog=True, ecg=True)
-    raw.set_channel_types({'ECG':'ecg',
-                            'hEOG':'eog',
-                            'vEOG':'eog',})# a rajouter dans raw2bids
+
     raw = raw.apply_gradient_compensation(grade=3)  # required for source reconstruction
     
     # Plot raw signal
@@ -116,9 +115,10 @@ def preproc_pipeline(filepaths, tmin, tmax):
     ## Filtering
     high_cutoff = 200
     low_cutoff = 0.1
+    line_freq = raw.info['line_freq']
     preproc = raw.copy().filter(low_cutoff, high_cutoff, picks=picks, fir_design="firwin")
     preproc.notch_filter(
-        np.arange(60, high_cutoff + 1, 60),
+        np.arange(line_freq, high_cutoff + 1, line_freq),
         picks=picks,
         filter_length="auto",
         phase="zero",
@@ -141,7 +141,6 @@ def preproc_pipeline(filepaths, tmin, tmax):
     report.add_figure(fig, title="PSD (filtered for AR)")
 
     ## Epoching for Autoreject
-    events, event_id = mne.events_from_annotations(raw)
     epochs_filt = mne.Epochs(
         raw_filt,
         events=events,
@@ -281,12 +280,15 @@ def preproc_pipeline(filepaths, tmin, tmax):
     report.add_figure(fig, title="Evoked (Rare - Freq) - Joint")
     evokeds.append(evoked_diff)
     report.add_evokeds(evokeds, titles=["Evoked (Freq)", "Evoked (Rare)", "Evoked (Resp)", "Evoked (Rare - Freq)"])
+
+    ## Set annotations for preproc
+    preproc.set_annotations(mne.annotations_from_events(events), 
+                           event_desc={v: k for k, v in event_id.items()}, 
+                           sfreq=raw.info['sfreq'])
     del ar
     del ica
     del raw
     del raw_filt
-    epochs = epochs.resample(600)
-    preproc = preproc.resample(600)
     return epochs, preproc, autoreject_log, report
 
 if __name__ == "__main__":
@@ -301,9 +303,9 @@ if __name__ == "__main__":
         # Create filenames
         filepaths = create_fnames(subj, bloc)
         if not os.path.isfile(str(filepaths['preproc'].fpath)):
-            epochs, preproc, autoreject_log, report = preproc_pipeline(filepaths, tmin, tmax)
+            epochs, preproc, autoreject_log, report, events = preproc_pipeline(filepaths, tmin, tmax)
             ## Save preproc
-            write_raw_bids(preproc, filepaths['preproc'], format='FIF', overwrite=True, allow_preload=True)
+            write_raw_bids(preproc, filepaths['preproc'], events=events, format='FIF', overwrite=True, allow_preload=True)
             ## Save epochs
             write_raw_bids(preproc, filepaths['epoch'], format='FIF', overwrite=True, allow_preload=True) # Init bids structure
             epochs.save(filepaths['epoch'].fpath, overwrite=True)
