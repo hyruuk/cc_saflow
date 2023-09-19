@@ -303,9 +303,9 @@ if __name__ == "__main__":
         # Create filenames
         filepaths = create_fnames(subj, bloc)
         if not os.path.isfile(str(filepaths['preproc'].fpath)):
-            epochs, preproc, autoreject_log, report, events = preproc_pipeline(filepaths, tmin, tmax)
+            epochs, preproc, autoreject_log, report = preproc_pipeline(filepaths, tmin, tmax)
             ## Save preproc
-            write_raw_bids(preproc, filepaths['preproc'], events=events, format='FIF', overwrite=True, allow_preload=True)
+            write_raw_bids(preproc, filepaths['preproc'], format='FIF', overwrite=True, allow_preload=True)
             ## Save epochs
             write_raw_bids(preproc, filepaths['epoch'], format='FIF', overwrite=True, allow_preload=True) # Init bids structure
             epochs.save(filepaths['epoch'].fpath, overwrite=True)
