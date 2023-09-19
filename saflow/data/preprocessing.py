@@ -282,9 +282,9 @@ def preproc_pipeline(filepaths, tmin, tmax):
     report.add_evokeds(evokeds, titles=["Evoked (Freq)", "Evoked (Rare)", "Evoked (Resp)", "Evoked (Rare - Freq)"])
 
     ## Set annotations for preproc
-    preproc.set_annotations(events=mne.annotations_from_events(events), 
-                            sfreq=raw.info['sfreq'],
-                            event_desc={v: k for k, v in event_id.items()})
+    preproc.set_annotations(events=mne.annotations_from_events(events,
+                                                               sfreq=raw.info['sfreq'],
+                                                               event_desc={v: k for k, v in event_id.items()}))
     del ar
     del ica
     del raw
