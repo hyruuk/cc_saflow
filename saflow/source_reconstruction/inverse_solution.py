@@ -1,6 +1,6 @@
 # Computes inverse solution and saves sources
 from saflow import FS_SUBJDIR, SUBJ_LIST, BLOCS_LIST, BIDS_PATH, invsol_params
-
+import numpy as np
 import mne
 from mne.minimum_norm import make_inverse_operator, apply_inverse_raw, apply_inverse_epochs
 import os
@@ -103,7 +103,7 @@ def create_fnames(subject, bloc):
                             processing='clean',
                             description='sources',
                             root=BIDS_PATH + '/derivatives/minimum-norm-estimate/')
-    stc_bidspath.mkdir(exist_ok=True)
+    #stc_bidspath.mkdir(exist_ok=True)
 
     morph_bidspath = BIDSPath(subject=subject,
                             task='gradCPT',
@@ -228,30 +228,43 @@ def get_inverse(filepath, fwd, noise_cov):
     #    json.dump(residual, f)
     return stc
 
-def get_morphed(filepath, subject, stcs, src, subjects_dir=FS_SUBJDIR):
+def get_morphed(filepath, subject, stcs, src, mri_available=False, subjects_dir=FS_SUBJDIR):
     fsaverage_fpath = op.join(FS_SUBJDIR, 'fsaverage', 'bem', 'fsaverage-ico-5-src.fif')
-    src_to = mne.read_source_spaces(fsaverage_fpath)
-    morphed = []
-    subject = 'sub-' + str(subject)
-    if len(stcs) > 1:
-        fname_mrp = filepath['morph'].update(processing='epo')
-    else:
-        fname_mrp = filepath['morph'].update(processing='clean')
-    # Morph each source estimate and save
-    for idx, stc in enumerate(stcs):
-        morph = mne.compute_source_morph(
-            src,
-            subject_from=subject,
-            subject_to="fsaverage",
-            subjects_dir=subjects_dir,
-        ).apply(stc)
-        fname_mrp = filepath['morph']
+    if mri_available:
+        src_to = mne.read_source_spaces(fsaverage_fpath)
+        morphed = []
+        subject = 'sub-' + str(subject)
         if len(stcs) > 1:
-            filename = str(fname_mrp.update(processing='epo').fpath) + f'_epoch{idx}'
+            fname_mrp = filepath['morph'].update(processing='epo')
         else:
-            filename = str(fname_mrp.update(processing='clean').fpath)
-        morph.save(filename, ftype='h5', overwrite=True)
-        #morphed.append(morph)
+            fname_mrp = filepath['morph'].update(processing='clean')
+        # Morph each source estimate and save
+        for idx, stc in enumerate(stcs):
+            morph = mne.compute_source_morph(
+                src,
+                subject_from=subject,
+                subject_to="fsaverage",
+                subjects_dir=subjects_dir,
+            ).apply(stc)
+            fname_mrp = filepath['morph']
+            if len(stcs) > 1:
+                filename = str(fname_mrp.update(processing='epo').fpath) + f'_epoch{idx}'
+            else:
+                filename = str(fname_mrp.update(processing='clean').fpath)
+
+            morph_to_save = mne.SourceEstimate(data=np.float32(morph.data), 
+                                            vertices=morph.vertices, 
+                                            tmin=morph.tmin, 
+                                            tstep=morph.tstep, 
+                                            subject=subject)
+            morph_to_save.save(filename, ftype='h5', overwrite=True)
+    else:
+        stc_to_save = mne.SourceEstimate(data=np.float32(stc.data), 
+                                         vertices=stc.vertices, 
+                                         tmin=stc.tmin, 
+                                         tstep=stc.tstep, 
+                                         subject='fsaverage')
+        stc_to_save.save(str(filepath['morph'].update(processing='clean')), ftype='h5', overwrite=True)
     return
 
 
@@ -288,7 +301,7 @@ if __name__ == "__main__":
         os.makedirs(os.path.dirname(filepath['noise_cov']), exist_ok=True)
         noise_cov.save(filepath['noise_cov'])
     else:
-        noise_cov = mne.read_cov(filepath['noise_cov'])    
+        noise_cov = mne.read_cov(filepath['noise_cov'])
 
     # Apply inverse on preprocessed data
     stc = get_inverse(filepath, fwd, noise_cov)
@@ -297,10 +310,10 @@ if __name__ == "__main__":
     #stcs = get_inverse_epochs(filepath, fwd, noise_cov)
         
     # Morph to fsaverage
-    if mri_available:
-        get_morphed(filepath, subject, [stc], src)
+    #if mri_available:
+    get_morphed(filepath, subject, [stc], src, mri_available=mri_available)
         #get_morphed(filepath, subject, stcs, src)
-    else:
-        stc.save(str(filepath['morph'].update(processing='clean')), ftype='h5', overwrite=True)
+    #else:
+        #stc.save(str(filepath['morph'].update(processing='clean')), ftype='h5', overwrite=True)
         #for idx, stc in enumerate(stcs):
             #stc.save(str(filepath['morph'].update(processing='epo').fpath), ftype='h5', overwrite=True)
