@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "-s",
     "--subject",
-    default='04',
+    default='13',
     type=str,
     help="Subject to process",
 )
@@ -23,6 +23,7 @@ parser.add_argument(
     type=str,
     help="Run to process",
 )
+
 
 def create_fnames(subject, bloc):
     # Setup input files
@@ -133,7 +134,6 @@ def get_coregistration(filepath, subject, subjects_dir=FS_SUBJDIR, mri_available
         subject = 'sub-' + str(subject)
     else:
         subject = 'fsaverage'
-
     coreg = mne.coreg.Coregistration(info, subject, subjects_dir, fiducials="estimated")
     coreg.fit_icp(n_iterations=6, nasion_weight=2.0, verbose=True)
     coreg.omit_head_shape_points(distance=5.0 / 1000)
@@ -229,6 +229,7 @@ def get_inverse(filepath, fwd, noise_cov):
     return stc
 
 def get_morphed(filepath, subject, stcs, src, mri_available=False, subjects_dir=FS_SUBJDIR):
+    # TODO : modify the function so it only accepts continuous signal
     fsaverage_fpath = op.join(FS_SUBJDIR, 'fsaverage', 'bem', 'fsaverage-ico-5-src.fif')
     if mri_available:
         src_to = mne.read_source_spaces(fsaverage_fpath)
@@ -259,6 +260,7 @@ def get_morphed(filepath, subject, stcs, src, mri_available=False, subjects_dir=
                                             subject=subject)
             morph_to_save.save(filename, ftype='h5', overwrite=True)
     else:
+        stc = stcs[0]
         stc_to_save = mne.SourceEstimate(data=np.float32(stc.data), 
                                          vertices=stc.vertices, 
                                          tmin=stc.tmin, 
