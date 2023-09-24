@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "-s",
     "--subject",
-    default='13',
+    default='35',
     type=str,
     help="Subject to process",
 )
@@ -228,9 +228,11 @@ def get_inverse(filepath, fwd, noise_cov):
     #    json.dump(residual, f)
     return stc
 
-def get_morphed(filepath, subject, stcs, src, mri_available=False, subjects_dir=FS_SUBJDIR):
+def get_morphed(filepath, subject, stcs, fwd, mri_available=False, subjects_dir=FS_SUBJDIR):
     # TODO : modify the function so it only accepts continuous signal
     fsaverage_fpath = op.join(FS_SUBJDIR, 'fsaverage', 'bem', 'fsaverage-ico-5-src.fif')
+    # Create source space to project to
+    src_to = get_source_space(subject, mri_available=False)
     if mri_available:
         src_to = mne.read_source_spaces(fsaverage_fpath)
         morphed = []
@@ -242,8 +244,9 @@ def get_morphed(filepath, subject, stcs, src, mri_available=False, subjects_dir=
         # Morph each source estimate and save
         for idx, stc in enumerate(stcs):
             morph = mne.compute_source_morph(
-                src,
+                fwd['src'],
                 subject_from=subject,
+                src_to=src_to,
                 subject_to="fsaverage",
                 subjects_dir=subjects_dir,
             ).apply(stc)
@@ -313,7 +316,7 @@ if __name__ == "__main__":
         
     # Morph to fsaverage
     #if mri_available:
-    get_morphed(filepath, subject, [stc], src, mri_available=mri_available)
+    get_morphed(filepath, subject, [stc], fwd, mri_available=mri_available)
         #get_morphed(filepath, subject, stcs, src)
     #else:
         #stc.save(str(filepath['morph'].update(processing='clean')), ftype='h5', overwrite=True)
