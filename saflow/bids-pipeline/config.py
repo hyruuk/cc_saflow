@@ -10,6 +10,7 @@ import numpy as np
 
 from mne_bids_pipeline.typing import PathLike, ArbitraryContrast
 
+on_error = "abort"
 
 ###############################################################################
 # Config parameters
@@ -26,7 +27,7 @@ study_name: str = "saflow"
 #     ```
 # """
 
-bids_root: Optional[PathLike] = '/media/hyruuk/CoCoLabYANN/coco_data/saflow/bids'
+bids_root: Optional[PathLike] = '/media/hyruuk/CoCoLabYANN/coco_data/saflow/bids_sample'
 # """
 # Specify the BIDS root directory. Pass an empty string or ```None` to use
 # the value specified in the `BIDS_ROOT` environment variable instead.
@@ -71,7 +72,7 @@ subjects_dir: Optional[PathLike] = '/media/hyruuk/CoCoLabYANN/coco_data/saflow/f
 #     and want to run the source analysis steps.
 # """
 
-interactive: bool = True
+interactive: bool = False
 # """
 # If True, the steps will provide some interactive elements, such as
 # figures. If running the steps from a notebook or Spyder,
@@ -93,7 +94,7 @@ task: str = "gradCPT"
 # The task to process.
 # """
 
-runs: Union[Iterable, Literal["all"]] = ['02','03']
+runs: Union[Iterable, Literal["all"]] = ['02']
 # """
 # The runs to process. If `'all'`, will process all runs found in the
 # BIDS dataset.
@@ -150,7 +151,7 @@ runs: Union[Iterable, Literal["all"]] = ['02','03']
 # plotting.
 # """
 
-subjects: Union[Iterable[str], Literal["all"]] = ['06', '07']
+subjects: Union[Iterable[str], Literal["all"]] = ['05']
 # """
 # Subjects to analyze. If `'all'`, include all subjects. To only
 # include a subset of subjects, pass a list of their identifiers. Even
@@ -898,7 +899,7 @@ raw_resample_sfreq: Optional[float] = 600
 # EPOCHING
 # --------
 
-# epochs_metadata_tmin: Optional[float] = None
+epochs_metadata_tmin: Optional[float] = 0.512
 # """
 # The beginning of the time window for metadata generation, in seconds,
 # relative to the time-locked event of the respective epoch. This may be less
@@ -906,7 +907,7 @@ raw_resample_sfreq: Optional[float] = 600
 # time point of the epoch.
 # """
 
-# epochs_metadata_tmax: Optional[float] = None
+epochs_metadata_tmax: Optional[float] = 1.536
 # """
 # Same as `epochs_metadata_tmin`, but specifying the **end** of the time
 # window for metadata generation.
@@ -993,7 +994,7 @@ conditions: Optional[Union[Iterable[str], Dict[str, str]]] = ['Freq', 'Rare', 'R
 #                   'incorrect': 'response/incorrect'}
 # """  # noqa : E501
 
-epochs_tmin: float = 0.4
+epochs_tmin: float = 0.512
 # """
 # The beginning of an epoch, relative to the respective event, in seconds.
 
@@ -1003,7 +1004,7 @@ epochs_tmin: float = 0.4
 #     ```
 # """
 
-epochs_tmax: float = 1.2
+epochs_tmax: float = 1.536
 # """
 # The end of an epoch, relative to the respective event, in seconds.
 # ???+ example "Example"
