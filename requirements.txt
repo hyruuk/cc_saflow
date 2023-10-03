@@ -23,4 +23,5 @@ tqdm
 xgboost
 rich
 statsmodels
+neurokit2
 h5io
