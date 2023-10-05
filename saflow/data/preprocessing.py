@@ -12,11 +12,13 @@ from mne.io import read_raw_ctf
 from matplotlib.pyplot import close
 import numpy as np
 
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "-s",
     "--subject",
-    default='05',
+    default='20',
     type=str,
     help="Subject to process",
 )
@@ -98,7 +100,7 @@ def preproc_pipeline(filepaths, tmin, tmax):
     # Load raw data
     raw = read_raw_bids(filepaths['raw'], {'preload':True})
     events, event_id = mne.events_from_annotations(raw)
-    raw, events = raw.resample(600, events=events)
+    #raw, events = raw.resample(600, events=events)
     picks = mne.pick_types(raw.info, meg=True, eog=True, ecg=True)
 
     raw = raw.apply_gradient_compensation(grade=3)  # required for source reconstruction
@@ -152,18 +154,7 @@ def preproc_pipeline(filepaths, tmin, tmax):
         picks=picks,
         preload=True,
     )
-    ## Epoching for save
-    epochs = mne.Epochs(
-        preproc,
-        events=events,
-        event_id=event_id,
-        tmin=tmin, 
-        tmax=tmax,
-        baseline=None,
-        reject=None,
-        picks=picks,
-        preload=True,
-    )
+
     ## Plot evoked for each condition
     evokeds = []
     for cond in ['Freq', 'Rare', 'Resp']:
@@ -180,6 +171,7 @@ def preproc_pipeline(filepaths, tmin, tmax):
     ar.fit(epochs_filt)
     autoreject_log = ar.get_reject_log(epochs_filt)
     print(np.sum(autoreject_log.bad_epochs))
+    breakpoint()
     
     try:
         fig = epochs[autoreject_log.bad_epochs].plot()
@@ -245,6 +237,20 @@ def preproc_pipeline(filepaths, tmin, tmax):
     to_remove = ecg_inds + eog_inds
     ica.exclude = to_remove
     preproc = ica.apply(preproc)
+
+    ## Epoching for save
+    reject_dict = dict(mag=3000e-15)
+    epochs = mne.Epochs(
+        preproc,
+        events=events,
+        event_id=event_id,
+        tmin=tmin, 
+        tmax=tmax,
+        baseline=None,
+        reject=reject_dict,
+        picks=picks,
+        preload=True,
+    )
     epochs = ica.apply(epochs)
 
     ## Transform data with autoreject thresholds
