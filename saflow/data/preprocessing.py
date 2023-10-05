@@ -154,6 +154,19 @@ def preproc_pipeline(filepaths, tmin, tmax):
         picks=picks,
         preload=True,
     )
+    ## Epoching for plot
+    reject_dict = dict(mag=3000e-15)
+    epochs = mne.Epochs(
+        preproc,
+        events=events,
+        event_id=event_id,
+        tmin=tmin, 
+        tmax=tmax,
+        baseline=None,
+        reject=reject_dict,
+        picks=picks,
+        preload=True,
+    )
 
     ## Plot evoked for each condition
     evokeds = []
@@ -171,7 +184,6 @@ def preproc_pipeline(filepaths, tmin, tmax):
     ar.fit(epochs_filt)
     autoreject_log = ar.get_reject_log(epochs_filt)
     print(np.sum(autoreject_log.bad_epochs))
-    breakpoint()
     
     try:
         fig = epochs[autoreject_log.bad_epochs].plot()
@@ -239,7 +251,6 @@ def preproc_pipeline(filepaths, tmin, tmax):
     preproc = ica.apply(preproc)
 
     ## Epoching for save
-    reject_dict = dict(mag=3000e-15)
     epochs = mne.Epochs(
         preproc,
         events=events,
