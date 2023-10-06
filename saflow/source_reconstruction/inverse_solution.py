@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "-s",
     "--subject",
-    default='35',
+    default='12',
     type=str,
     help="Subject to process",
 )
@@ -220,57 +220,48 @@ def get_inverse(filepath, fwd, noise_cov):
                 pick_ori=None,
                 verbose=True,
             )
-    # Save sources as hdf5
-    #stc.save(filepath['stc'], ftype='h5', overwrite=True)
-    # Save residual as json
-    #residual_fullpath = filepath['stc'].replace('source', 'residual').replace('.h5', '.json')
-    #with open(residual_fullpath, 'w') as f:
-    #    json.dump(residual, f)
+
     return stc
 
 def get_morphed(filepath, subject, stcs, fwd, mri_available=False, subjects_dir=FS_SUBJDIR):
     # TODO : modify the function so it only accepts continuous signal
-    fsaverage_fpath = op.join(FS_SUBJDIR, 'fsaverage', 'bem', 'fsaverage-ico-5-src.fif')
+    fsaverage_fpath = op.join(FS_SUBJDIR, 'fsaverage', 'bem', 'fsaverage-oct-6-src.fif')
     # Create source space to project to
     src_to = get_source_space(subject, mri_available=False)
     if mri_available:
-        src_to = mne.read_source_spaces(fsaverage_fpath)
-        morphed = []
-        subject = 'sub-' + str(subject)
-        if len(stcs) > 1:
-            fname_mrp = filepath['morph'].update(processing='epo')
-        else:
-            fname_mrp = filepath['morph'].update(processing='clean')
-        # Morph each source estimate and save
-        for idx, stc in enumerate(stcs):
-            morph = mne.compute_source_morph(
-                fwd['src'],
-                subject_from=subject,
-                src_to=src_to,
-                subject_to="fsaverage",
-                subjects_dir=subjects_dir,
-            ).apply(stc)
-            fname_mrp = filepath['morph']
-            if len(stcs) > 1:
-                filename = str(fname_mrp.update(processing='epo').fpath) + f'_epoch{idx}'
-            else:
-                filename = str(fname_mrp.update(processing='clean').fpath)
-
-            morph_to_save = mne.SourceEstimate(data=np.float32(morph.data), 
-                                            vertices=morph.vertices, 
-                                            tmin=morph.tmin, 
-                                            tstep=morph.tstep, 
-                                            subject=subject)
-            morph_to_save.save(filename, ftype='h5', overwrite=True)
+        subject = 'fsaverage'
     else:
-        stc = stcs[0]
-        stc_to_save = mne.SourceEstimate(data=np.float32(stc.data), 
-                                         vertices=stc.vertices, 
-                                         tmin=stc.tmin, 
-                                         tstep=stc.tstep, 
-                                         subject='fsaverage')
-        stc_to_save.save(str(filepath['morph'].update(processing='clean')), ftype='h5', overwrite=True)
-    return
+        subject = 'sub-' + str(subject)
+
+    src_to = mne.read_source_spaces(fsaverage_fpath)
+    morphed = []
+    if len(stcs) > 1:
+        fname_mrp = filepath['morph'].update(processing='epo')
+    else:
+        fname_mrp = filepath['morph'].update(processing='clean')
+    # Morph each source estimate and save
+    for idx, stc in enumerate(stcs):
+        morph = mne.compute_source_morph(
+            fwd['src'],
+            subject_from=subject,
+            src_to=src_to,
+            subject_to="fsaverage",
+            subjects_dir=subjects_dir,
+        ).apply(stc)
+        fname_mrp = filepath['morph']
+        if len(stcs) > 1:
+            filename = str(fname_mrp.update(processing='epo').fpath) + f'_epoch{idx}'
+        else:
+            filename = str(fname_mrp.update(processing='clean').fpath)
+
+        stc_to_save = mne.SourceEstimate(data=np.float32(morph.data), 
+                                        vertices=morph.vertices, 
+                                        tmin=morph.tmin, 
+                                        tstep=morph.tstep, 
+                                        subject=subject)
+        stc_to_save.save(filename, ftype='h5', overwrite=True)
+
+    return stc_to_save
 
 
 if __name__ == "__main__":
@@ -316,7 +307,7 @@ if __name__ == "__main__":
         
     # Morph to fsaverage
     #if mri_available:
-    get_morphed(filepath, subject, [stc], fwd, mri_available=mri_available)
+    stc_to_save = get_morphed(filepath, subject, [stc], fwd, mri_available=mri_available)
         #get_morphed(filepath, subject, stcs, src)
     #else:
         #stc.save(str(filepath['morph'].update(processing='clean')), ftype='h5', overwrite=True)
