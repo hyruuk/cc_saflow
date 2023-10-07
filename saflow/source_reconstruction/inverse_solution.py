@@ -228,11 +228,10 @@ def get_morphed(filepath, subject, stcs, fwd, mri_available=False, subjects_dir=
     fsaverage_fpath = op.join(FS_SUBJDIR, 'fsaverage', 'bem', 'fsaverage-oct-6-src.fif')
     # Create source space to project to
     src_to = get_source_space(subject, mri_available=False)
-    if mri_available:
+    if not mri_available:
         subject = 'fsaverage'
     else:
         subject = 'sub-' + str(subject)
-
     src_to = mne.read_source_spaces(fsaverage_fpath)
     morphed = []
     if len(stcs) > 1:
@@ -274,6 +273,7 @@ if __name__ == "__main__":
         mri_available = False
     else:
         mri_available = True
+    print(f"MRI available : {mri_available}")
 
     # Create filenames
     filepath = create_fnames(subject, bloc)
