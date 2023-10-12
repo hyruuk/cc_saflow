@@ -40,7 +40,7 @@ def create_fnames(subject, run, bids_root=saflow.BIDS_PATH):
                             task='gradCPT',
                             run=run,
                             datatype='meg',
-                            description='lzc_idx',
+                            description='idx',
                             root=bids_root + '/derivatives/lzc/')
     lzc_bidspath.mkdir(exist_ok=True)
 
@@ -48,7 +48,7 @@ def create_fnames(subject, run, bids_root=saflow.BIDS_PATH):
                             task='gradCPT',
                             run=run,
                             datatype='meg',
-                            description='slope_idx',
+                            description='idx',
                             root=bids_root + '/derivatives/FOOOF_slope/')
     slope_bidspath.mkdir(exist_ok=True)
     
