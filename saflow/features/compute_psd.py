@@ -31,8 +31,6 @@ parser.add_argument(
 )
 
 
-
-
 def compute_hilbert_env(stc, l_freq, h_freq):
     """
     Compute the Hilbert envelope of a source estimate object, after band-pass filtering it between l_freq and h_freq.
@@ -97,7 +95,8 @@ def compute_PSD(stc, filepaths):
         segmented_array, events_idx, events_dicts = segment_sourcelevel(stc_env, filepaths, sfreq=stc.sfreq)
         time_avg_array = time_average(segmented_array)
         psd_array.append(time_avg_array)
-    psd_array = np.array(psd_array)
+    psd_array = np.array(psd_array).transpose(1,0,2)
+
     return psd_array, events_idx, events_dicts
 
 
@@ -115,6 +114,6 @@ if __name__ == "__main__":
     psd_array, events_idx, events_dicts = compute_PSD(stc, filepaths)
 
     for idx, array in enumerate(psd_array):
-        fname = filepaths['psd'].replace('idx', str(events_idx[idx])) + '.pkl'
+        fname = str(filepaths['psd'].fpath).replace('idx', str(events_idx[idx])) + '.pkl'
         with open(fname, 'wb') as f:
             pickle.dump(array, f)
