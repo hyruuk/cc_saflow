@@ -32,7 +32,7 @@ def create_fnames(subject, run, bids_root=saflow.BIDS_PATH):
                             task='gradCPT',
                             run=run,
                             datatype='meg',
-                            description='psd_idx',
+                            description='idx',
                             root=bids_root + '/derivatives/psd/')
     psd_bidspath.mkdir(exist_ok=True)
 
