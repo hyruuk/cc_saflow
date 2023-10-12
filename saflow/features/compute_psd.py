@@ -10,7 +10,7 @@ import pandas as pd
 import mne_bids
 from scipy.signal import hilbert
 from mne_bids import BIDSPath, read_raw_bids
-from neurokit2.complexity import complexity_lempelziv, complexity_dimension, complexity_delay
+#from neurokit2.complexity import complexity_lempelziv, complexity_dimension, complexity_delay
 import pickle
 from saflow.features.utils import create_fnames, segment_sourcelevel
 
@@ -18,7 +18,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "-s",
     "--subject",
-    default='23',
+    default='12',
     type=str,
     help="Subject to process",
 )
@@ -94,11 +94,11 @@ def compute_PSD(stc, filepaths):
     psd_array = []
     for idx, freq in enumerate(saflow.FREQS_NAMES):
         stc_env = compute_hilbert_env(stc, saflow.FREQS[idx][0], saflow.FREQS[idx][1])
-        segmented_array, events_idx = segment_sourcelevel(stc_env, filepaths, sfreq=stc.sfreq)
+        segmented_array, events_idx, events_dicts = segment_sourcelevel(stc_env, filepaths, sfreq=stc.sfreq)
         time_avg_array = time_average(segmented_array)
         psd_array.append(time_avg_array)
     psd_array = np.array(psd_array)
-    return psd_array, events_idx
+    return psd_array, events_idx, events_dicts
 
 
 if __name__ == "__main__":
@@ -112,9 +112,9 @@ if __name__ == "__main__":
 
     stc = mne.read_source_estimate(filepaths['morph'])
 
-    psd_array, events_idx = compute_PSD(stc, filepaths)
+    psd_array, events_idx, events_dicts = compute_PSD(stc, filepaths)
 
     for idx, array in enumerate(psd_array):
-        fname = filepaths['psd'].replace('_idx', '_'+str(events_idx[idx])) + '.pkl'
+        fname = filepaths['psd'].replace('idx', str(events_idx[idx])) + '.pkl'
         with open(fname, 'wb') as f:
             pickle.dump(array, f)
