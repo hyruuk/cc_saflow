@@ -109,6 +109,7 @@ def segment_sourcelevel(data_array, filepaths, sfreq=600, tmin=0.426, tmax=1.278
                     # Fill a dict with events info
                     included_events = [idx - i for i in range(n_events_window)]
                     event_dict = {'event_idx':idx,
+                                  't0_sample':event[0],
                                   'VTC':events_full.loc[idx, 'VTC'],
                                   'task':events_full.loc[idx, 'task'],
                                   'RT':events_full.loc[idx, 'RT'],

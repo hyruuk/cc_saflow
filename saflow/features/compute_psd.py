@@ -49,7 +49,11 @@ def compute_hilbert_env(stc, l_freq, h_freq):
     stc_hilb : np.ndarray
         The Hilbert envelope of the source estimate object, with shape (n_vertices, n_samples).
     """
-    stc_filtered = mne.filter.filter_data(np.float64(stc.data), sfreq=stc.sfreq, l_freq=l_freq, h_freq=h_freq)
+    stc_filtered = mne.filter.filter_data(np.float64(stc.data), 
+                                          sfreq=stc.sfreq, 
+                                          l_freq=l_freq, 
+                                          h_freq=h_freq, 
+                                          n_jobs=-1)
     stc_hilb = np.abs(hilbert(stc_filtered))**2
     return stc_hilb
 
@@ -116,4 +120,6 @@ if __name__ == "__main__":
     for idx, array in enumerate(psd_array):
         fname = str(filepaths['psd'].fpath).replace('idx', str(events_idx[idx])) + '.pkl'
         with open(fname, 'wb') as f:
-            pickle.dump(array, f)
+            pickle.dump({'data':array,
+                         'info':events_dicts[idx]}, 
+                         f)

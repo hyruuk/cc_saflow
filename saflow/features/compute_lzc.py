@@ -39,9 +39,9 @@ def compute_lzc_for_epoch(epoch, idx, filepaths):
     for chan_idx, channel in enumerate(epoch):
         print(f'Epoch {idx} channel {chan_idx}')
         # Compute LZC and permuted LZC
-        plzc = complexity_lempelziv(channel, permutation=True, dimension=7, delay=2)[0]
+        #plzc = complexity_lempelziv(channel, permutation=True, dimension=7, delay=2)[0]
         lzc = complexity_lempelziv(channel, permutation=False)[0]
-        epoch_array.append([lzc, plzc])
+        epoch_array.append([lzc])#, plzc])
     epoch_array = np.array(epoch_array)
     
     # Save epoch
