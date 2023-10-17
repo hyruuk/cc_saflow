@@ -15,6 +15,14 @@ import pickle
 from saflow.features.utils import create_fnames, segment_sourcelevel
 
 parser = argparse.ArgumentParser()
+
+parser.add_argument(
+    "-nt",
+    "--n_trials",
+    default=1,
+    type=int,
+    help="Number of trials to consider per epoch",
+)
 parser.add_argument(
     "-s",
     "--subject",
@@ -79,7 +87,7 @@ def time_average(segmented_array):
     time_avg_array = np.array(time_avg_array)
     return time_avg_array
 
-def compute_PSD(stc, filepaths):
+def compute_PSD(stc, filepaths, n_trials=1):
     """
     Compute the power spectral density (PSD) of a source estimate object across different frequency bands.
 
@@ -96,7 +104,7 @@ def compute_PSD(stc, filepaths):
     psd_array = []
     for idx, freq in enumerate(saflow.FREQS_NAMES):
         stc_env = compute_hilbert_env(stc, saflow.FREQS[idx][0], saflow.FREQS[idx][1])
-        segmented_array, events_idx, events_dicts = segment_sourcelevel(stc_env, filepaths, sfreq=stc.sfreq)
+        segmented_array, events_idx, events_dicts = segment_sourcelevel(stc_env, filepaths, sfreq=stc.sfreq, n_events_window=n_trials)
         time_avg_array = time_average(segmented_array)
         psd_array.append(time_avg_array)
     psd_array = np.array(psd_array).transpose(1,0,2)
@@ -106,16 +114,20 @@ def compute_PSD(stc, filepaths):
 
 if __name__ == "__main__":
     args = parser.parse_args()
+    n_trials = args.n_trials
     subject = args.subject
     run = args.run
     freq_bands = saflow.FREQS
     freq_names = saflow.FREQS_NAMES
 
     filepaths = create_fnames(subject, run)
+    if n_epochs > 1:
+        filepaths['psd'].update(root=saflow.BIDS_PATH + f'/derivatives/psd_{n_trials}/')
+
 
     stc = mne.read_source_estimate(filepaths['morph'])
 
-    psd_array, events_idx, events_dicts = compute_PSD(stc, filepaths)
+    psd_array, events_idx, events_dicts = compute_PSD(stc, filepaths, n_trials=1)
 
     for idx, array in enumerate(psd_array):
         fname = str(filepaths['psd'].fpath).replace('idx', str(events_idx[idx])) + '.pkl'
