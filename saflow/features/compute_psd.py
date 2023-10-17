@@ -121,7 +121,7 @@ if __name__ == "__main__":
     freq_names = saflow.FREQS_NAMES
 
     filepaths = create_fnames(subject, run)
-    if n_epochs > 1:
+    if n_trials > 1:
         filepaths['psd'].update(root=saflow.BIDS_PATH + f'/derivatives/psd_{n_trials}/')
 
 
