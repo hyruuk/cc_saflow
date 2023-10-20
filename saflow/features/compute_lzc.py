@@ -35,32 +35,41 @@ parser.add_argument(
 )
 
 def compute_lzc_for_epoch(epoch, idx, filepaths):
-    epoch_array = []
-    for chan_idx, channel in enumerate(epoch):
-        print(f'Epoch {idx} channel {chan_idx}')
-        # Compute LZC and permuted LZC
-        #plzc = complexity_lempelziv(channel, permutation=True, dimension=7, delay=2)[0]
-        lzc = complexity_lempelziv(channel, permutation=False)[0]
-        epoch_array.append([lzc])#, plzc])
-    epoch_array = np.array(epoch_array)
-    
-    # Save epoch
     fname = str(filepaths['lzc'].fpath).replace('idx', str(idx)) + '.pkl'
-    with open(fname, 'wb') as f:
-        pickle.dump(epoch_array.T, f)
+    if not os.path.exists(fname):
+        print(f'Epoch {idx}')
+        n_jobs = -1  # Uses all processors. Adjust if needed.
+        lzc_array = Parallel(n_jobs=n_jobs)(delayed(compute_lzc_for_chan)(channel, chan_idx) 
+                                            for chan_idx, channel in enumerate(epoch))
+        epoch_array = np.array(lzc_array)
+        # save
+        with open(fname, 'wb') as f:
+            pickle.dump({'data':epoch_array.T,
+                         'info':events_dicts[idx]}, f)
+    # if exists, just load
+    else:
+        with open(fname, 'rb') as f:
+            file = pickle.load(f)
+            epoch_array = file['data']
     return epoch_array
+
+def compute_lzc_for_chan(channel, chan_idx):
+    # Compute LZC and permuted LZC
+    print(f'Channel {chan_idx}')
+    plzc = complexity_lempelziv(channel, permutation=True, dimension=7, delay=2)[0]
+    lzc = complexity_lempelziv(channel, permutation=False)[0]
+    return [lzc, plzc]
+
 
 def compute_LZC_on_sources(stc, filepaths):
     # Segment array
     segmented_array, events_idx, events_dicts = segment_sourcelevel(stc.data, filepaths, sfreq=stc.sfreq, n_events_window=8)
     
-    # Parallel computation
-    n_jobs = -1  # Uses all processors. Adjust if needed.
-    lzc_array = Parallel(n_jobs=n_jobs)(delayed(compute_lzc_for_epoch)(epoch, idx, filepaths) 
-                                        for idx, epoch in enumerate(segmented_array))
+    for epo_idx, epoch in enumerate(segmented_array):
+        lzc_array = compute_lzc_for_epoch(epoch, epo_idx, filepaths)
     
     lzc_array = np.array(lzc_array)
-    return lzc_array, events_idx
+    return lzc_array, events_idx, events_dicts
 
 
 if __name__ == "__main__":
@@ -74,4 +83,4 @@ if __name__ == "__main__":
 
     stc = mne.read_source_estimate(filepaths['morph'])
 
-    lzc_array, events_idx = compute_LZC_on_sources(stc, filepaths)
+    lzc_array, events_idx, events_dicts = compute_LZC_on_sources(stc, filepaths)

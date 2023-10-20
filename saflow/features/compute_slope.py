@@ -12,12 +12,13 @@ from mne_bids import BIDSPath, read_raw_bids
 
 import pickle
 from fooof import FOOOF
+from saflow.features.utils import create_fnames, segment_sourcelevel
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "-s",
     "--subject",
-    default='23',
+    default='12',
     type=str,
     help="Subject to process",
 )
@@ -29,84 +30,7 @@ parser.add_argument(
     help="Run to process",
 )
 
-def create_fnames(subject, run, bids_root=saflow.BIDS_PATH):
-    morph_bidspath = BIDSPath(subject=subject,
-                            task='gradCPT',
-                            run=run,
-                            datatype='meg',
-                            processing='clean',
-                            description='morphed',
-                            root=bids_root + '/derivatives/morphed_sources/')
-    
-    preproc_bidspath = BIDSPath(subject=subject, 
-                        task='gradCPT', 
-                        run=run, 
-                        datatype='meg', 
-                        suffix='meg',
-                        processing='clean',
-                        root=bids_root + '/derivatives/preprocessed/')
-    
-    psd_bidspath = BIDSPath(subject=subject,
-                            task='gradCPT',
-                            run=run,
-                            datatype='meg',
-                            description='psd_idx',
-                            root=bids_root + '/derivatives/psd/')
-    psd_bidspath.mkdir(exist_ok=True)
 
-    lzc_bidspath = BIDSPath(subject=subject,
-                            task='gradCPT',
-                            run=run,
-                            datatype='meg',
-                            description='lzc_idx',
-                            root=bids_root + '/derivatives/lzc/')
-    lzc_bidspath.mkdir(exist_ok=True)
-    
-    return {'morph':morph_bidspath,
-            'preproc':preproc_bidspath,
-            }
-
-
-def segment_sourcelevel(data_array, filepaths, sfreq=600, tmin=0.426, tmax=1.278):
-    """
-    Segment a source-level data array based on events from a preprocessed MEG dataset.
-
-    Parameters
-    ----------
-    data_array : np.ndarray
-        The source-level data array to segment.
-    preproc_bidspath : mne_bids.BIDSPath
-        The BIDSPath object pointing to the preprocessed MEG dataset.
-    sfreq : float, optional
-        The sampling frequency of the data, in Hz. Default is 600.
-    tmin : float, optional
-        The start time of the segment relative to the event onset, in seconds. Default is 0.426.
-    tmax : float, optional
-        The end time of the segment relative to the event onset, in seconds. Default is 1.278.
-
-    Returns
-    -------
-    segmented_array : np.ndarray
-        The segmented data array, with shape (n_events, n_channels, n_samples).
-    """
-    # Load events
-    preproc = mne_bids.read_raw_bids(bids_path=filepaths['preproc'], verbose=False)
-    events = mne.events_from_annotations(preproc, verbose=False)
-    # Compute time samples
-    tmin_samples = int(tmin * sfreq)
-    tmax_samples = int(tmax * sfreq)
-
-    # Segment array
-    segmented_array = []
-    events_idx = []
-    for idx, event in enumerate(events[0]):
-        if event[2] in [1,2]:
-            if event[0]+tmax_samples < data_array.shape[1]:
-                segmented_array.append(data_array[:,event[0]+tmin_samples:event[0]+tmax_samples])
-                events_idx.append(idx)
-    segmented_array = np.array(segmented_array)
-    events_idx = np.array(events_idx)
-    return segmented_array, events_idx
 
 def compute_slope(stc, filepaths, fooof_bounds=[5,40]):
     """
@@ -125,28 +49,34 @@ def compute_slope(stc, filepaths, fooof_bounds=[5,40]):
         The slope of the source estimate object, with shape (n_epochs, n_channels, 2)
     """
     # Segment array
-    segmented_array, events_idx = segment_sourcelevel(stc.data, filepaths['preproc'], sfreq=stc.sfreq)
+    segmented_array, events_idx, events_dicts = segment_sourcelevel(stc.data, filepaths, sfreq=stc.sfreq, n_events_window=8)
     slope_array = []
     for idx, epoch in enumerate(segmented_array):
         epoch_array = []
-        for channel in epoch:
-            # Prepare FFT and mask
-            power_spectrum = abs(np.fft.fft(channel))**2
-            freqs = np.fft.fftfreq(channel.size, 1/stc.sfreq)
-            fooof_bounds = [5,40]
-            mask = np.logical_and(freqs >= fooof_bounds[0], freqs <= fooof_bounds[1])
+        fname = str(filepaths['slope'].fpath).replace('idx', str(events_idx[idx])) + '.pkl'
+        if not os.path.isfile(fname):
+            for chan_idx, channel in enumerate(epoch):
+                print(f'Epoch {idx} channel {chan_idx}')
+                # Prepare FFT and mask
+                power_spectrum = abs(np.fft.fft(channel))**2
+                freqs = np.fft.fftfreq(channel.size, 1/stc.sfreq)
+                fooof_bounds = [5,40]
+                mask = np.logical_and(freqs >= fooof_bounds[0], freqs <= fooof_bounds[1])
 
-            fm = FOOOF(max_n_peaks=3)
-            fm.fit(freqs[mask], power_spectrum[mask])
-            slope = fm.get_params('aperiodic_params')[0]
-            epoch_array.append(slope)
-        epoch_array = np.array(epoch_array)
+                fm = FOOOF(max_n_peaks=3)
+                fm.fit(freqs[mask], power_spectrum[mask])
+                slope = fm.get_params('aperiodic_params')[0]
+                epoch_array.append(slope)
+            epoch_array = np.array(epoch_array)
+            # Save epoch
+            with open(fname, 'wb') as f:
+                pickle.dump({'data':epoch_array,
+                             'info':events_dicts[idx]}, f)
+        else:
+            with open(fname, 'rb') as f:
+                file = pickle.load(f)
+                epoch_array = file['data']
         slope_array.append(epoch_array)
-        
-        # Save epoch
-        fname = filepaths['lzc'].replace('_idx', '_'+str(events_idx[idx])) + '.pkl'
-        with open(fname, 'wb') as f:
-            pickle.dump(epoch_array, f)
 
     slope_array = np.array(slope_array)
     return slope_array, events_idx
