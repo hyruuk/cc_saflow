@@ -4,6 +4,7 @@ reports/*
 # Params file
 #src/saflow_params.py
 saflow/__init__.py
+tmp/*
 
 # Distribution / packaging
 .Python
