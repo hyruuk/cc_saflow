@@ -33,6 +33,13 @@ parser.add_argument(
     type=str,
     help="Run to process",
 )
+parser.add_argument(
+    "-nt",
+    "--n_trials",
+    default=8,
+    type=int,
+    help="Number of trials to consider per epoch",
+)
 
 def compute_lzc_for_epoch(epoch, idx, filepaths):
     fname = str(filepaths['lzc'].fpath).replace('idx', str(idx)) + '.pkl'
@@ -61,9 +68,9 @@ def compute_lzc_for_chan(channel, chan_idx):
     return [lzc, plzc]
 
 
-def compute_LZC_on_sources(stc, filepaths):
+def compute_LZC_on_sources(stc, filepaths, n_trials=8):
     # Segment array
-    segmented_array, events_idx, events_dicts = segment_sourcelevel(stc.data, filepaths, sfreq=stc.sfreq, n_events_window=8)
+    segmented_array, events_idx, events_dicts = segment_sourcelevel(stc.data, filepaths, sfreq=stc.sfreq, n_events_window=n_trials)
     
     for epo_idx, epoch in enumerate(segmented_array):
         lzc_array = compute_lzc_for_epoch(epoch, epo_idx, filepaths)
@@ -76,6 +83,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     subject = args.subject
     run = args.run
+    n_trials = args.n_trials
     freq_bands = saflow.FREQS
     freq_names = saflow.FREQS_NAMES
 
@@ -83,4 +91,4 @@ if __name__ == "__main__":
 
     stc = mne.read_source_estimate(filepaths['morph'])
 
-    lzc_array, events_idx, events_dicts = compute_LZC_on_sources(stc, filepaths)
+    lzc_array, events_idx, events_dicts = compute_LZC_on_sources(stc, filepaths, n_trials=n_trials)
