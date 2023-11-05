@@ -103,28 +103,29 @@ def segment_sourcelevel(data_array, filepaths, sfreq=600, tmin=0.426, tmax=1.278
         if event[2] in [1,2]:
             if event[0]+tmax_samples < data_array.shape[1]:
                 if event[0]+tmin_samples > 0:
-                    segmented_array.append(data_array[:,event[0]+tmin_samples:event[0]+tmax_samples])
-                    events_idx.append(idx)
+                    if idx - n_events_window >= 0: # Check if there are enough events before the current one
+                        segmented_array.append(data_array[:,event[0]+tmin_samples:event[0]+tmax_samples])
+                        events_idx.append(idx)
 
-                    # Fill a dict with events info
-                    included_events = [idx - i for i in range(n_events_window)]
-                    event_dict = {'event_idx':idx,
-                                  't0_sample':event[0],
-                                  'VTC':events_full.loc[idx, 'VTC'],
-                                  'task':events_full.loc[idx, 'task'],
-                                  'RT':events_full.loc[idx, 'RT'],
-                                  'INOUT':events_full.loc[idx, 'INOUT_50_50'],
-                                  'INOUT_2575':events_full.loc[idx, 'INOUT_25_75'],
-                                  'INOUT_1090':events_full.loc[idx, 'INOUT_10_90'],
-                                  'included_events_idx':included_events,
-                                  'included_VTC':events_full.loc[included_events, 'VTC'].values,
-                                  'included_task':events_full.loc[included_events, 'task'].values,
-                                  'included_RT':events_full.loc[included_events, 'RT'].values,
-                                  'included_INOUT':events_full.loc[included_events, 'INOUT_50_50'].values,
-                                  'included_INOUT_2575':events_full.loc[included_events, 'INOUT_25_75'].values,
-                                  'included_INOUT_1090':events_full.loc[included_events, 'INOUT_10_90'].values,
-                                  }
-                    events_dict.append(event_dict)
+                        # Fill a dict with events info
+                        included_events = [idx - i for i in range(n_events_window)]
+                        event_dict = {'event_idx':idx,
+                                    't0_sample':event[0],
+                                    'VTC':events_full.loc[idx, 'VTC'],
+                                    'task':events_full.loc[idx, 'task'],
+                                    'RT':events_full.loc[idx, 'RT'],
+                                    'INOUT':events_full.loc[idx, 'INOUT_50_50'],
+                                    'INOUT_2575':events_full.loc[idx, 'INOUT_25_75'],
+                                    'INOUT_1090':events_full.loc[idx, 'INOUT_10_90'],
+                                    'included_events_idx':included_events,
+                                    'included_VTC':events_full.loc[included_events, 'VTC'].values,
+                                    'included_task':events_full.loc[included_events, 'task'].values,
+                                    'included_RT':events_full.loc[included_events, 'RT'].values,
+                                    'included_INOUT':events_full.loc[included_events, 'INOUT_50_50'].values,
+                                    'included_INOUT_2575':events_full.loc[included_events, 'INOUT_25_75'].values,
+                                    'included_INOUT_1090':events_full.loc[included_events, 'INOUT_10_90'].values,
+                                    }
+                        events_dict.append(event_dict)
     segmented_array = np.array(segmented_array)
     events_idx = np.array(events_idx)
     return segmented_array, events_idx, events_dict
