@@ -170,6 +170,7 @@ if __name__ == "__main__":
 
     for subject in subjects:
         for run in runs:
+            print(f'Processing subject {subject}, run {run}')
             filepaths = create_fnames(subject, run)
             filepaths['psd'].update(root=op.join('/'.join(str(filepaths['psd'].root).split('/')[:-1]), str(filepaths['psd'].root).split('/')[-1] + f'_{method}_{level}_{n_trials}'))
 

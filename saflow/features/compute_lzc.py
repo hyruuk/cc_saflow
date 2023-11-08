@@ -23,14 +23,14 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "-s",
     "--subject",
-    default='12',
+    default='all',
     type=str,
     help="Subject to process",
 )
 parser.add_argument(
     "-r",
     "--run",
-    default='02',
+    default='all',
     type=str,
     help="Run to process",
 )
@@ -70,10 +70,9 @@ def compute_lzc_for_epoch(epoch, idx, events_dict, filepaths):
 
 def compute_lzc_for_chan(channel, chan_idx):
     # Compute LZC and permuted LZC
-    print(f'Channel {chan_idx}')
-    plzc = complexity_lempelziv(channel, permutation=True, dimension=7, delay=2)[0]
+    #plzc = complexity_lempelziv(channel, permutation=True, dimension=7, delay=2)[0]
     lzc = complexity_lempelziv(channel, permutation=False)[0]
-    return [lzc, plzc]
+    return [lzc, 0]#plzc]
 
 
 def compute_LZC_on_sources(data, sfreq, filepaths, n_trials=8):
@@ -112,8 +111,9 @@ if __name__ == "__main__":
 
     for subject in subjects:
         for run in runs:
+            print(f'Processing subject {subject}, run {run}')
             filepaths = create_fnames(subject, run)
-            filepaths['lzc'].update(root=op.join('/'.join(str(filepaths['lzc'].root).split('/')[:-1]), str(filepaths['lzc'].root).split('/')[-1] + f'_{level}_{n_trials}'))
+            filepaths['lzc'].update(root=op.join('/'.join(str(filepaths['lzc'].root).split('/')[:-1]), str(filepaths['lzc'].root).split('/')[-1] + f'_{level}_{n_trials}-trials_noplzc'))
             filepaths['lzc'].mkdir(exist_ok=True)
             if level == 'sensor':
                 raw = mne_bids.read_raw_bids(filepaths['preproc'])
