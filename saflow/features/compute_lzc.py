@@ -16,6 +16,7 @@ from joblib import Parallel, delayed
 import numpy as np
 import pickle
 from saflow.features.utils import create_fnames, segment_sourcelevel
+import os.path as op
 
 
 parser = argparse.ArgumentParser()
@@ -40,8 +41,15 @@ parser.add_argument(
     type=int,
     help="Number of trials to consider per epoch",
 )
+parser.add_argument(
+    "-l",
+    "--level",
+    default="sensor",
+    type=str,
+    help="Level of processing (sensor or source)",
+)
 
-def compute_lzc_for_epoch(epoch, idx, filepaths):
+def compute_lzc_for_epoch(epoch, idx, events_dict, filepaths):
     fname = str(filepaths['lzc'].fpath).replace('idx', str(idx)) + '.pkl'
     if not os.path.exists(fname):
         print(f'Epoch {idx}')
@@ -52,7 +60,7 @@ def compute_lzc_for_epoch(epoch, idx, filepaths):
         # save
         with open(fname, 'wb') as f:
             pickle.dump({'data':epoch_array.T,
-                         'info':events_dicts[idx]}, f)
+                         'info':events_dict}, f)
     # if exists, just load
     else:
         with open(fname, 'rb') as f:
@@ -68,12 +76,12 @@ def compute_lzc_for_chan(channel, chan_idx):
     return [lzc, plzc]
 
 
-def compute_LZC_on_sources(stc, filepaths, n_trials=8):
+def compute_LZC_on_sources(data, sfreq, filepaths, n_trials=8):
     # Segment array
-    segmented_array, events_idx, events_dicts = segment_sourcelevel(stc.data, filepaths, sfreq=stc.sfreq, n_events_window=n_trials)
+    segmented_array, events_idx, events_dicts = segment_sourcelevel(data, filepaths, sfreq=sfreq, n_events_window=n_trials)
     
     for epo_idx, epoch in enumerate(segmented_array):
-        lzc_array = compute_lzc_for_epoch(epoch, epo_idx, filepaths)
+        lzc_array = compute_lzc_for_epoch(epoch, epo_idx, events_dicts[epo_idx], filepaths)
     
     lzc_array = np.array(lzc_array)
     return lzc_array, events_idx, events_dicts
@@ -84,11 +92,37 @@ if __name__ == "__main__":
     subject = args.subject
     run = args.run
     n_trials = args.n_trials
+    level = args.level
     freq_bands = saflow.FREQS
     freq_names = saflow.FREQS_NAMES
 
-    filepaths = create_fnames(subject, run)
+    if type(run) == str:
+        if run == 'all':
+            runs = ['02', '03', '04', '05', '06', '07']
+        else:
+            runs = [run]
+    elif type(run) == list:
+        runs = run
 
-    stc = mne.read_source_estimate(filepaths['morph'])
+    if type(subject) == str:
+        if subject == 'all':
+            subjects = saflow.SUBJ_LIST
+        else:
+            subjects = [subject]
 
-    lzc_array, events_idx, events_dicts = compute_LZC_on_sources(stc, filepaths, n_trials=n_trials)
+    for subject in subjects:
+        for run in runs:
+            filepaths = create_fnames(subject, run)
+            filepaths['lzc'].update(root=op.join('/'.join(str(filepaths['lzc'].root).split('/')[:-1]), str(filepaths['lzc'].root).split('/')[-1] + f'_{level}_{n_trials}'))
+            filepaths['lzc'].mkdir(exist_ok=True)
+            if level == 'sensor':
+                raw = mne_bids.read_raw_bids(filepaths['preproc'])
+                picks = mne.pick_types(raw.info, meg=True, ref_meg=False, eeg=False, eog=False)
+                data = raw.get_data(picks=picks)
+                sfreq = raw.info['sfreq']
+            elif level == 'source':
+                stc = mne.read_source_estimate(filepaths['morph'])
+                data = np.float64(stc.data)
+                sfreq = stc.sfreq
+
+            lzc_array, events_idx, events_dicts = compute_LZC_on_sources(data, sfreq, filepaths, n_trials=n_trials)
