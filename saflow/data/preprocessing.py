@@ -266,7 +266,7 @@ def preproc_pipeline(filepaths, tmin, tmax):
 
     ## Transform data with autoreject thresholds
     epochs = ar.fit_transform(epochs)
-    autoreject_log = ar.get_reject_log(epochs)
+    #autoreject_log = ar.get_reject_log(epochs)
 
     ## Plot cleaned signal
     fig = preproc.plot(duration=20, start=50, show=False)
