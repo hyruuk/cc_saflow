@@ -108,7 +108,7 @@ def segment_sourcelevel(data_array, filepaths, sfreq=600, tmin=0.426, tmax=1.278
     stim_events_list = []
     for idx, event in enumerate(events):
         if event[2] in [1,2]:
-            stim_events_list.append(event[0])
+            stim_events_list.append(idx)
             if event[0]+tmax_samples < data_array.shape[1]:
                 if event[0]+tmin_samples > 0:
                     if len(stim_events_list) >= n_events_window:
