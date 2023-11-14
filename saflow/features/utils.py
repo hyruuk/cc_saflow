@@ -4,6 +4,7 @@ import mne_bids
 import numpy as np
 import pandas as pd
 import mne
+import pickle
 
 def create_fnames(subject, run, bids_root=saflow.BIDS_PATH):
     morph_bidspath = BIDSPath(subject=subject,
@@ -94,21 +95,28 @@ def segment_sourcelevel(data_array, filepaths, sfreq=600, tmin=0.426, tmax=1.278
     epoch_length = tmax_samples - tmin_samples
     tmin_samples = tmin_samples - int(epoch_length * (n_events_window-1))
 
+    # Grab ARlog : 
+    arlog_fname = str(filepaths['preproc'].copy().update(description='ARlog').fpath)+'.pkl'
+    with open(arlog_fname, 'rb') as f:
+        ARlog = pickle.load(f)
+    bad_epochs = ARlog.bad_epochs
 
     # Segment array
     segmented_array = []
     events_idx = []
     events_dict = []
+    stim_events_list = []
     for idx, event in enumerate(events):
         if event[2] in [1,2]:
+            stim_events_list.append(event[0])
             if event[0]+tmax_samples < data_array.shape[1]:
                 if event[0]+tmin_samples > 0:
-                    if idx - n_events_window >= 0: # Check if there are enough events before the current one
+                    if len(stim_events_list) >= n_events_window:
+                    #if idx - n_events_window >= 0: # Check if there are enough events before the current one
                         segmented_array.append(data_array[:,event[0]+tmin_samples:event[0]+tmax_samples])
                         events_idx.append(idx)
-
                         # Fill a dict with events info
-                        included_events = [idx - i for i in range(n_events_window)]
+                        included_events = stim_events_list[-n_events_window:]
                         event_dict = {'event_idx':idx,
                                     't0_sample':event[0],
                                     'VTC':events_full.loc[idx, 'VTC'],
@@ -117,6 +125,8 @@ def segment_sourcelevel(data_array, filepaths, sfreq=600, tmin=0.426, tmax=1.278
                                     'INOUT':events_full.loc[idx, 'INOUT_50_50'],
                                     'INOUT_2575':events_full.loc[idx, 'INOUT_25_75'],
                                     'INOUT_1090':events_full.loc[idx, 'INOUT_10_90'],
+                                    'bad_epoch':bad_epochs[idx],
+                                    'included_bad_epochs':bad_epochs[included_events],
                                     'included_events_idx':included_events,
                                     'included_VTC':events_full.loc[included_events, 'VTC'].values,
                                     'included_task':events_full.loc[included_events, 'task'].values,
