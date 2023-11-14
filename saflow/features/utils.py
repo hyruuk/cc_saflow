@@ -96,7 +96,7 @@ def segment_sourcelevel(data_array, filepaths, sfreq=600, tmin=0.426, tmax=1.278
     tmin_samples = tmin_samples - int(epoch_length * (n_events_window-1))
 
     # Grab ARlog : 
-    arlog_fname = str(filepaths['preproc'].copy().update(description='ARlog').fpath)+'.pkl'
+    arlog_fname = str(filepaths['preproc'].copy().update(description='ARlog', processing=None).fpath)+'.pkl'
     with open(arlog_fname, 'rb') as f:
         ARlog = pickle.load(f)
     bad_epochs = ARlog.bad_epochs
