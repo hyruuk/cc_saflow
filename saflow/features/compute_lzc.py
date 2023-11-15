@@ -17,6 +17,7 @@ import numpy as np
 import pickle
 from saflow.features.utils import create_fnames, segment_sourcelevel
 import os.path as op
+import antropy
 
 
 parser = argparse.ArgumentParser()
@@ -69,9 +70,12 @@ def compute_lzc_for_epoch(epoch, idx, events_dict, filepaths):
     return epoch_array
 
 def compute_lzc_for_chan(channel, chan_idx):
+    print(chan_idx)
     # Compute LZC and permuted LZC
     #plzc = complexity_lempelziv(channel, permutation=True, dimension=7, delay=2)[0]
-    lzc = complexity_lempelziv(channel, permutation=False)[0]
+    #lzc = complexity_lempelziv(channel, permutation=False)[0]
+    channel_binarized = np.array([0 if x < np.median(channel) else 1 for x in channel])
+    lzc = antropy.lziv_complexity(channel_binarized, normalize=True)
     return [lzc, 0]#plzc]
 
 
