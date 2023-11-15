@@ -42,7 +42,7 @@ parser.add_argument(
 parser.add_argument(
     "-s",
     "--subject",
-    default='12',
+    default='04',
     type=str,
     help="Subject to process",
 )
@@ -215,10 +215,14 @@ if __name__ == "__main__":
                 stc = mne.read_source_estimate(filepaths['morph'])
                 data = np.float64(stc.data)
                 sfreq = stc.sfreq
+                
             elif level == 'sensor':
                 raw = mne_bids.read_raw_bids(filepaths['preproc'])
                 data = raw.get_data()
                 sfreq = raw.info['sfreq']
+                meg_picks = mne.pick_types(raw.info, meg=True, ref_meg=False, eeg=False, eog=False)
+                data = data[meg_picks,:]
+
             if method == 'fooof':
                 psd_array, events_idx, events_dicts, fooof_array = compute_PSD(data, filepaths, sfreq, n_trials=n_trials, method=method)
                 for idx, array in enumerate(psd_array):
