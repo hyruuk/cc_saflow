@@ -166,7 +166,6 @@ def compute_PSD(data, filepaths, sfreq, n_trials=1, method='welch'):
             for epoch_idx in range(welch_array[0].shape[0]):
                 fm_temp = fg_temp.get_fooof(epoch_idx).copy()
                 fooof_list.append(fm_temp)
-                spectrum = fm_temp.fooofed_spectrum_
                 fooof_freqs = fm_temp.freqs
                 for band_idx, band in enumerate(saflow.FREQS_NAMES):
                     freq_mask = np.where((fooof_freqs >= bands[band][0]) & (fooof_freqs <= bands[band][1]))[0]
@@ -209,7 +208,7 @@ if __name__ == "__main__":
         for run in runs:
             print(f'Processing subject {subject}, run {run}')
             filepaths = create_fnames(subject, run)
-            filepaths['psd'].update(root=op.join('/'.join(str(filepaths['psd'].root).split('/')[:-1]), str(filepaths['psd'].root).split('/')[-1] + f'_{method}_{level}_{n_trials}'))
+            filepaths['psd'].update(root=op.join('/'.join(str(filepaths['psd'].root).split('/')[:-1]), str(filepaths['psd'].root).split('/')[-1] + f'_{method}_{level}_{n_trials}trials'))
 
             filepaths['psd'].mkdir(exist_ok=True)
             if level == 'source':
@@ -237,5 +236,3 @@ if __name__ == "__main__":
                         pickle.dump({'data':array,
                                     'info':events_dicts[idx]}, 
                                     f)
-
-                                    
