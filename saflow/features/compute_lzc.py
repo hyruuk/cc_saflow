@@ -66,16 +66,16 @@ def compute_lzc_for_epoch(epoch, idx, events_dict, filepaths):
     else:
         with open(fname, 'rb') as f:
             file = pickle.load(f)
-            epoch_array = file['data']
+        epoch_array = file['data']
     return epoch_array
 
 def compute_lzc_for_chan(channel, chan_idx):
-    print(chan_idx)
     # Compute LZC and permuted LZC
     #plzc = complexity_lempelziv(channel, permutation=True, dimension=7, delay=2)[0]
     #lzc = complexity_lempelziv(channel, permutation=False)[0]
     channel_binarized = np.array([0 if x < np.median(channel) else 1 for x in channel])
     lzc = antropy.lziv_complexity(channel_binarized, normalize=True)
+    #print(f'Chan : {chan_idx}, LZC = {lzc}')
     return [lzc, 0]#plzc]
 
 
