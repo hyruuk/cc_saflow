@@ -72,11 +72,11 @@ def compute_lzc_for_epoch(epoch, idx, events_dict, filepaths):
 def compute_lzc_for_chan(channel, chan_idx):
     # Compute LZC and permuted LZC
     #plzc = complexity_lempelziv(channel, permutation=True, dimension=7, delay=2)[0]
-    lzc = complexity_lempelziv(channel, symbolize='median', permutation=False)[0]
+    nk_lzc = complexity_lempelziv(channel, symbolize='median', permutation=False)[0]
     #channel_binarized = np.array([0 if x < np.median(channel) else 1 for x in channel])
-    #lzc = antropy.lziv_complexity(channel_binarized, normalize=True)
-    print(f'Chan : {chan_idx}, LZC = {lzc}')
-    return [lzc, 0]#plzc]
+    #ant_lzc = antropy.lziv_complexity(channel_binarized, normalize=True)
+    #print(f'Chan : {chan_idx}, LZC = {lzc}')
+    return [nk_lzc, 0]#plzc]
 
 
 def compute_LZC_on_sources(data, sfreq, filepaths, n_trials=8):
@@ -84,6 +84,7 @@ def compute_LZC_on_sources(data, sfreq, filepaths, n_trials=8):
     segmented_array, events_idx, events_dicts = segment_sourcelevel(data, filepaths, sfreq=sfreq, n_events_window=n_trials)
     
     for epo_idx, epoch in enumerate(segmented_array):
+        print(f'Epoch {epo_idx}')
         lzc_array = compute_lzc_for_epoch(epoch, epo_idx, events_dicts[epo_idx], filepaths)
     
     lzc_array = np.array(lzc_array)
