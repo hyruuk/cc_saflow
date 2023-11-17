@@ -24,14 +24,14 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "-s",
     "--subject",
-    default='all',
+    default='12',
     type=str,
     help="Subject to process",
 )
 parser.add_argument(
     "-r",
     "--run",
-    default='all',
+    default='04',
     type=str,
     help="Run to process",
 )
@@ -57,11 +57,12 @@ def compute_lzc_for_epoch(epoch, idx, events_dict, filepaths):
         n_jobs = -1  # Uses all processors. Adjust if needed.
         lzc_array = Parallel(n_jobs=n_jobs)(delayed(compute_lzc_for_chan)(channel, chan_idx) 
                                             for chan_idx, channel in enumerate(epoch))
-        epoch_array = np.array(lzc_array)
+        epoch_array = np.array(lzc_array).T
         # save
         with open(fname, 'wb') as f:
-            pickle.dump({'data':epoch_array.T,
+            pickle.dump({'data':epoch_array,
                          'info':events_dict}, f)
+        print(f'Saved {fname}')
     # if exists, just load
     else:
         with open(fname, 'rb') as f:
