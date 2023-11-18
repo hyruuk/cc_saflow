@@ -106,7 +106,7 @@ def time_average(segmented_array):
     """
     time_avg_array = []
     for array in segmented_array:
-        time_avg_array.append(np.mean(array, axis=1))
+        time_avg_array.append(np.nanmean(array, axis=1))
     time_avg_array = np.array(time_avg_array)
     return time_avg_array
 
@@ -147,7 +147,7 @@ def compute_PSD(data, filepaths, sfreq, n_trials=1, method='welch', n_jobs=-1):
                 welch_array_masked = welch_array[0][:,:,freq_mask]
             else:
                 welch_array_masked = welch_array[0][:,:,freq_mask[0]:freq_mask[-1]+1]
-            psd_array.append(np.mean(welch_array_masked, axis=-1))
+            psd_array.append(np.nanmean(welch_array_masked, axis=-1))
         psd_array = np.array(psd_array)
         return psd_array, events_idx, events_dicts
     
@@ -182,7 +182,7 @@ def compute_PSD(data, filepaths, sfreq, n_trials=1, method='welch', n_jobs=-1):
                 for band_idx, band in enumerate(saflow.FREQS_NAMES):
                     freq_mask = np.where((fooof_freqs >= bands[band][0]) & (fooof_freqs <= bands[band][1]))[0]
                     welch_array_masked = fm_temp.fooofed_spectrum_[freq_mask]
-                    psd_array[epoch_idx, chan_idx, band_idx] = np.mean(welch_array_masked)
+                    psd_array[epoch_idx, chan_idx, band_idx] = np.nanmean(welch_array_masked)
                 del fm_temp
             del fg_temp
             fooof_list = np.array(fooof_list)
