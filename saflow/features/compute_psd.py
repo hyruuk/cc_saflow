@@ -42,20 +42,27 @@ parser.add_argument(
 parser.add_argument(
     "-s",
     "--subject",
-    default='04',
+    default='all',
     type=str,
     help="Subject to process",
 )
 parser.add_argument(
     "-r",
     "--run",
-    default='02',
+    default='all',
     type=str,
     help="Run to process",
 )
+parser.add_argument(
+    "-j",
+    "--n_jobs",
+    default=-1,
+    type=int,
+    help="Number of jobs to use",
+)
 
 
-def compute_hilbert_env(data, sfreq, l_freq, h_freq):
+def compute_hilbert_env(data, sfreq, l_freq, h_freq, n_jobs=-1):
     """
     Compute the Hilbert envelope of a source estimate object, after band-pass filtering it between l_freq and h_freq.
 
@@ -77,7 +84,7 @@ def compute_hilbert_env(data, sfreq, l_freq, h_freq):
                                           sfreq=sfreq, 
                                           l_freq=l_freq, 
                                           h_freq=h_freq, 
-                                          n_jobs=-1)
+                                          n_jobs=n_jobs)
     stc_hilb = np.abs(hilbert(stc_filtered))**2
     return stc_hilb
 
@@ -103,7 +110,7 @@ def time_average(segmented_array):
     time_avg_array = np.array(time_avg_array)
     return time_avg_array
 
-def compute_PSD(data, filepaths, sfreq, n_trials=1, method='welch'):
+def compute_PSD(data, filepaths, sfreq, n_trials=1, method='welch', n_jobs=-1):
     """
     Compute the power spectral density (PSD) of a source estimate object across different frequency bands.
 
@@ -117,18 +124,21 @@ def compute_PSD(data, filepaths, sfreq, n_trials=1, method='welch'):
     psd_array : np.ndarray
         The PSD of the source estimate object, with shape (n_freq_bands, n_events, n_channels).
     """
-    segmented_array, events_idx, events_dicts = segment_sourcelevel(data, filepaths, sfreq=sfreq, n_events_window=n_trials)
     psd_array = []
     if method == 'hilbert':
         for idx, freq in enumerate(saflow.FREQS_NAMES):
             stc_env = compute_hilbert_env(data, sfreq, saflow.FREQS[idx][0], saflow.FREQS[idx][1])
+            segmented_array, events_idx, events_dicts = segment_sourcelevel(stc_env, filepaths, sfreq=sfreq, n_events_window=n_trials)
             time_avg_array = time_average(segmented_array)
             psd_array.append(time_avg_array)
-        psd_array = np.array(psd_array).transpose(1,0,2)
+        psd_array = np.array(psd_array)
         return psd_array, events_idx, events_dicts
 
     elif method == 'welch':
-        welch_array = mne.time_frequency.psd_array_welch(segmented_array, sfreq=sfreq, n_jobs=-1, n_fft=1022, n_overlap=512)
+        segmented_array, events_idx, events_dicts = segment_sourcelevel(data, filepaths, sfreq=sfreq, n_events_window=n_trials)
+        welch_array = mne.time_frequency.psd_array_welch(segmented_array, sfreq=sfreq, n_jobs=n_jobs, n_fft=1022, n_overlap=512)
+        print(f'Number of bins : {len(welch_array[1])}')
+        print(welch_array[1])
         for idx, freq in enumerate(saflow.FREQS_NAMES):
             lowfreq = saflow.FREQS[idx][0]
             highfreq = saflow.FREQS[idx][1]
@@ -138,10 +148,12 @@ def compute_PSD(data, filepaths, sfreq, n_trials=1, method='welch'):
             else:
                 welch_array_masked = welch_array[0][:,:,freq_mask[0]:freq_mask[-1]+1]
             psd_array.append(np.mean(welch_array_masked, axis=-1))
-        psd_array = np.array(psd_array).transpose(1,0,2)
+        psd_array = np.array(psd_array)
         return psd_array, events_idx, events_dicts
     
     elif method == 'fooof':
+        segmented_array, events_idx, events_dicts = segment_sourcelevel(data, filepaths, sfreq=sfreq, n_events_window=n_trials)
+
         # Define `peak_width_limit` setting
         peak_width = [1, 8]
         # Define `max_n_peaks` setting
@@ -151,9 +163,9 @@ def compute_PSD(data, filepaths, sfreq, n_trials=1, method='welch'):
         # Define frequency range
         PSD_range = [2, 120]
         # Initialize a model object for spectral parameterization, with some settings 
-        fg = FOOOFGroup(peak_width_limits=peak_width, max_n_peaks=n_peaks, min_peak_height=peak_height, verbose=False, aperiodic_mode='knee')
+        fg = FOOOFGroup(peak_width_limits=peak_width, max_n_peaks=n_peaks, min_peak_height=peak_height, verbose=False, aperiodic_mode='fixed')
         bands = {key: value for key, value in zip(saflow.FREQS_NAMES, saflow.FREQS)}
-        welch_array = mne.time_frequency.psd_array_welch(segmented_array, sfreq=sfreq, n_jobs=-1, n_fft=1022, n_overlap=512)
+        welch_array = mne.time_frequency.psd_array_welch(segmented_array, sfreq=sfreq, n_jobs=n_jobs, n_fft=1022, n_overlap=512)
         
         fooof_array = []
         psd_array = np.zeros((welch_array[0].shape[0], welch_array[0].shape[1], len(saflow.FREQS_NAMES)))
@@ -176,7 +188,7 @@ def compute_PSD(data, filepaths, sfreq, n_trials=1, method='welch'):
             fooof_list = np.array(fooof_list)
             fooof_array.append(fooof_list)
         fooof_array = np.array(fooof_array).T
-        psd_array = np.array(psd_array)
+        psd_array = np.array(psd_array).transpose(2,0,1)
         return psd_array, events_idx, events_dicts, fooof_array
 
 
@@ -187,6 +199,7 @@ if __name__ == "__main__":
     run = args.run
     level = args.level
     method = args.method
+    n_jobs = args.n_jobs
     freq_bands = saflow.FREQS
     freq_names = saflow.FREQS_NAMES
 
@@ -224,7 +237,7 @@ if __name__ == "__main__":
                 data = data[meg_picks,:]
 
             if method == 'fooof':
-                psd_array, events_idx, events_dicts, fooof_array = compute_PSD(data, filepaths, sfreq, n_trials=n_trials, method=method)
+                psd_array, events_idx, events_dicts, fooof_array = compute_PSD(data, filepaths, sfreq, n_trials=n_trials, method=method, n_jobs=n_jobs)
                 for idx, array in enumerate(psd_array):
                     fname = str(filepaths['psd'].fpath).replace('idx', str(events_idx[idx])) + '.pkl'
                     with open(fname, 'wb') as f:
