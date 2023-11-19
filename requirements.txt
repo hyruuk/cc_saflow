@@ -26,3 +26,4 @@ statsmodels
 neurokit2
 fooof
 h5io
+statannotations
