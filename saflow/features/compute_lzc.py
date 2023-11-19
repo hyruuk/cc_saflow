@@ -24,14 +24,14 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "-s",
     "--subject",
-    default='12',
+    default='all',
     type=str,
     help="Subject to process",
 )
 parser.add_argument(
     "-r",
     "--run",
-    default='04',
+    default='all',
     type=str,
     help="Run to process",
 )
@@ -54,7 +54,7 @@ def compute_lzc_for_epoch(epoch, idx, events_dict, filepaths):
     fname = str(filepaths['lzc'].fpath).replace('idx', str(idx)) + '.pkl'
     if not os.path.exists(fname):
         print(f'Epoch {idx}')
-        n_jobs = -1  # Uses all processors. Adjust if needed.
+        n_jobs = None  # Uses all processors. Adjust if needed.
         lzc_array = Parallel(n_jobs=n_jobs)(delayed(compute_lzc_for_chan)(channel, chan_idx) 
                                             for chan_idx, channel in enumerate(epoch))
         epoch_array = np.array(lzc_array).T
