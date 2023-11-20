@@ -136,17 +136,13 @@ def compute_PSD(data, filepaths, sfreq, n_trials=1, method='welch', n_jobs=-1):
 
     elif method == 'welch':
         segmented_array, events_idx, events_dicts = segment_sourcelevel(data, filepaths, sfreq=sfreq, n_events_window=n_trials)
-        welch_array = mne.time_frequency.psd_array_welch(segmented_array, sfreq=sfreq, n_jobs=n_jobs, n_fft=1022, n_overlap=512)
-        print(f'Number of bins : {len(welch_array[1])}')
-        print(welch_array[1])
+
+        welch_array = mne.time_frequency.psd_array_welch(segmented_array, sfreq=sfreq, n_jobs=n_jobs, n_fft=1022, n_overlap=959, average='median')
         for idx, freq in enumerate(saflow.FREQS_NAMES):
             lowfreq = saflow.FREQS[idx][0]
             highfreq = saflow.FREQS[idx][1]
             freq_mask = np.where((welch_array[1] >= lowfreq) & (welch_array[1] <= highfreq))[0]
-            if len(freq_mask) <= 1:
-                welch_array_masked = welch_array[0][:,:,freq_mask]
-            else:
-                welch_array_masked = welch_array[0][:,:,freq_mask[0]:freq_mask[-1]+1]
+            welch_array_masked = welch_array[0][:,:,freq_mask]
             psd_array.append(np.nanmean(welch_array_masked, axis=-1))
         psd_array = np.array(psd_array)
         return psd_array, events_idx, events_dicts
@@ -165,30 +161,33 @@ def compute_PSD(data, filepaths, sfreq, n_trials=1, method='welch', n_jobs=-1):
         # Initialize a model object for spectral parameterization, with some settings 
         fg = FOOOFGroup(peak_width_limits=peak_width, max_n_peaks=n_peaks, min_peak_height=peak_height, verbose=False, aperiodic_mode='fixed')
         bands = {key: value for key, value in zip(saflow.FREQS_NAMES, saflow.FREQS)}
-        welch_array = mne.time_frequency.psd_array_welch(segmented_array, sfreq=sfreq, n_jobs=n_jobs, n_fft=1022, n_overlap=512)
-        
+
+        welch_array = mne.time_frequency.psd_array_welch(segmented_array, sfreq=sfreq, n_jobs=n_jobs, n_fft=1022, n_overlap=959, average='median')
         fooof_array = []
-        psd_array = np.zeros((welch_array[0].shape[0], welch_array[0].shape[1], len(saflow.FREQS_NAMES)))
-        for chan_idx in range(welch_array[0].shape[1]):
-            print(f'Computing PSD for channel {chan_idx}')
-            chan_data = welch_array[0][:,chan_idx,:]
+        
+        psd_array = np.zeros((len(saflow.FREQS_NAMES), welch_array[0].shape[0], welch_array[0].shape[1]))
+        for epoch_idx in range(welch_array[0].shape[0]):
+            print(f'Computing epoch : {epoch_idx}')
+            epoch_data = welch_array[0][epoch_idx,:,:]
             fg_temp = fg.copy()
-            fg_temp.fit(welch_array[1], chan_data, PSD_range)
+            fg_temp.fit(welch_array[1], epoch_data, PSD_range, n_jobs=n_jobs)
+            print(f'{fg_temp.n_null_} failed fits : {fg_temp.null_inds_}')
+            
             fooof_list = []
-            for epoch_idx in range(welch_array[0].shape[0]):
-                fm_temp = fg_temp.get_fooof(epoch_idx).copy()
+            for chan_idx in range(welch_array[0].shape[1]):
+                fm_temp = fg_temp.get_fooof(chan_idx).copy()
                 fooof_list.append(fm_temp)
                 fooof_freqs = fm_temp.freqs
                 for band_idx, band in enumerate(saflow.FREQS_NAMES):
                     freq_mask = np.where((fooof_freqs >= bands[band][0]) & (fooof_freqs <= bands[band][1]))[0]
                     welch_array_masked = fm_temp.fooofed_spectrum_[freq_mask]
-                    psd_array[epoch_idx, chan_idx, band_idx] = np.nanmean(welch_array_masked)
+                    psd_array[band_idx, epoch_idx, chan_idx] = np.nanmean(welch_array_masked)
                 del fm_temp
             del fg_temp
             fooof_list = np.array(fooof_list)
             fooof_array.append(fooof_list)
-        fooof_array = np.array(fooof_array).T
-        psd_array = np.array(psd_array).transpose(2,0,1)
+        fooof_array = np.array(fooof_array)
+
         return psd_array, events_idx, events_dicts, fooof_array
 
 
@@ -242,11 +241,12 @@ if __name__ == "__main__":
                     fname = str(filepaths['psd'].fpath).replace('idx', str(events_idx[idx])) + '.pkl'
                     with open(fname, 'wb') as f:
                         pickle.dump({'data':array,
-                                    'info':events_dicts[idx],
-                                    'fooof':fooof_array[idx,:]}, 
+                                    'info':events_dicts[idx],}, 
                                     f)
+                    with open(fname.replace('_desc-', '_fg-'), 'wb') as f:
+                        pickle.dump({'fooof':fooof_array[idx,:]}, f)
             else:
-                psd_array, events_idx, events_dicts = compute_PSD(data, filepaths, sfreq, n_trials=n_trials, method=method)
+                psd_array, events_idx, events_dicts = compute_PSD(data, filepaths, sfreq, n_trials=n_trials, method=method, n_jobs=n_jobs)
                 for idx, array in enumerate(psd_array):
                     fname = str(filepaths['psd'].fpath).replace('idx', str(events_idx[idx])) + '.pkl'
                     with open(fname, 'wb') as f:
