@@ -129,6 +129,7 @@ def compute_PSD(data, filepaths, sfreq, n_trials=1, method='welch', n_jobs=-1):
         for idx, freq in enumerate(saflow.FREQS_NAMES):
             stc_env = compute_hilbert_env(data, sfreq, saflow.FREQS[idx][0], saflow.FREQS[idx][1])
             segmented_array, events_idx, events_dicts = segment_sourcelevel(stc_env, filepaths, sfreq=sfreq, n_events_window=n_trials)
+
             time_avg_array = time_average(segmented_array)
             psd_array.append(time_avg_array)
         psd_array = np.array(psd_array)
@@ -247,7 +248,8 @@ if __name__ == "__main__":
                         pickle.dump({'fooof':fooof_array[idx,:]}, f)
             else:
                 psd_array, events_idx, events_dicts = compute_PSD(data, filepaths, sfreq, n_trials=n_trials, method=method, n_jobs=n_jobs)
-                for idx, array in enumerate(psd_array):
+                for idx in range(psd_array.shape[1]):
+                    array = psd_array[:,idx,:] # shape (n_freqs, n_channels)
                     fname = str(filepaths['psd'].fpath).replace('idx', str(events_idx[idx])) + '.pkl'
                     with open(fname, 'wb') as f:
                         pickle.dump({'data':array,
