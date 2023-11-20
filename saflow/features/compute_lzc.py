@@ -17,7 +17,7 @@ import numpy as np
 import pickle
 from saflow.features.utils import create_fnames, segment_sourcelevel
 import os.path as op
-#import antropy
+import antropy
 
 
 parser = argparse.ArgumentParser()
@@ -75,10 +75,11 @@ def compute_lzc_for_chan(channel, chan_idx):
     # Compute LZC and permuted LZC
     plzc = complexity_lempelziv(channel, permutation=True, dimension=7, delay=2)[0]
     nk_lzc = complexity_lempelziv(channel, symbolize='median', permutation=False)[0]
-    #channel_binarized = np.array([0 if x < np.median(channel) else 1 for x in channel])
-    #ant_lzc = antropy.lziv_complexity(channel_binarized, normalize=True)
-    print(f'Chan : {chan_idx}, LZC = {ant_lzc}')
-    return [nk_lzc, plzc]
+    channel_binarized = np.array([0 if x < np.median(channel) else 1 for x in channel])
+    ant_lzc = antropy.lziv_complexity(channel_binarized, normalize=True)
+    result = [nk_lzc, plzc, ant_lzc]
+    print(f'Chan : {chan_idx}, LZC = {result}')
+    return result
 
 
 def compute_LZC_on_sources(data, sfreq, filepaths, n_trials=8):
@@ -119,7 +120,7 @@ if __name__ == "__main__":
         for run in runs:
             print(f'Processing subject {subject}, run {run}')
             filepaths = create_fnames(subject, run)
-            filepaths['lzc'].update(root=op.join('/'.join(str(filepaths['lzc'].root).split('/')[:-1]), str(filepaths['lzc'].root).split('/')[-1] + f'_{level}_{n_trials}trials_noplzc_ant'))
+            filepaths['lzc'].update(root=op.join('/'.join(str(filepaths['lzc'].root).split('/')[:-1]), str(filepaths['lzc'].root).split('/')[-1] + f'_{level}_{n_trials}trials'))
             filepaths['lzc'].mkdir(exist_ok=True)
             if level == 'sensor':
                 raw = mne_bids.read_raw_bids(filepaths['preproc'])
