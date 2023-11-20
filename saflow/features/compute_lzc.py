@@ -17,7 +17,7 @@ import numpy as np
 import pickle
 from saflow.features.utils import create_fnames, segment_sourcelevel
 import os.path as op
-import antropy
+#import antropy
 
 
 parser = argparse.ArgumentParser()
@@ -54,7 +54,7 @@ def compute_lzc_for_epoch(epoch, idx, events_dict, filepaths):
     fname = str(filepaths['lzc'].fpath).replace('idx', str(idx)) + '.pkl'
     if not os.path.exists(fname):
         print(f'Epoch {idx}')
-        n_jobs = None  # Uses all processors. Adjust if needed.
+        n_jobs = -1  # Uses all processors. Adjust if needed.
         lzc_array = Parallel(n_jobs=n_jobs)(delayed(compute_lzc_for_chan)(channel, chan_idx) 
                                             for chan_idx, channel in enumerate(epoch))
         epoch_array = np.array(lzc_array).T
@@ -73,12 +73,12 @@ def compute_lzc_for_epoch(epoch, idx, events_dict, filepaths):
 
 def compute_lzc_for_chan(channel, chan_idx):
     # Compute LZC and permuted LZC
-    #plzc = complexity_lempelziv(channel, permutation=True, dimension=7, delay=2)[0]
-    #nk_lzc = complexity_lempelziv(channel, symbolize='median', permutation=False)[0]
-    channel_binarized = np.array([0 if x < np.median(channel) else 1 for x in channel])
-    ant_lzc = antropy.lziv_complexity(channel_binarized, normalize=True)
+    plzc = complexity_lempelziv(channel, permutation=True, dimension=7, delay=2)[0]
+    nk_lzc = complexity_lempelziv(channel, symbolize='median', permutation=False)[0]
+    #channel_binarized = np.array([0 if x < np.median(channel) else 1 for x in channel])
+    #ant_lzc = antropy.lziv_complexity(channel_binarized, normalize=True)
     print(f'Chan : {chan_idx}, LZC = {ant_lzc}')
-    return [ant_lzc, 0]#plzc]
+    return [nk_lzc, plzc]
 
 
 def compute_LZC_on_sources(data, sfreq, filepaths, n_trials=8):
@@ -86,7 +86,7 @@ def compute_LZC_on_sources(data, sfreq, filepaths, n_trials=8):
     segmented_array, events_idx, events_dicts = segment_sourcelevel(data, filepaths, sfreq=sfreq, n_events_window=n_trials)
     
     for epo_idx, epoch in enumerate(segmented_array):
-        lzc_array = compute_lzc_for_epoch(epoch, epo_idx, events_dicts[epo_idx], filepaths)
+        lzc_array = compute_lzc_for_epoch(epoch, events_idx[epo_idx], events_dicts[epo_idx], filepaths)
     
     lzc_array = np.array(lzc_array)
     return lzc_array, events_idx, events_dicts
