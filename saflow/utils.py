@@ -64,7 +64,7 @@ def create_fnames(subject, run, bids_root=saflow.BIDS_PATH):
             'preproc':preproc_bidspath,
             'psd':psd_bidspath,
             'lzc':lzc_bidspath,
-            'slope':slope_bidspath,
+            'welch':welch_bidspath,
             }
 
 
