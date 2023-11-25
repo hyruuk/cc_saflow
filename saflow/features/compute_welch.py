@@ -57,38 +57,6 @@ parser.add_argument(
     type=int,
     help="Number of jobs to run in parallel",
 )
-parser.add_argument(
-    "-c",
-    "--channel",
-    default='all',
-    type=str,
-    help="Channel to process",
-)
-
-def compute_fooofs_on_averages(avg_psd, n_jobs=-1, method='knee', max_n_peaks=8, output_fname=None):
-    fg = FOOOFGroup(aperiodic_mode=method, max_n_peaks=max_n_peaks)
-    count = 0
-    fooof_groups = []
-    conditions_list = []
-    subjects_list = []
-    for cond_idx, cond in enumerate(['IN', 'OUT']):
-        for subj_idx in range(len(avg_psd['IN'])):
-            count = count + 1
-            print('=====================================')
-            print(f'Processing group {count} for cond {cond}')
-            fg_temp = fg.copy()
-            fg_temp.fit(avg_psd['freq_bins'], avg_psd[cond][subj_idx], [2,120], n_jobs=n_jobs)
-            fooof_groups.append(fg_temp)
-            conditions_list.append(cond)
-            subjects_list.append(avg_psd['subject_list'][subj_idx])
-    fooof_array = np.array(fooof_groups)
-    data_dict = {'fooof_array': fooof_array,
-                 'conditions': conditions_list,
-                'subjects': subjects_list}
-    if output_fname is not None:
-        with open(output_fname, 'wb') as f:
-            pickle.dump(data_dict, f)
-    return fooof_array, conditions_list, subjects_list
 
 
 if __name__ == "__main__":
@@ -99,7 +67,7 @@ if __name__ == "__main__":
     method = args.method
     subj = args.subject
     run = args.run
-    chan = args.channel
+
     if subj == 'all':
         subjects = saflow.SUBJ_LIST
     else:
@@ -142,40 +110,3 @@ if __name__ == "__main__":
                     pickle.dump({'data':welch_array,
                                 'info':events_dicts,
                                 'freq_bins':freq_bins}, f)
-
-
-'''
-    ## Compute FOOOFs
-    output_fname = op.join(saflow.BIDS_PATH, 'derivatives', 'subject_averaged_fooofs_knee-mp8.pkl')
-    if not op.exists(output_fname):
-        fg = FOOOFGroup(aperiodic_mode='knee')
-        count = 0
-        fooof_groups = []
-        conditions_list = []
-        subjects_list = []
-        for cond_idx, cond in enumerate(['IN', 'OUT']):
-            for subj_idx in range(len(avg_psd['IN'])):
-                count = count + 1
-                print('=====================================')
-                print(f'Processing group {count} for cond {cond}')
-                fg_temp = fg.copy()
-                fg_temp.fit(avg_psd['freq_bins'], avg_psd[cond][subj_idx], [2,120], n_jobs=n_jobs)
-                fooof_groups.append(fg_temp)
-                conditions_list.append(cond)
-                subjects_list.append(avg_psd['subject_list'][subj_idx])
-        fooof_array = np.array(fooof_groups)
-        data_dict = {'fooof_array': fooof_array,
-                     'conditions': conditions_list,
-                    'subjects': subjects_list}
-                
-        with open(output_fname, 'wb') as f:
-            pickle.dump(data_dict, f)
-    else:
-        with open(output_fname, 'rb') as f:
-            data_dict = pickle.load(f)
-            fooof_array = data_dict['fooof_array']
-            conditions_list = data_dict['conditions']
-            subjects_list = data_dict['subjects']
-'''
-
-
