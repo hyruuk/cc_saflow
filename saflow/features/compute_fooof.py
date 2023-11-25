@@ -92,7 +92,6 @@ if __name__ == "__main__":
         OUT_subj = []
         for run in runs:
             print(f'Processing subject {subject}, run {run}')
-            run = '0' + str(run)
             filepaths = create_fnames(subject, run)
             input_fname = str(filepaths['welch'].fpath) + '.pkl'
             IN_baseline = []
