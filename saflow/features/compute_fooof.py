@@ -81,7 +81,7 @@ if __name__ == "__main__":
     else:
         subjects = [subj]
     if run == 'all':
-        runs = saflow.BLOCS_LIST
+        runs = ['0' + x for x in saflow.BLOCS_LIST]
     else:
         runs = [run]
 
@@ -118,7 +118,7 @@ if __name__ == "__main__":
             OUT_run_avg = np.mean(np.array(OUT_baseline), axis=0)
             IN_subj.append(IN_run_avg)
             OUT_subj.append(OUT_run_avg)
-
+            0/0
             # Run-level FOOOFs
             fg_IN = fg.copy()
             fg_IN.fit(freq_bins, IN_run_avg, [2,120], n_jobs=n_jobs)
@@ -128,7 +128,7 @@ if __name__ == "__main__":
             # Trial-level FOOOFs
             trial_fooofs = []
             for idx_trial, trial in enumerate(welch_array):
-                print(f'Processing trial {idx_trial} for run-{run}')
+                print(f'Processing trial {idx_trial} for subject-{subject} run-{run}')
                 fg_trial = fg.copy()
                 fg_trial.fit(freq_bins, trial, [2,120], n_jobs=n_jobs)
                 trial_fooofs.append(fg_trial)
@@ -145,6 +145,7 @@ if __name__ == "__main__":
                 
         IN_subj = np.array(IN_subj)
         OUT_subj = np.array(OUT_subj)
+
 
         # Average across runs
         IN_subj_avg = np.mean(IN_subj, axis=0)
