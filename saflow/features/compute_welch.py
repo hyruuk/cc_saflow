@@ -68,12 +68,15 @@ if __name__ == "__main__":
     subj = args.subject
     run = args.run
 
+    n_fft = 2044
+    n_overlap = 1533
+
     if subj == 'all':
         subjects = saflow.SUBJ_LIST
     else:
         subjects = [subj]
     if run == 'all':
-        runs = saflow.BLOCS_LIST
+        runs = ['0' + x for x in saflow.BLOCS_LIST]
     else:
         runs = [run]
 
@@ -84,6 +87,7 @@ if __name__ == "__main__":
             print(f'Processing subject {subject}, run {run}')
             run = '0' + str(run)
             filepaths = create_fnames(subject, run)
+            filepaths['welch'].update(root=op.join('/'.join(str(filepaths['welch'].root).split('/')[:-1]), str(filepaths['welch'].root).split('/')[-1] + f'_{n_fft}_{level}_{n_trials}trials'))
             output_fname = str(filepaths['welch'].fpath) + '.pkl'
             if not op.exists(output_fname):
                 subject_list = []
@@ -104,7 +108,7 @@ if __name__ == "__main__":
                     data = data[meg_picks,:]
 
                 segmented_array, events_idx, events_dicts = segment_sourcelevel(data, filepaths, sfreq=sfreq, n_events_window=n_trials)
-                welch_array, freq_bins = mne.time_frequency.psd_array_welch(segmented_array, sfreq=sfreq, n_jobs=n_jobs, n_fft=1022, n_overlap=959, average='mean')
+                welch_array, freq_bins = mne.time_frequency.psd_array_welch(segmented_array, sfreq=sfreq, n_jobs=n_jobs, n_fft=n_fft, n_overlap=n_overlap, average='mean')
                 
                 with open(output_fname, 'wb') as f:
                     pickle.dump({'data':welch_array,
