@@ -64,6 +64,14 @@ parser.add_argument(
     type=str,
     help="Channel to process",
 )
+parser.add_argument(
+    "-wp",
+    "--welch_params",
+    default='2044_sensor_8trials',
+    type=str,
+    help="Welch from which to process",
+)
+
 
 
 
@@ -73,19 +81,20 @@ if __name__ == "__main__":
     n_trials = args.n_trials
     level = args.level
     method = args.method
-    subj = args.subject
+    subjects = args.subject
     run = args.run
     chan = args.channel
-    if subj == 'all':
+    welch_params = args.welch_params
+    if subjects == 'all':
         subjects = saflow.SUBJ_LIST
     else:
-        subjects = [subj]
+        subjects = [subjects]
     if run == 'all':
         runs = ['0' + x for x in saflow.BLOCS_LIST]
     else:
         runs = [run]
 
-    welch_params = '2044_sensor_8trials'
+    
     fooof_params = f'fooof_{welch_params}'
 
     max_n_peaks = 8
