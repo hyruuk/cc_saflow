@@ -118,7 +118,7 @@ if __name__ == "__main__":
             OUT_run_avg = np.mean(np.array(OUT_baseline), axis=0)
             IN_subj.append(IN_run_avg)
             OUT_subj.append(OUT_run_avg)
-            0/0
+
             # Run-level FOOOFs
             fg_IN = fg.copy()
             fg_IN.fit(freq_bins, IN_run_avg, [2,120], n_jobs=n_jobs)
@@ -137,15 +137,53 @@ if __name__ == "__main__":
             # Save
             filepaths['welch'].update(root=saflow.BIDS_PATH + '/derivatives/fooof/').mkdir(exist_ok=True)
             output_fname = str(filepaths['welch'].update(root=saflow.BIDS_PATH + '/derivatives/fooof/').fpath) + '.pkl'
-            with open(output_fname, 'wb') as f:
-                pickle.dump({'IN_fooofs': fg_IN,
+            output_dict = {'IN_fooofs': fg_IN,
                             'OUT_fooofs': fg_OUT,
                             'trial_fooofs': trial_fooofs,
-                            'info': events_dicts}, f)
-                
+                            'info': events_dicts}
+            with open(output_fname, 'wb') as f:
+                pickle.dump(output_dict, f)
+            
+            data = output_dict
+            # Create magic dict
+            magic_dict = []
+            for trial_idx in range(len(data['trial_fooofs'])):
+                INOUT = data['info'][trial_idx]['INOUT']
+                print(f'Adding trial {trial_idx} of run {run} of subject {sub}')
+                for chan_idx in range(len(data['trial_fooofs'][trial_idx])):
+                    psd_raw = data['trial_fooofs'][trial_idx].get_fooof(chan_idx).power_spectrum
+                    freq_bins = data['trial_fooofs'][trial_idx].get_fooof(chan_idx).freqs
+
+                    if INOUT == 'IN':
+                        psd_corrected = data['trial_fooofs'][trial_idx].get_fooof(chan_idx).power_spectrum - data['IN_fooofs'].get_fooof(chan_idx)._ap_fit
+                    elif INOUT == 'OUT':
+                        psd_corrected = data['trial_fooofs'][trial_idx].get_fooof(chan_idx).power_spectrum - data['OUT_fooofs'].get_fooof(chan_idx)._ap_fit
+
+                    psd_model_fit = data['trial_fooofs'][trial_idx].get_fooof(chan_idx).fooofed_spectrum_
+                    exponent = data['trial_fooofs'][trial_idx].get_fooof(chan_idx).aperiodic_params_[-1]
+                    offset = data['trial_fooofs'][trial_idx].get_fooof(chan_idx).aperiodic_params_[0]
+                    knee = data['trial_fooofs'][trial_idx].get_fooof(chan_idx).aperiodic_params_[1]
+                    r_squared = data['trial_fooofs'][trial_idx].get_fooof(chan_idx).r_squared_
+                    
+                    data_dict = {'psd_raw': psd_raw, 
+                                'psd_corrected': psd_corrected, 
+                                'psd_model_fit': psd_model_fit, 
+                                'exponent': exponent, 
+                                'offset': offset, 
+                                'knee': knee, 
+                                'r_squared': r_squared,
+                                'info': data['info'][trial_idx],
+                                'freq_bins': freq_bins}
+                    magic_dict.append(data_dict)
+            fname_output = output_fname.replace('.pkl', '_magic.pkl')
+            with open(fname_output, 'wb') as f:
+                pickle.dump(magic_dict, f)    
+
+
+            
+        # Subject-level FOOOFs        
         IN_subj = np.array(IN_subj)
         OUT_subj = np.array(OUT_subj)
-
 
         # Average across runs
         IN_subj_avg = np.mean(IN_subj, axis=0)
