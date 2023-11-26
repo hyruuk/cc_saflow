@@ -87,6 +87,7 @@ if __name__ == "__main__":
             print(f'Processing subject {subject}, run {run}')
             filepaths = create_fnames(subject, run)
             filepaths['welch'].update(root=op.join('/'.join(str(filepaths['welch'].root).split('/')[:-1]), str(filepaths['welch'].root).split('/')[-1] + f'_{n_fft}_{level}_{n_trials}trials'))
+            filepaths['welch'].mkdir(exist_ok=True)
             output_fname = str(filepaths['welch'].fpath) + '.pkl'
             if not op.exists(output_fname):
                 subject_list = []
