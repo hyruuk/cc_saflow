@@ -3,7 +3,7 @@ reports/*
 ./data/*
 # Params file
 #src/saflow_params.py
-saflow/__init__.py
+./saflow/__init__.py
 tmp/*
 
 # Distribution / packaging
