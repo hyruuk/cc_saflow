@@ -85,7 +85,6 @@ if __name__ == "__main__":
     for subject in subjects:
         for run in runs:
             print(f'Processing subject {subject}, run {run}')
-            run = '0' + str(run)
             filepaths = create_fnames(subject, run)
             filepaths['welch'].update(root=op.join('/'.join(str(filepaths['welch'].root).split('/')[:-1]), str(filepaths['welch'].root).split('/')[-1] + f'_{n_fft}_{level}_{n_trials}trials'))
             output_fname = str(filepaths['welch'].fpath) + '.pkl'
