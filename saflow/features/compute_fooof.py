@@ -67,7 +67,7 @@ parser.add_argument(
 parser.add_argument(
     "-wp",
     "--welch_params",
-    default='2044_sensor_8trials',
+    default='1022_sensor_8trials',
     type=str,
     help="Welch from which to process",
 )
