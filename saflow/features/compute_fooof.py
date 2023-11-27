@@ -32,7 +32,7 @@ parser.add_argument(
 parser.add_argument(
     "-m",
     "--method",
-    default="knee",
+    default="fixed",
     type=str,
     help="Level of processing (sensor or source)",
 )
