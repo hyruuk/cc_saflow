@@ -64,6 +64,14 @@ parser.add_argument(
     type=str,
     help="Channel to process",
 )
+parser.add_argument(
+    "-wp",
+    "--welch_params",
+    default='2044_sensor_8trials',
+    type=str,
+    help="Welch from which to process",
+)
+
 
 
 
@@ -73,27 +81,34 @@ if __name__ == "__main__":
     n_trials = args.n_trials
     level = args.level
     method = args.method
-    subj = args.subject
+    subjects = args.subject
     run = args.run
     chan = args.channel
-    if subj == 'all':
+    welch_params = args.welch_params
+    if subjects == 'all':
         subjects = saflow.SUBJ_LIST
     else:
-        subjects = [subj]
+        subjects = [subjects]
     if run == 'all':
         runs = ['0' + x for x in saflow.BLOCS_LIST]
     else:
         runs = [run]
 
     
-    fg = FOOOFGroup(aperiodic_mode=method, max_n_peaks=8)
+    fooof_params = f'fooof_{welch_params}'
+
+    max_n_peaks = 8
+    peak_width_limits = [2, 12]
+    fg = FOOOFGroup(aperiodic_mode=method, peak_width_limits=peak_width_limits, max_n_peaks=max_n_peaks)
     for subject in subjects:
         IN_subj = []
         OUT_subj = []
         for run in runs:
             print(f'Processing subject {subject}, run {run}')
             filepaths = create_fnames(subject, run)
+            input_fname = filepaths['welch'].update(root=op.join('/'.join(str(filepaths['welch'].root).split('/')[:-1]), str(filepaths['welch'].root).split('/')[-1] + f'_{welch_params}'))
             input_fname = str(filepaths['welch'].fpath) + '.pkl'
+            print(input_fname)
             IN_baseline = []
             OUT_baseline = []
 
@@ -135,8 +150,8 @@ if __name__ == "__main__":
             #trial_fooofs = np.array(trial_fooofs)
 
             # Save
-            filepaths['welch'].update(root=saflow.BIDS_PATH + '/derivatives/fooof/').mkdir(exist_ok=True)
-            output_fname = str(filepaths['welch'].update(root=saflow.BIDS_PATH + '/derivatives/fooof/').fpath) + '.pkl'
+            filepaths['welch'].update(root=saflow.BIDS_PATH + f'/derivatives/{fooof_params}/').mkdir(exist_ok=True)
+            output_fname = str(filepaths['welch'].update(root=saflow.BIDS_PATH + f'/derivatives/{fooof_params}/').fpath) + '.pkl'
             output_dict = {'IN_fooofs': fg_IN,
                             'OUT_fooofs': fg_OUT,
                             'trial_fooofs': trial_fooofs,
@@ -149,7 +164,7 @@ if __name__ == "__main__":
             magic_dict = []
             for trial_idx in range(len(data['trial_fooofs'])):
                 INOUT = data['info'][trial_idx]['INOUT']
-                print(f'Adding trial {trial_idx} of run {run} of subject {sub}')
+                print(f'Adding trial {trial_idx} of run {run} of subject {subject}')
                 for chan_idx in range(len(data['trial_fooofs'][trial_idx])):
                     psd_raw = data['trial_fooofs'][trial_idx].get_fooof(chan_idx).power_spectrum
                     freq_bins = data['trial_fooofs'][trial_idx].get_fooof(chan_idx).freqs
