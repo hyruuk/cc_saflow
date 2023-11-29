@@ -19,7 +19,14 @@ from matplotlib.pyplot import close
 import pickle
 import os.path as op
 import os
+import saflow
 
+def average_bands(psd, freq_bins, bands=saflow.FREQS):
+    band_power = []
+    for band in bands:
+        band_mask = np.logical_and(freq_bins >= band[0], freq_bins <= band[1])
+        band_power.append(np.mean(psd[band_mask]))
+    return np.array(band_power)
 
 def find_rawfile(subj, bloc, BIDS_PATH):
     filepath = "/sub-{}/ses-recording/meg/".format(subj)

@@ -9,6 +9,9 @@ import numpy as np
 import pandas as pd
 import mne
 import pickle
+import pickle as pkl
+import os.path as op
+import random
 
 def create_fnames(subject, run, bids_root=saflow.BIDS_PATH):
     morph_bidspath = BIDSPath(subject=subject,
@@ -152,7 +155,6 @@ def get_meg_picks_and_info(subject, run, bids_root=saflow.BIDS_PATH):
     picks = mne.pick_types(raw.info, meg=True, ref_meg=False, eeg=False, eog=False)
     raw_mag = raw.copy().pick_types(meg=True, ref_meg=False, eeg=False, eog=False)
     return picks, raw_mag.info
-
 
 def get_SAflow_bids(BIDS_PATH, subj, run, stage, cond=None):
     """
