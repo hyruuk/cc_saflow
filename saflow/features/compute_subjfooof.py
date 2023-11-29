@@ -10,6 +10,7 @@ from mne_bids import BIDSPath, read_raw_bids
 from fooof import FOOOF, Bands, FOOOFGroup
 import mne_bids
 import warnings
+from saflow.data import select_trial
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
@@ -86,7 +87,7 @@ if __name__ == "__main__":
     chan = args.channel
     welch_params = args.welch_params
     if subjects == 'all':
-        subjects = saflow.SUBJ_LIST
+        subjects = [x.split('-')[1] for x in os.listdir(op.join(saflow.BIDS_PATH, 'derivatives', 'welch_' + welch_params))]
     else:
         subjects = [subjects]
     if run == 'all':
@@ -103,6 +104,7 @@ if __name__ == "__main__":
     for subject in subjects:
         IN_subj = []
         OUT_subj = []
+        runs = [x.split('_')[2].split('-')[1] for x in os.listdir(op.join(saflow.BIDS_PATH, 'derivatives', 'welch_' + welch_params, 'sub-' + subject, 'meg'))]
         for run in runs:
             print(f'Processing subject {subject}, run {run}')
             filepaths = create_fnames(subject, run)
@@ -121,18 +123,19 @@ if __name__ == "__main__":
 
             # Grab correct baseline trials
             for idx_trial, trial in enumerate(welch_array):
-                if events_dicts[idx_trial]['bad_epoch'] == False:
-                    if events_dicts[idx_trial]['task'] == 'correct_commission':
-                        if events_dicts[idx_trial]['INOUT_2575'] == 'IN':
-                            IN_baseline.append(trial)
-                        elif events_dicts[idx_trial]['INOUT_2575'] == 'OUT':
-                            OUT_baseline.append(trial)
+                trial_selected = select_trial(events_dicts[idx_trial], trial_type='correct_commission')
+                if trial_selected:
+                    if events_dicts[idx_trial]['INOUT_2575'] == 'IN':
+                        IN_baseline.append(trial)
+                    elif events_dicts[idx_trial]['INOUT_2575'] == 'OUT':
+                        OUT_baseline.append(trial)
 
-            # Compute trial-averages
-            IN_run_avg = np.mean(np.array(IN_baseline), axis=0)
-            OUT_run_avg = np.mean(np.array(OUT_baseline), axis=0)
-            IN_subj.append(IN_run_avg)
-            OUT_subj.append(OUT_run_avg)
+            if len(IN_baseline) != 0 and len(OUT_baseline) != 0:
+                # Compute trial-averages
+                IN_run_avg = np.mean(np.array(IN_baseline), axis=0)
+                OUT_run_avg = np.mean(np.array(OUT_baseline), axis=0)
+                IN_subj.append(IN_run_avg)
+                OUT_subj.append(OUT_run_avg)
 
         # Subject-level FOOOFs        
         IN_subj = np.array(IN_subj)
