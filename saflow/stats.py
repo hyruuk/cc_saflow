@@ -67,7 +67,7 @@ def simple_contrast(X, y, groups):
     tvals = []
     pvals = []
     for feature_idx in range(n_features):
-        t, p = stats.ttest_rel(X_condB[:,feature_idx,:], X_condA[:,feature_idx,:], axis=0)
+        t, p = stats.ttest_ind(X_condB[:,feature_idx,:], X_condA[:,feature_idx,:], axis=0)
         tvals.append(t)
         pvals.append(p)
     tvals = np.array(tvals)
@@ -81,14 +81,14 @@ def subject_contrast(X, y):
     for cond in np.unique(y):
         X_avg_by_cond.append(np.nanmean(X[y == cond], axis=0))
     # Compute normalized contrast (A - B)/B
-    X_contrast = (X_avg_by_cond[1] - X_avg_by_cond[0]) / X_avg_by_cond[0]
+    X_contrast = (X_avg_by_cond[0] - X_avg_by_cond[1]) / X_avg_by_cond[1]
     # Split conditions for ttest
     X_condA = X[y == 0]
     X_condB = X[y == 1]
     tvals = []
     pvals = []
     for feature_idx in range(n_features):
-        t, p = stats.ttest_ind(X_condA[:,feature_idx,:], X_condB[:,feature_idx,:], axis=0)
+        t, p = stats.ttest_rel(X_condB[:,feature_idx,:], X_condA[:,feature_idx,:], axis=0)
         tvals.append(t)
         pvals.append(p)
     tvals = np.array(tvals)

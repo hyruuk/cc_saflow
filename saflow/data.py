@@ -120,6 +120,54 @@ def load_features(feature_folder, subject='all', feature='psd', splitby='inout',
     task = np.array(task)
     return X, y, groups, {'vtc':VTC, 'task':task}
 
+def load_subjlevel_fooofs(feature, feature_fpath):
+    X_raw = []
+    X_corrected = []
+    X_model = []
+    X_ksor = []
+    y = []
+    groups = []
+    n_chans = 270
+    for sub_idx, sub in enumerate(sorted(os.listdir(feature_fpath))):
+        for file in sorted(os.listdir(op.join(feature_fpath, sub, 'meg'))):
+            if 'run' not in file:
+                fpath = op.join(feature_fpath, sub, 'meg', file)
+                with open(fpath, 'rb') as f:
+                    fooof_dict = pkl.load(f)
+                for condition in ['IN_fooofs', 'OUT_fooofs']:
+                    psds_raw = []
+                    psds_corrected = []
+                    psds_model = []
+                    ksor_list = []
+                    for chan_idx in range(n_chans):
+                        fm = fooof_dict[condition].get_fooof(chan_idx)
+                        psd_raw = fm.power_spectrum
+                        psd_corrected = fm.power_spectrum - fm._ap_fit
+                        psd_model = fm.fooofed_spectrum_
+                        ksor = [fm.get_params('aperiodic_params')[-1], 
+                                fm.get_params('aperiodic_params')[0], 
+                                fm.get_params('aperiodic_params')[1], 
+                                fm.get_params('r_squared')]
+                        freq_bins = fm.freqs
+
+                        psds_raw.append(average_bands(psd_raw, freq_bins))
+                        psds_corrected.append(average_bands(psd_corrected, freq_bins))
+                        psds_model.append(average_bands(psd_model, freq_bins))
+                        ksor_list.append(np.array(ksor))
+                    X_raw.append(np.array(psds_raw))
+                    X_corrected.append(np.array(psds_corrected))
+                    X_model.append(np.array(psds_model))
+                    X_ksor.append(np.array(ksor_list))
+                    groups.append(sub_idx)
+                    y.append(0 if condition == 'IN_fooofs' else 1)
+    X_raw = np.array(X_raw).transpose(2,0,1)
+    X_corrected = np.array(X_corrected).transpose(2,0,1)
+    X_model = np.array(X_model).transpose(2,0,1)
+    X_ksor = np.array(X_ksor).transpose(2,0,1)
+    y = np.array(y)
+    groups = np.array(groups)
+    return X_raw, X_corrected, X_model, X_ksor, y, groups
+
 def get_trial_data(data_reshaped, trial_idx, feat_to_get, freq_bins=None):
     trial_data = []
     for chan_idx in range(data_reshaped.shape[1]):
