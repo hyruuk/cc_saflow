@@ -33,7 +33,7 @@ parser.add_argument(
 parser.add_argument(
     "-m",
     "--method",
-    default="knee",
+    default="fixed",
     type=str,
     help="Level of processing (sensor or source)",
 )
@@ -96,7 +96,7 @@ if __name__ == "__main__":
         runs = [run]
 
     
-    fooof_params = 'fooof_1022_knee_sensor_8trials'
+    fooof_params = 'fooof_fixed_1022_sensor_8trials'
 
     max_n_peaks = 8
     peak_width_limits = [2, 12]

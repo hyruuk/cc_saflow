@@ -12,6 +12,7 @@ import pickle
 import pickle as pkl
 import os.path as op
 import random
+import string
 
 def create_fnames(subject, run, bids_root=saflow.BIDS_PATH):
     morph_bidspath = BIDSPath(subject=subject,
@@ -214,10 +215,12 @@ def create_pval_mask(pvals, alpha=0.05):
 
 def grid_topoplot(array_data, chan_info, titles_x, titles_y, masks=None, mask_params=None, cmap=None, vlims=None, title=None):
     '''Creates a grid of topoplots from the array_data. First dimension is used for the rows, second for the columns'''
-    letters = ['A', 'B', 'C']
-    if vlims is None:
-        vlims = [(-np.max(abs(row_data)), np.max(abs(row_data))) for row_data in array_data]
+    letters = list(string.ascii_uppercase)
+    if len(array_data.shape) == 2:
+        array_data = array_data.reshape((1, array_data.shape[0], array_data.shape[1]))
     fig, axes = plt.subplots(array_data.shape[0], array_data.shape[1], figsize=(3*array_data.shape[1], 3*array_data.shape[0]))
+    if len(array_data.shape) == 2:
+        axes = np.array([axes])
     plt.subplots_adjust(wspace=0.1, hspace=0)
     for idx_row, row in enumerate(axes):
         for idx_col, ax in enumerate(row):
