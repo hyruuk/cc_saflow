@@ -95,7 +95,7 @@ if __name__ == "__main__":
         runs = [run]
 
     
-    fooof_params = f'fooof_{welch_params}'
+    fooof_params = f'fooof_{method}_{welch_params}'
 
     max_n_peaks = 8
     peak_width_limits = [2, 12]
