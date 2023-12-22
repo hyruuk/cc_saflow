@@ -10,6 +10,7 @@ from mne_bids import BIDSPath, read_raw_bids
 from fooof import FOOOF, Bands, FOOOFGroup
 import mne_bids
 import warnings
+from saflow.data import select_trial
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
@@ -121,12 +122,12 @@ if __name__ == "__main__":
 
             # Grab correct baseline trials
             for idx_trial, trial in enumerate(welch_array):
-                if events_dicts[idx_trial]['bad_epoch'] == False:
-                    if events_dicts[idx_trial]['task'] == 'correct_commission':
-                        if events_dicts[idx_trial]['INOUT_2575'] == 'IN':
-                            IN_baseline.append(trial)
-                        elif events_dicts[idx_trial]['INOUT_2575'] == 'OUT':
-                            OUT_baseline.append(trial)
+                trial_selected = select_trial(events_dicts[idx_trial])
+                if trial_selected:
+                    if events_dicts[idx_trial]['INOUT_2575'] == 'IN':
+                        IN_baseline.append(trial)
+                    elif events_dicts[idx_trial]['INOUT_2575'] == 'OUT':
+                        OUT_baseline.append(trial)
 
             # Compute trial-averages
             IN_run_avg = np.mean(np.array(IN_baseline), axis=0)

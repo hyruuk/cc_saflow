@@ -32,7 +32,7 @@ def load_fooof_data(feature, feature_fpath, feat_to_get, trial_type_to_get, clas
                 data_reshaped = np.array(data).reshape(n_trials, n_chans)
 
                 for trial_idx in range(data_reshaped.shape[0]):
-                    epoch_selected = select_trial(data_reshaped[trial_idx][0]['info'], trial_type=trial_type_to_get)
+                    epoch_selected = select_trial(data_reshaped[trial_idx][0]['info'], inout=classif, trial_type=trial_type_to_get)
                     if epoch_selected:
                         trial_data = get_trial_data(data_reshaped, trial_idx, feat_to_get)
                         if not np.isnan(trial_data).any():
@@ -78,7 +78,7 @@ def load_features(feature_folder, subject='all', feature='psd', splitby='inout',
                 with open(filepath, 'rb') as f:
                     data = pkl.load(f)
                 print(trial)
-                epoch_selected = select_trial(data['info'], trial_type=get_task)
+                epoch_selected = select_trial(data['info'], trial_type=get_task, inout=inout)
                 if epoch_selected:
                     try:
                         if splitby == 'inout':
@@ -154,7 +154,6 @@ def load_subjlevel_fooofs(feature, feature_fpath, zscored=False):
                         psds_corrected.append(average_bands(psd_corrected, freq_bins))
                         psds_model.append(average_bands(psd_model, freq_bins))
                         ksor_list.append(np.array(ksor))
-
                     if zscored:
                         X_raw.append(zscore(np.array(psds_raw), axis=0))
                         X_corrected.append(zscore(np.array(psds_corrected), axis=0))
@@ -238,7 +237,7 @@ def balance_data(X, y, groups, seed=10):
     return X, y, groups
 
 
-def select_trial(event_dict, trial_type=['correct_commission'], type_how='all', bad_how='any', inout_how='all', inout='INOUT_2575', verbose=False):
+def select_trial(event_dict, trial_type=['correct_commission'], type_how='correct', bad_how='any', inout_how='all', inout='INOUT_2575', verbose=False):
     if bad_how is None or bad_how == 'ignore':
         bad_epoch = False
     elif bad_how == 'last':
@@ -259,7 +258,7 @@ def select_trial(event_dict, trial_type=['correct_commission'], type_how='all', 
 
     if type_how == 'last':
         retain_type = event_dict['task'] in trial_type
-    if type_how == 'all':
+    if type_how == 'all': # c'est louche, vérifier
         if len(np.unique(event_dict['included_task'])) == 1:
             if np.unique(event_dict['included_task']) == 'correct_omission':
                 retain_type = True
@@ -270,7 +269,9 @@ def select_trial(event_dict, trial_type=['correct_commission'], type_how='all', 
                 retain_type = True
             else:
                 retain_type = False
-    
+    if type_how == 'correct':
+        correct_trials = ['correct_omission', 'correct_commission']
+        retain_type = all(item in correct_trials for item in event_dict['included_task'])
     retain_epoch = retain_inout & retain_type & ~bad_epoch
     if verbose:
         print(f'Bad : {bad_epoch}, InOut : {retain_inout}, Type : {retain_type}, Retain : {retain_epoch}')
