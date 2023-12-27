@@ -32,7 +32,7 @@ def load_fooof_data(feature, feature_fpath, feat_to_get, trial_type_to_get, clas
                 data_reshaped = np.array(data).reshape(n_trials, n_chans)
 
                 for trial_idx in range(data_reshaped.shape[0]):
-                    epoch_selected = select_trial(data_reshaped[trial_idx][0]['info'], inout=classif, trial_type=trial_type_to_get)
+                    epoch_selected = select_trial(data_reshaped[trial_idx][0]['info'], inout=classif, type_how='lapse')
                     if epoch_selected:
                         trial_data = get_trial_data(data_reshaped, trial_idx, feat_to_get)
                         if not np.isnan(trial_data).any():
@@ -78,7 +78,7 @@ def load_features(feature_folder, subject='all', feature='psd', splitby='inout',
                 with open(filepath, 'rb') as f:
                     data = pkl.load(f)
                 print(trial)
-                epoch_selected = select_trial(data['info'], trial_type=get_task, inout=inout)
+                epoch_selected = select_trial(data['info'], type_how='correct', inout=inout)
                 if epoch_selected:
                     try:
                         if splitby == 'inout':
@@ -276,8 +276,11 @@ def select_trial(event_dict, trial_type=['correct_commission'], type_how='correc
         correct_trials = ['correct_omission', 'correct_commission']
         retain_type = all(item in correct_trials for item in event_dict['included_task'])
 
-    if type_how == 'lapse':
+    elif type_how == 'lapse':
         retain_type = 'commission_error' in event_dict['included_task']
+        print(event_dict['included_task'])
+        print(retain_type)
+
 
     retain_epoch = retain_inout & retain_type & ~bad_epoch
     if verbose:
