@@ -256,9 +256,10 @@ def select_trial(event_dict, trial_type=['correct_commission'], type_how='correc
     else:
         retain_inout = False
 
+    # deprec
     if type_how == 'last':
         retain_type = event_dict['task'] in trial_type
-    if type_how == 'all': # c'est louche, vérifier
+    if type_how == 'all':
         if len(np.unique(event_dict['included_task'])) == 1:
             if np.unique(event_dict['included_task']) == 'correct_omission':
                 retain_type = True
@@ -269,9 +270,15 @@ def select_trial(event_dict, trial_type=['correct_commission'], type_how='correc
                 retain_type = True
             else:
                 retain_type = False
+
+    # used
     if type_how == 'correct':
         correct_trials = ['correct_omission', 'correct_commission']
         retain_type = all(item in correct_trials for item in event_dict['included_task'])
+
+    if type_how == 'lapse':
+        retain_type = 'commission_error' in event_dict['included_task']
+
     retain_epoch = retain_inout & retain_type & ~bad_epoch
     if verbose:
         print(f'Bad : {bad_epoch}, InOut : {retain_inout}, Type : {retain_type}, Retain : {retain_epoch}')

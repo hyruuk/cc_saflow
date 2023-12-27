@@ -95,8 +95,9 @@ if __name__ == "__main__":
     else:
         runs = [run]
 
-    
-    fooof_params = f'fooof_{method}_{welch_params}'
+    trial_type = 'lapse'
+
+    fooof_params = f'fooof_{method}_{trial_type}_{welch_params}'
 
     max_n_peaks = 8
     peak_width_limits = [2, 12]
@@ -122,7 +123,7 @@ if __name__ == "__main__":
 
             # Grab correct baseline trials
             for idx_trial, trial in enumerate(welch_array):
-                trial_selected = select_trial(events_dicts[idx_trial])
+                trial_selected = select_trial(events_dicts[idx_trial], trial_type=trial_type)
                 if trial_selected:
                     if events_dicts[idx_trial]['INOUT_2575'] == 'IN':
                         IN_baseline.append(trial)
