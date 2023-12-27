@@ -97,7 +97,7 @@ if __name__ == "__main__":
 
     type_how = 'lapse'
 
-    fooof_params = f'fooof_{method}_{trial_type}_{welch_params}'
+    fooof_params = f'fooof_{method}_{type_how}_{welch_params}'
 
     max_n_peaks = 8
     peak_width_limits = [2, 12]
