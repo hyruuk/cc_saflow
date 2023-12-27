@@ -278,8 +278,6 @@ def select_trial(event_dict, trial_type=['correct_commission'], type_how='correc
 
     elif type_how == 'lapse':
         retain_type = 'commission_error' in event_dict['included_task']
-        print(event_dict['included_task'])
-        print(retain_type)
 
 
     retain_epoch = retain_inout & retain_type & ~bad_epoch
