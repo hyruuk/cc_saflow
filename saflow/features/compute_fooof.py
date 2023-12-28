@@ -95,7 +95,7 @@ if __name__ == "__main__":
     else:
         runs = [run]
 
-    type_how = 'lapse'
+    type_how = 'alltrials'
 
     fooof_params = f'fooof_{method}_{type_how}_{welch_params}'
 

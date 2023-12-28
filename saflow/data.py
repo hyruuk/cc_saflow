@@ -78,7 +78,7 @@ def load_features(feature_folder, subject='all', feature='psd', splitby='inout',
                 with open(filepath, 'rb') as f:
                     data = pkl.load(f)
                 print(trial)
-                epoch_selected = select_trial(data['info'], type_how='correct', inout=inout)
+                epoch_selected = select_trial(data['info'], type_how='lapse', inout=inout, verbose=True)
                 if epoch_selected:
                     try:
                         if splitby == 'inout':
@@ -278,9 +278,12 @@ def select_trial(event_dict, trial_type=['correct_commission'], type_how='correc
 
     elif type_how == 'lapse':
         retain_type = 'commission_error' in event_dict['included_task']
-
+    
+    elif type_how == 'alltrials':
+        retain_type = True
 
     retain_epoch = retain_inout & retain_type & ~bad_epoch
     if verbose:
+        print(event_dict['included_task'])
         print(f'Bad : {bad_epoch}, InOut : {retain_inout}, Type : {retain_type}, Retain : {retain_epoch}')
     return retain_epoch
