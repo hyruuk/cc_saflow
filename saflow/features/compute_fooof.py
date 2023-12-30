@@ -40,14 +40,14 @@ parser.add_argument(
 parser.add_argument(
     "-s",
     "--subject",
-    default='all',
+    default='19',
     type=str,
     help="Subject to process",
 )
 parser.add_argument(
     "-r",
     "--run",
-    default='all',
+    default='06',
     type=str,
     help="Run to process",
 )
@@ -80,6 +80,13 @@ parser.add_argument(
     type=str,
     help="Type of trials to consider",
 )
+parser.add_argument(
+    "-b",
+    "--bounds",
+    default='2575',
+    type=str,
+    help="Bounds of the VTC window",
+)
 
 
 
@@ -104,6 +111,8 @@ if __name__ == "__main__":
         runs = [run]
 
     type_how = args.type
+    lowbound = int(args.bounds[:2])
+    highbound = int(args.bounds[2:])
 
     fooof_params = f'fooof_{method}_{type_how}_{welch_params}'
 
@@ -129,7 +138,7 @@ if __name__ == "__main__":
                 events_dicts = file['info']
                 freq_bins = file['freq_bins']
 
-            inbound, outbound = get_VTC_bounds(events_dicts, lowbound=25, highbound=75)
+            inbound, outbound = get_VTC_bounds(events_dicts, lowbound=lowbound, highbound=highbound)
             # Grab correct baseline trials
             for idx_trial, trial in enumerate(welch_array):
                 event_dict = events_dicts[idx_trial]
@@ -141,7 +150,7 @@ if __name__ == "__main__":
                         IN_baseline.append(trial)
                     elif inout_epoch == 'OUT':
                         OUT_baseline.append(trial)
-
+            print(f'Found {len(IN_baseline)} IN trials and {len(OUT_baseline)} OUT trials for subject {subject} run {run}')
             # Compute trial-averages
             IN_run_avg = np.mean(np.array(IN_baseline), axis=0)
             OUT_run_avg = np.mean(np.array(OUT_baseline), axis=0)
