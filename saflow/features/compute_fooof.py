@@ -73,6 +73,14 @@ parser.add_argument(
     help="Welch from which to process",
 )
 
+parser.add_argument(
+    "-t",
+    "--type",
+    default='alltrials',
+    type=str,
+    help="Type of trials to consider",
+)
+
 
 
 
@@ -95,7 +103,7 @@ if __name__ == "__main__":
     else:
         runs = [run]
 
-    type_how = 'alltrials'
+    type_how = args.type
 
     fooof_params = f'fooof_{method}_{type_how}_{welch_params}'
 
