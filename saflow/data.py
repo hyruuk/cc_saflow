@@ -10,9 +10,6 @@ from saflow.neuro import average_bands
 from scipy.stats import zscore
 
 def load_fooof_data(feature, feature_fpath, feat_to_get, trial_type_to_get, classif='INOUT_2575'):
-    if type(trial_type_to_get) == str:
-        trial_type_to_get = [trial_type_to_get]
-    
     X = []
     y = []
     groups = []
@@ -32,7 +29,7 @@ def load_fooof_data(feature, feature_fpath, feat_to_get, trial_type_to_get, clas
                 data_reshaped = np.array(data).reshape(n_trials, n_chans)
 
                 for trial_idx in range(data_reshaped.shape[0]):
-                    epoch_selected = select_trial(data_reshaped[trial_idx][0]['info'], inout=classif, type_how='lapse')
+                    epoch_selected = select_trial(data_reshaped[trial_idx][0]['info'], inout=classif, type_how=trial_type_to_get, verbose=True)
                     if epoch_selected:
                         trial_data = get_trial_data(data_reshaped, trial_idx, feat_to_get)
                         if not np.isnan(trial_data).any():
@@ -52,6 +49,12 @@ def load_fooof_data(feature, feature_fpath, feat_to_get, trial_type_to_get, clas
                                     y.append(0)
                                 elif data_reshaped[trial_idx][0]['info']['task'] == 'correct_commission':
                                     y.append(1)
+                            elif classif == 'rare':
+                                # 0 = correct, 1 = error
+                                if data_reshaped[trial_idx][0]['info']['task'] == 'correct_omission':
+                                    y.append(0)
+                                elif data_reshaped[trial_idx][0]['info']['task'] == 'commission_error':
+                                    y.append(1)
                         else:
                             print('Nan in trial data')
                             print(f'{sub} {file}, trial {trial_idx}')
@@ -65,7 +68,6 @@ def load_fooof_data(feature, feature_fpath, feat_to_get, trial_type_to_get, clas
 def load_features(feature_folder, subject='all', feature='psd', splitby='inout', inout='INOUT_2575', remove_errors=True, get_task = ['correct_commission']):
     ''' 0 = IN, 1 = OUT
     '''
-    subject
     X = []
     y = []
     groups = []
@@ -199,6 +201,7 @@ def get_trial_data(data_reshaped, trial_idx, feat_to_get, freq_bins=None, zscore
 
 
 def balance_data(X, y, groups, seed=10):
+    ## TODO : dépister potentiel bug avec IN et OUT
     X_balanced = []
     y_balanced = []
     groups_balanced = []
@@ -236,6 +239,49 @@ def balance_data(X, y, groups, seed=10):
     groups = np.array(groups_balanced)
     return X, y, groups
 
+import pandas as pd
+import numpy as np
+from sklearn.utils import resample
+
+def balance_dataset(X, y, groups, seed=None):
+    # Convert to DataFrame for easier manipulation
+    data = pd.DataFrame(X)
+    data['class'] = y
+    data['group'] = groups
+
+    # Initialize result lists
+    balanced_X = []
+    balanced_y = []
+    balanced_groups = []
+
+    # Set the random seed for reproducibility
+    if seed is not None:
+        np.random.seed(seed)
+
+    # Process each group
+    for group in np.unique(groups):
+        # Filter the data for the current group
+        group_data = data[data['group'] == group]
+
+        # Get the count of the least populous class in this group
+        min_count = group_data['class'].value_counts().min()
+
+        # Sample from each class
+        for class_value in group_data['class'].unique():
+            class_data = group_data[group_data['class'] == class_value]
+            sampled_class_data = class_data.sample(n=min_count, replace=False)
+
+            # Append sampled data to the results
+            balanced_X.append(sampled_class_data.drop(['class', 'group'], axis=1))
+            balanced_y.extend(sampled_class_data['class'])
+            balanced_groups.extend(sampled_class_data['group'])
+
+    # Concatenate results
+    balanced_X = pd.concat(balanced_X).values
+    balanced_y = np.array(balanced_y)
+    balanced_groups = np.array(balanced_groups)
+
+    return balanced_X, balanced_y, balanced_groups
 
 def select_trial(event_dict, trial_type=['correct_commission'], type_how='correct', bad_how='any', inout_how='all', inout='INOUT_2575', verbose=False):
     if bad_how is None or bad_how == 'ignore':
@@ -286,4 +332,55 @@ def select_trial(event_dict, trial_type=['correct_commission'], type_how='correc
     if verbose:
         print(event_dict['included_task'])
         print(f'Bad : {bad_epoch}, InOut : {retain_inout}, Type : {retain_type}, Retain : {retain_epoch}')
+    return retain_epoch
+
+
+def get_VTC_bounds(events_dicts, lowbound=25, highbound=75):
+    # get the averaged VTC for each epoch
+    run_VTCs = []
+    for info_dict in events_dicts:
+        run_VTCs.append(np.mean(info_dict['included_VTC'], axis=0))
+    
+    # obtain the bounds of the VTC for this run
+    inbound = np.percentile(run_VTCs, lowbound, axis=0)
+    outbound = np.percentile(run_VTCs, highbound, axis=0)
+    return inbound, outbound
+
+def get_inout(info_dict, inbound, outbound):
+    VTC = np.mean(info_dict['included_VTC'], axis=0)
+    if VTC <= inbound:
+        return 'IN'
+    elif VTC >= outbound:
+        return 'OUT'
+    else:
+        return 'MID'
+
+def select_epoch(event_dict, bad_how='any', type_how='alltrials', inout_epoch=None, verbose=False):
+    # Check if bad epoch
+    if bad_how == 'any':
+        bad_epoch = np.sum(event_dict['included_bad_epochs']) > 0
+    else:
+        bad_epoch = False
+
+    # Check trial types across the epoch
+    if type_how == 'alltrials':
+        retain_task = True
+    elif type_how == 'correct':
+        correct_task_types = ['correct_omission', 'correct_commission']
+        retain_task = all(item in correct_task_types for item in event_dict['included_task'])
+    elif type_how == 'lapse':
+        retain_task = 'commission_error' in event_dict['included_task']
+    
+    # Check inout type
+    retain_inout = False
+    if inout_epoch is not None:    
+        if inout_epoch in ['IN', 'OUT']:
+            retain_inout = True
+    
+    retain_epoch = retain_task & ~bad_epoch & retain_inout
+
+    if verbose:
+        print(f'Bad : {bad_epoch}, InOut : {retain_inout}, Type : {retain_task}, Retain : {retain_epoch}')
+        print(event_dict['included_task'])
+        print(event_dict['included_bad_epochs'])
     return retain_epoch
