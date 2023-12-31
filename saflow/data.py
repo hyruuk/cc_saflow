@@ -1,6 +1,7 @@
 import saflow
 from saflow.stats import subject_average, simple_contrast, subject_contrast
 import numpy as np
+import pandas as pd
 import os.path as op
 import pickle
 import pickle as pkl
@@ -9,7 +10,7 @@ import os
 from saflow.neuro import average_bands
 from scipy.stats import zscore
 
-def load_fooof_data(feature, feature_fpath, feat_to_get, trial_type_to_get, classif='INOUT_2575'):
+def load_fooof_data(feature, feature_fpath, feat_to_get, type_how='alltrials', classif='INOUT_2575'):
     X = []
     y = []
     groups = []
@@ -27,9 +28,21 @@ def load_fooof_data(feature, feature_fpath, feat_to_get, trial_type_to_get, clas
                 n_chans = 270
                 n_trials = int(len(data)/n_chans)
                 data_reshaped = np.array(data).reshape(n_trials, n_chans)
+                # Get events dicts
+                events_dicts = get_events_dicts_from_magic_dict(data_reshaped)
+                # Get VTC bounds
+                if 'INOUT' in classif:
+                    lowbound = int(classif.split('_')[1][:2])
+                    highbound = int(classif.split('_')[1][2:])
+                else:
+                    lowbound = 50
+                    highbound = 50
+                inbound, outbound = get_VTC_bounds(events_dicts, lowbound=lowbound, highbound=highbound)
 
                 for trial_idx in range(data_reshaped.shape[0]):
-                    epoch_selected = select_trial(data_reshaped[trial_idx][0]['info'], inout=classif, type_how=trial_type_to_get, verbose=True)
+                    event_dict = events_dicts[trial_idx]
+                    inout_epoch = get_inout(event_dict, inbound, outbound)
+                    epoch_selected = select_epoch(event_dict, bad_how='any', type_how=type_how, inout_epoch=inout_epoch, verbose=False)
                     if epoch_selected:
                         trial_data = get_trial_data(data_reshaped, trial_idx, feat_to_get)
                         if not np.isnan(trial_data).any():
@@ -39,21 +52,21 @@ def load_fooof_data(feature, feature_fpath, feat_to_get, trial_type_to_get, clas
                             task.append(data_reshaped[trial_idx][0]['info']['task'])
                             if 'INOUT' in classif:
                                 # 0 = IN, 1 = OUT
-                                if data_reshaped[trial_idx][0]['info'][classif] == 'IN':
+                                if inout_epoch == 'IN':
                                     y.append(0)
-                                elif data_reshaped[trial_idx][0]['info'][classif] == 'OUT':
+                                elif inout_epoch == 'OUT':
                                     y.append(1)
                             elif classif == 'oddball':
                                 # 0 = rare, 1 = frequent
-                                if data_reshaped[trial_idx][0]['info']['task'] == 'correct_omission':
+                                if event_dict['task'] == 'correct_omission':
                                     y.append(0)
-                                elif data_reshaped[trial_idx][0]['info']['task'] == 'correct_commission':
+                                elif event_dict['task'] == 'correct_commission':
                                     y.append(1)
                             elif classif == 'rare':
                                 # 0 = correct, 1 = error
-                                if data_reshaped[trial_idx][0]['info']['task'] == 'correct_omission':
+                                if event_dict['task'] == 'correct_omission':
                                     y.append(0)
-                                elif data_reshaped[trial_idx][0]['info']['task'] == 'commission_error':
+                                elif event_dict['task'] == 'commission_error':
                                     y.append(1)
                         else:
                             print('Nan in trial data')
@@ -64,6 +77,13 @@ def load_fooof_data(feature, feature_fpath, feat_to_get, trial_type_to_get, clas
     VTC = np.array(VTC)
     task = np.array(task)
     return X, y, groups, VTC, task
+
+def get_events_dicts_from_magic_dict(data_reshaped):
+    events_dicts = []
+    for trial_idx in range(data_reshaped.shape[0]):
+        events_dicts.append(data_reshaped[trial_idx][0]['info'])
+    return events_dicts
+
 
 def load_features(feature_folder, subject='all', feature='psd', splitby='inout', inout='INOUT_2575', remove_errors=True, get_task = ['correct_commission']):
     ''' 0 = IN, 1 = OUT
@@ -239,20 +259,14 @@ def balance_data(X, y, groups, seed=10):
     groups = np.array(groups_balanced)
     return X, y, groups
 
-import pandas as pd
-import numpy as np
-from sklearn.utils import resample
 
-def balance_dataset(X, y, groups, seed=None):
-    # Convert to DataFrame for easier manipulation
-    data = pd.DataFrame(X)
-    data['class'] = y
-    data['group'] = groups
+
+def balance_dataset(X, y, groups, seed=42069):
+    # Number of observations
+    n_observations = X.shape[1]
 
     # Initialize result lists
-    balanced_X = []
-    balanced_y = []
-    balanced_groups = []
+    balanced_indices = []
 
     # Set the random seed for reproducibility
     if seed is not None:
@@ -260,28 +274,32 @@ def balance_dataset(X, y, groups, seed=None):
 
     # Process each group
     for group in np.unique(groups):
-        # Filter the data for the current group
-        group_data = data[data['group'] == group]
+        # Indices for the current group
+        group_indices = np.where(groups == group)[0]
 
-        # Get the count of the least populous class in this group
-        min_count = group_data['class'].value_counts().min()
+        # Count observations in each class within the group
+        class_counts = {label: np.sum(y[group_indices] == label) for label in np.unique(y[group_indices])}
+        # Print the class counts for the current group
+        print('Group {}: {}'.format(group, class_counts))
+
+        # Find the minimum count among classes in this group
+        min_count = min(class_counts.values())
 
         # Sample from each class
-        for class_value in group_data['class'].unique():
-            class_data = group_data[group_data['class'] == class_value]
-            sampled_class_data = class_data.sample(n=min_count, replace=False)
+        for class_value in np.unique(y[group_indices]):
+            class_indices = group_indices[y[group_indices] == class_value]
+            sampled_indices = np.random.choice(class_indices, size=min_count, replace=False)
+            balanced_indices.extend(sampled_indices)
 
-            # Append sampled data to the results
-            balanced_X.append(sampled_class_data.drop(['class', 'group'], axis=1))
-            balanced_y.extend(sampled_class_data['class'])
-            balanced_groups.extend(sampled_class_data['group'])
+    # Sort indices to maintain original order
+    balanced_indices = sorted(set(balanced_indices))
 
-    # Concatenate results
-    balanced_X = pd.concat(balanced_X).values
-    balanced_y = np.array(balanced_y)
-    balanced_groups = np.array(balanced_groups)
-
+    # Select balanced data
+    balanced_X = X[:, balanced_indices, :]
+    balanced_y = y[balanced_indices]
+    balanced_groups = groups[balanced_indices]
     return balanced_X, balanced_y, balanced_groups
+
 
 def select_trial(event_dict, trial_type=['correct_commission'], type_how='correct', bad_how='any', inout_how='all', inout='INOUT_2575', verbose=False):
     if bad_how is None or bad_how == 'ignore':
