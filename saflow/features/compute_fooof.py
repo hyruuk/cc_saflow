@@ -40,14 +40,14 @@ parser.add_argument(
 parser.add_argument(
     "-s",
     "--subject",
-    default='19',
+    default='all',
     type=str,
     help="Subject to process",
 )
 parser.add_argument(
     "-r",
     "--run",
-    default='06',
+    default='all',
     type=str,
     help="Run to process",
 )
@@ -144,7 +144,6 @@ if __name__ == "__main__":
                 event_dict = events_dicts[idx_trial]
                 inout_epoch = get_inout(event_dict, inbound, outbound)
                 epoch_selected = select_epoch(event_dict, bad_how='any', type_how=type_how, inout_epoch=inout_epoch, verbose=True)
-                #trial_selected = select_trial(events_dicts[idx_trial], type_how=type_how)
                 if epoch_selected:
                     if inout_epoch == 'IN':
                         IN_baseline.append(trial)
@@ -170,11 +169,10 @@ if __name__ == "__main__":
                 fg_trial = fg.copy()
                 fg_trial.fit(freq_bins, trial, [2,120], n_jobs=n_jobs)
                 trial_fooofs.append(fg_trial)
-            #trial_fooofs = np.array(trial_fooofs)
 
             # Save
             filepaths['welch'].update(root=saflow.BIDS_PATH + f'/derivatives/{fooof_params}/').mkdir(exist_ok=True)
-            output_fname = str(filepaths['welch'].update(root=saflow.BIDS_PATH + f'/derivatives/{fooof_params}/').fpath) + '.pkl'
+            output_fname = str(filepaths['welch'].update(root=saflow.BIDS_PATH + f'/derivatives/{fooof_params}_selfcorr/').fpath) + '.pkl'
             output_dict = {'IN_fooofs': fg_IN,
                             'OUT_fooofs': fg_OUT,
                             'trial_fooofs': trial_fooofs,
@@ -191,11 +189,14 @@ if __name__ == "__main__":
                 for chan_idx in range(len(data['trial_fooofs'][trial_idx])):
                     psd_raw = data['trial_fooofs'][trial_idx].get_fooof(chan_idx).power_spectrum
                     freq_bins = data['trial_fooofs'][trial_idx].get_fooof(chan_idx).freqs
-
-                    if INOUT == 'IN':
-                        psd_corrected = data['trial_fooofs'][trial_idx].get_fooof(chan_idx).power_spectrum - data['IN_fooofs'].get_fooof(chan_idx)._ap_fit
-                    elif INOUT == 'OUT':
-                        psd_corrected = data['trial_fooofs'][trial_idx].get_fooof(chan_idx).power_spectrum - data['OUT_fooofs'].get_fooof(chan_idx)._ap_fit
+                    
+                    # currently deprec
+                    #if INOUT == 'IN':
+                    #    psd_corrected = data['trial_fooofs'][trial_idx].get_fooof(chan_idx).power_spectrum - data['IN_fooofs'].get_fooof(chan_idx)._ap_fit
+                    #elif INOUT == 'OUT':
+                    #    psd_corrected = data['trial_fooofs'][trial_idx].get_fooof(chan_idx).power_spectrum - data['OUT_fooofs'].get_fooof(chan_idx)._ap_fit
+                    # now live
+                    psd_corrected = data['trial_fooofs'][trial_idx].get_fooof(chan_idx).power_spectrum - data['trial_fooofs'][trial_idx].get_fooof(chan_idx)._ap_fit
 
                     psd_model_fit = data['trial_fooofs'][trial_idx].get_fooof(chan_idx).fooofed_spectrum_
                     exponent = data['trial_fooofs'][trial_idx].get_fooof(chan_idx).aperiodic_params_[-1]
@@ -215,28 +216,4 @@ if __name__ == "__main__":
                     magic_dict.append(data_dict)
             fname_output = output_fname.replace('.pkl', '_magic.pkl')
             with open(fname_output, 'wb') as f:
-                pickle.dump(magic_dict, f)    
-
-
-            
-        # Subject-level FOOOFs        
-        IN_subj = np.array(IN_subj)
-        OUT_subj = np.array(OUT_subj)
-
-        # Average across runs
-        IN_subj_avg = np.mean(IN_subj, axis=0)
-        OUT_subj_avg = np.mean(OUT_subj, axis=0)
-
-        # Compute FOOOFs
-        fg_subj_IN = fg.copy()
-        fg_subj_IN.fit(freq_bins, IN_subj_avg, [2,120], n_jobs=n_jobs)
-        fg_subj_OUT = fg.copy()
-        fg_subj_OUT.fit(freq_bins, OUT_subj_avg, [2,120], n_jobs=n_jobs)
-
-        # Save
-        output_fname = str(filepaths['welch'].update(root=saflow.BIDS_PATH + '/derivatives/fooof/', run=None).fpath) + '.pkl'
-        print(output_fname)
-
-        with open(output_fname, 'wb') as f:
-            pickle.dump({'IN_fooofs': fg_subj_IN,
-                        'OUT_fooofs': fg_subj_OUT}, f)
+                pickle.dump(magic_dict, f)
