@@ -171,7 +171,7 @@ if __name__ == "__main__":
                 trial_fooofs.append(fg_trial)
 
             # Save
-            filepaths['welch'].update(root=saflow.BIDS_PATH + f'/derivatives/{fooof_params}/').mkdir(exist_ok=True)
+            filepaths['welch'].update(root=saflow.BIDS_PATH + f'/derivatives/{fooof_params}_selfcorr/').mkdir(exist_ok=True)
             output_fname = str(filepaths['welch'].update(root=saflow.BIDS_PATH + f'/derivatives/{fooof_params}_selfcorr/').fpath) + '.pkl'
             output_dict = {'IN_fooofs': fg_IN,
                             'OUT_fooofs': fg_OUT,
