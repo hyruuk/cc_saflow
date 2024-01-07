@@ -9,18 +9,23 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.model_selection import LeaveOneGroupOut
 from sklearn.model_selection import permutation_test_score
 from scipy import stats
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import roc_auc_score
 
-
-def singlefeat_classif(clf, cv, X, y, groups, n_perms=1):
-    clf = LinearDiscriminantAnalysis()
-    cv = LeaveOneGroupOut()
-
+def singlefeat_classif(X, y, groups, clf=LinearDiscriminantAnalysis(), cv=LeaveOneGroupOut(), n_perms=1):
     all_scores, all_perm_scores, all_pvals = [], [], []
     for freq_idx in range(X.shape[0]):
         scores, perm_scores, pvals = [], [], []
         for chan_idx in range(X.shape[-1]):
             X_sf = X[freq_idx,:,chan_idx]
-            score, permutation_scores, pvalue = permutation_test_score(clf, X=X_sf.reshape(-1, 1), y=y, groups=groups, cv=cv, n_permutations=n_perms, n_jobs=-1)
+            score, permutation_scores, pvalue = permutation_test_score(clf, 
+                                                                       X=X_sf.reshape(-1, 1), 
+                                                                       y=y, 
+                                                                       groups=groups, 
+                                                                       cv=cv, 
+                                                                       n_permutations=n_perms, 
+                                                                       scoring='roc_auc', 
+                                                                       n_jobs=-1)
             scores.append(score)
             perm_scores.append(permutation_scores)
             pvals.append(pvalue)
