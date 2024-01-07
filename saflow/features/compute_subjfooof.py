@@ -10,7 +10,7 @@ from mne_bids import BIDSPath, read_raw_bids
 from fooof import FOOOF, Bands, FOOOFGroup
 import mne_bids
 import warnings
-from saflow.data import select_trial
+from saflow.data import select_epoch, get_VTC_bounds, get_inout
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
@@ -73,6 +73,20 @@ parser.add_argument(
     help="Welch from which to process",
 )
 
+parser.add_argument(
+    "-t",
+    "--type",
+    default='alltrials',
+    type=str,
+    help="Type of trials to consider",
+)
+parser.add_argument(
+    "-b",
+    "--bounds",
+    default='2575',
+    type=str,
+    help="Bounds of the VTC window",
+)
 
 
 
@@ -95,8 +109,11 @@ if __name__ == "__main__":
     else:
         runs = [run]
 
+    type_how = args.type
+    lowbound = int(args.bounds[:2])
+    highbound = int(args.bounds[2:])
     
-    fooof_params = 'fooof_fixed_1022_sensor_8trials'
+    fooof_params = f'fooof_fixed_{type_how}_1022_sensor_8trials'
 
     max_n_peaks = 8
     peak_width_limits = [2, 12]
@@ -121,13 +138,16 @@ if __name__ == "__main__":
                 events_dicts = file['info']
                 freq_bins = file['freq_bins']
 
+            inbound, outbound = get_VTC_bounds(events_dicts, lowbound=25, highbound=75)
             # Grab correct baseline trials
             for idx_trial, trial in enumerate(welch_array):
-                trial_selected = select_trial(events_dicts[idx_trial], trial_type='correct_commission')
-                if trial_selected:
-                    if events_dicts[idx_trial]['INOUT_2575'] == 'IN':
+                event_dict = events_dicts[idx_trial]
+                inout_epoch = get_inout(event_dict, inbound, outbound)
+                epoch_selected = select_epoch(event_dict, bad_how='any', type_how=type_how, inout_epoch=inout_epoch, verbose=True)
+                if epoch_selected:
+                    if inout_epoch == 'IN':
                         IN_baseline.append(trial)
-                    elif events_dicts[idx_trial]['INOUT_2575'] == 'OUT':
+                    elif inout_epoch == 'OUT':
                         OUT_baseline.append(trial)
 
             if len(IN_baseline) != 0 and len(OUT_baseline) != 0:
