@@ -212,16 +212,18 @@ def create_pval_mask(pvals, alpha=0.05):
     return mask
 
 # Grid topoplot
-
-def grid_topoplot(array_data, chan_info, titles_x, titles_y, masks=None, mask_params=None, cmap=None, vlims=None, title=None):
+def grid_topoplot(array_data, chan_info, titles_x, titles_y, row_titles, masks=None, mask_params=None, cmap=None, vlims=None, title=None, letters=None, axes=None, fig=None, cb_frac=0.005):
     '''Creates a grid of topoplots from the array_data. First dimension is used for the rows, second for the columns'''
-    letters = list(string.ascii_uppercase)
+
     if len(array_data.shape) == 2:
         array_data = array_data.reshape((1, array_data.shape[0], array_data.shape[1]))
-    fig, axes = plt.subplots(array_data.shape[0], array_data.shape[1], figsize=(3*array_data.shape[1], 3*array_data.shape[0]))
-    if len(array_data.shape) == 2:
-        axes = np.array([axes])
-    plt.subplots_adjust(wspace=0.1, hspace=0)
+        if axes is None:
+            fig, axes = plt.subplots(array_data.shape[0], array_data.shape[1], figsize=(3*array_data.shape[1], 3*array_data.shape[0]), dpi=300)
+            axes = axes.reshape(1, len(axes))
+    else:
+        if axes is None:
+            fig, axes = plt.subplots(array_data.shape[0], array_data.shape[1], figsize=(3*array_data.shape[1], 3*array_data.shape[0]), dpi=300)
+    #plt.subplots_adjust(wspace=0.1, hspace=0)
     for idx_row, row in enumerate(axes):
         for idx_col, ax in enumerate(row):
             mne.viz.plot_topomap(array_data[idx_row, idx_col], 
@@ -239,19 +241,26 @@ def grid_topoplot(array_data, chan_info, titles_x, titles_y, masks=None, mask_pa
             if idx_row == 0:
                 ax.set_title(titles_x[idx_col])
             if idx_col == 0:
-                ax.set_ylabel(titles_y[idx_row], fontsize=14, rotation=0, labelpad=45)
-                ax.text(
-                        -0.02,
-                        1.01,
-                        letters[idx_row],
-                        transform=ax.transAxes,
-                        size=14,
-                        weight="bold",
-                    )
+                ax.set_ylabel(titles_y[idx_row], fontsize=12, rotation=90, labelpad=10)
+                if letters is not None:
+                    ax.text(
+                            -0.02,
+                            1.01,
+                            letters[idx_row],
+                            transform=ax.transAxes,
+                            size=14,
+                            weight="bold",
+                        )
+                ax.text(-0.3, 0.5, row_titles[idx_row], fontsize=14, fontweight='bold', va='center', ha='right', rotation='horizontal', transform=ax.transAxes)
     # Add a colorbar and title. For this we need to use the figure handle.
     for row_idx in range(array_data.shape[0]):
-        fig.colorbar(axes[row_idx][0].images[-1], ax=axes[row_idx], orientation='vertical', fraction=.005)
+        fig.colorbar(axes[row_idx][0].images[-1], ax=axes[row_idx], orientation='vertical', fraction=cb_frac)
 
     if title is not None:
-        fig.suptitle(title, y=1, fontsize=18)
+        if len(axes) > 2:
+            y = 1
+        else:
+            y = 1.1
+        fig.suptitle(title, y=y, fontsize=16)
+
     return fig, axes

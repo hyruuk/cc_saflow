@@ -49,7 +49,7 @@ def load_fooof_data(feature, feature_fpath, feat_to_get, type_how='alltrials', c
                             X.append(trial_data)
                             groups.append(sub)
                             VTC.append(np.nanmean(data_reshaped[trial_idx][0]['info']['included_VTC']))
-                            task.append(data_reshaped[trial_idx][0]['info']['task'])
+                            task.append(data_reshaped[trial_idx][0]['info']['included_task'])
                             if 'INOUT' in classif:
                                 # 0 = IN, 1 = OUT
                                 if inout_epoch == 'IN':
@@ -58,19 +58,20 @@ def load_fooof_data(feature, feature_fpath, feat_to_get, type_how='alltrials', c
                                     y.append(1)
                             elif classif == 'oddball':
                                 # 0 = rare, 1 = frequent
-                                if event_dict['task'] == 'correct_omission':
+                                if 'correct_omission' in  event_dict['included_task']:
                                     y.append(0)
-                                elif event_dict['task'] == 'correct_commission':
+                                elif 'correct_commission' in  event_dict['included_task']:
                                     y.append(1)
                             elif classif == 'rare':
                                 # 0 = correct, 1 = error
-                                if event_dict['task'] == 'correct_omission':
+                                if 'correct_omission' in  event_dict['included_task']:
                                     y.append(0)
-                                elif event_dict['task'] == 'commission_error':
+                                elif 'commission_error' in  event_dict['included_task']:
                                     y.append(1)
                         else:
                             print('Nan in trial data')
                             print(f'{sub} {file}, trial {trial_idx}')
+    print(np.array(X).shape)
     X = np.array(X).transpose(2,0,1)
     y = np.array(y)
     groups = np.array(groups)
@@ -301,57 +302,6 @@ def balance_dataset(X, y, groups, seed=42069):
     return balanced_X, balanced_y, balanced_groups
 
 
-def select_trial(event_dict, trial_type=['correct_commission'], type_how='correct', bad_how='any', inout_how='all', inout='INOUT_2575', verbose=False):
-    if bad_how is None or bad_how == 'ignore':
-        bad_epoch = False
-    elif bad_how == 'last':
-        bad_epoch = event_dict['bad_epoch']
-    elif bad_how == 'any':
-        bad_epoch = np.sum(event_dict['included_bad_epochs']) > 0
-
-    if str(event_dict[inout]) != 'nan':
-        if inout_how == 'all':
-            n_uniques = len(np.unique(event_dict['included_INOUT'])) == 1
-            unique_elements = np.unique(event_dict['included_INOUT'])
-            uniques_inout = any(element in ['IN', 'OUT'] for element in unique_elements)
-            retain_inout =  n_uniques & uniques_inout
-        elif inout_how == 'last':
-            retain_inout = event_dict[inout] in ['IN', 'OUT']
-    else:
-        retain_inout = False
-
-    # deprec
-    if type_how == 'last':
-        retain_type = event_dict['task'] in trial_type
-    if type_how == 'all':
-        if len(np.unique(event_dict['included_task'])) == 1:
-            if np.unique(event_dict['included_task']) == 'correct_omission':
-                retain_type = True
-            else:
-                retain_type = False
-        else:
-            if event_dict['task'] in trial_type:
-                retain_type = True
-            else:
-                retain_type = False
-
-    # used
-    if type_how == 'correct':
-        correct_trials = ['correct_omission', 'correct_commission']
-        retain_type = all(item in correct_trials for item in event_dict['included_task'])
-
-    elif type_how == 'lapse':
-        retain_type = 'commission_error' in event_dict['included_task']
-    
-    elif type_how == 'alltrials':
-        retain_type = True
-
-    retain_epoch = retain_inout & retain_type & ~bad_epoch
-    if verbose:
-        print(event_dict['included_task'])
-        print(f'Bad : {bad_epoch}, InOut : {retain_inout}, Type : {retain_type}, Retain : {retain_epoch}')
-    return retain_epoch
-
 
 def get_VTC_bounds(events_dicts, lowbound=25, highbound=75):
     # get the averaged VTC for each epoch
@@ -386,6 +336,9 @@ def select_epoch(event_dict, bad_how='any', type_how='alltrials', inout_epoch=No
     elif type_how == 'correct':
         correct_task_types = ['correct_omission', 'correct_commission']
         retain_task = all(item in correct_task_types for item in event_dict['included_task'])
+    elif type_how == 'rare':
+        rare_task_types = ['correct_omission', 'commission_error']
+        retain_task = any(item in event_dict['included_task'] for item in rare_task_types)
     elif type_how == 'lapse':
         retain_task = 'commission_error' in event_dict['included_task']
     
