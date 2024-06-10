@@ -23,14 +23,14 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "-i",
     "--input",
-    default= '/scratch/hyruuk/saflow2023/sourcedata/',#"/media/hyruuk/CoCoLabYANN/coco_data/saflow/sourcedata",#'./data/raw',
+    default= '/scratch/hyruuk/saflow2024/sourcedata/',#"/media/hyruuk/CoCoLabYANN/coco_data/saflow/sourcedata",#'./data/raw',
     type=str,
     help="Path to the sourcedata folder",
 )
 parser.add_argument(
 	"-o",
 	"--output",
-	default = '/scratch/hyruuk/saflow2023/bids/',#"/media/hyruuk/CoCoLabYANN/coco_data/saflow/bids",#"./data/bids",
+	default = '/scratch/hyruuk/saflow2024/bids/',#"/media/hyruuk/CoCoLabYANN/coco_data/saflow/bids",#"./data/bids",
 	type = str,
 	help="Path to the output BIDS folder"
 )
