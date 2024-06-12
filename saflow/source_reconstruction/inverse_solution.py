@@ -134,7 +134,7 @@ def get_coregistration(filepath, subject, subjects_dir=FS_SUBJDIR, mri_available
         subject = 'sub-' + str(subject)
     else:
         subject = 'fsaverage'
-    coreg = mne.coreg.Coregistration(info, subject, subjects_dir, fiducials="estimated")
+    coreg = mne.coreg.Coregistration(info, subject, subjects_dir, fiducials="auto")
     coreg.fit_icp(n_iterations=6, nasion_weight=2.0, verbose=True)
     coreg.omit_head_shape_points(distance=5.0 / 1000)
     coreg.fit_icp(n_iterations=20, nasion_weight=10.0, verbose=True)
