@@ -1,10 +1,13 @@
-BIDS_PATH = '/scratch/hyruuk/saflow2023/bids/'
-ACQ_PATH = '/scratch/hyruuk/saflow2023/sourcedata/'
+import os.path as op
+
+DATA_ROOT = '/media/hyruuk/YH_storage/DATA/saflow/'
+
+BIDS_PATH = op.join(DATA_ROOT, 'bids')
+ACQ_PATH = op.join(DATA_ROOT, 'sourcedata')
+LOGS_DIR = op.join(DATA_ROOT, 'sourcedata', 'behav')
 
 RESULTS_PATH = './results/'
 IMG_DIR = './reports/figures/'
-CH_FILE = '/scratch/hyruuk/saflow2023/bids/sub-04/meg/sub-04_ses-recording_task-gradCPT_run-02_meg.ds'
-LOGS_DIR = '/scratch/hyruuk/saflow2023/sourcedata/behav/'
 
 FEAT_PATH = './features/'
 FREQS = [ [2, 4], [4, 8], [8, 12], [12, 20], [20, 30], [30, 60], [60, 90], [90, 120] ]
@@ -13,4 +16,4 @@ SUBJ_LIST = ['04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '
 BLOCS_LIST = ['2','3', '4', '5', '6', '7']
 ZONE_CONDS = ['IN', 'OUT']
 ZONE2575_CONDS = ['IN25', 'OUT75']
-FS_SUBJDIR = '/scratch/hyruuk/saflow2023/fs_subjects/'
+FS_SUBJDIR = op.join(DATA_ROOT, 'fs_subjects')

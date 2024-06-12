@@ -17,20 +17,20 @@ from mne_bids import (write_raw_bids, read_raw_bids,
                       BIDSPath, print_dir_tree)
 import pandas as pd
 from saflow.behav import get_VTC_from_file
-from saflow import SUBJ_LIST
+from saflow import SUBJ_LIST, ACQ_PATH, BIDS_PATH
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "-i",
     "--input",
-    default= '/scratch/hyruuk/saflow2023/sourcedata/',#"/media/hyruuk/CoCoLabYANN/coco_data/saflow/sourcedata",#'./data/raw',
+    default= None,
     type=str,
     help="Path to the sourcedata folder",
 )
 parser.add_argument(
 	"-o",
 	"--output",
-	default = '/scratch/hyruuk/saflow2023/bids/',#"/media/hyruuk/CoCoLabYANN/coco_data/saflow/bids",#"./data/bids",
+	default = None,
 	type = str,
 	help="Path to the output BIDS folder"
 )
@@ -268,8 +268,16 @@ def add_in_out_zone(events_bids: pd.DataFrame, bidspath: BIDSPath, files_list: L
 if __name__ == "__main__":
     # Parse arguments
     args = parser.parse_args()
-    raw_folder = args.input
-    bids_root = args.output
+    if args.input is not None:
+        raw_folder = args.input
+    else:
+        raw_folder = ACQ_PATH
+    if args.output is not None:
+        bids_root = args.output
+    else:
+        bids_root = BIDS_PATH
+
+
     os.makedirs(bids_root, exist_ok=True)
 
     # List MEG files
