@@ -186,11 +186,11 @@ def preproc_pipeline(filepaths, tmin, tmax):
     print(np.sum(autoreject_log.bad_epochs))
     
     try:
-        fig = epochs[autoreject_log.bad_epochs].plot()
+        fig = epochs[autoreject_log.bad_epochs].plot(show=False)
         report.add_figure(fig, title="Bad pochs")
     except:
         print("No bad epochs")
-    fig = autoreject_log.plot('horizontal')
+    fig = autoreject_log.plot('horizontal', show=False)
     report.add_figure(fig, title="Autoreject decisions")
 
     ## Then, run ICA on the filtered data
@@ -202,7 +202,7 @@ def preproc_pipeline(filepaths, tmin, tmax):
     ica = ICA(n_components=20, 
                 random_state=0,#).fit(raw_filt, decim=3)
                 noise_cov=noise_cov).fit(epochs_filt[~autoreject_log.bad_epochs], decim=3)
-    fig = ica.plot_sources(preproc, show=True)
+    fig = ica.plot_sources(preproc, show=False)
     report.add_figure(fig, title="ICA sources")
 
     ## Find ECG components
