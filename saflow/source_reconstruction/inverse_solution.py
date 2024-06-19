@@ -192,8 +192,8 @@ def get_inverse_epochs(filepath, fwd, noise_cov):
     stcs = apply_inverse_epochs(
                 epoch,
                 inverse_operator,
-                lambda2=invsol_params['lambda2'],
-                method=invsol_params['method'],
+                lambda2=lambda2,
+                method=method,
                 pick_ori=None,
                 verbose=True,
             )
@@ -215,8 +215,8 @@ def get_inverse(filepath, fwd, noise_cov):
     stc =  apply_inverse_raw(
                 preproc,
                 inverse_operator,
-                lambda2=invsol_params['lambda2'],
-                method=invsol_params['method'],
+                lambda2=lambda2,
+                method=method,
                 pick_ori=None,
                 verbose=True,
             )
@@ -267,6 +267,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
     subject = args.subject
     bloc = args.run
+
+    # Set some params
+    method = "MNE"
+    snr = 3.0
+    lambda2 = 1.0 / snr**2
 
     # Check if subject in FS_SUBJDIR
     if not os.path.exists(FS_SUBJDIR + '/sub-' + str(subject)):
