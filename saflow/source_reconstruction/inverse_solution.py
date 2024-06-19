@@ -1,5 +1,5 @@
 # Computes inverse solution and saves sources
-from saflow import FS_SUBJDIR, SUBJ_LIST, BLOCS_LIST, BIDS_PATH, invsol_params
+from saflow import FS_SUBJDIR, SUBJ_LIST, BLOCS_LIST, BIDS_PATH
 import numpy as np
 import mne
 from mne.minimum_norm import make_inverse_operator, apply_inverse_raw, apply_inverse_epochs
