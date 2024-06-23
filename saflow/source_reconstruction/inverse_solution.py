@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "-s",
     "--subject",
-    default='12',
+    default='33',
     type=str,
     help="Subject to process",
 )
@@ -226,6 +226,12 @@ def get_inverse(filepath, fwd, noise_cov):
 def get_morphed(filepath, subject, stcs, fwd, mri_available=False, subjects_dir=FS_SUBJDIR):
     # TODO : modify the function so it only accepts continuous signal
     fsaverage_fpath = op.join(FS_SUBJDIR, 'fsaverage', 'bem', 'fsaverage-oct-6-src.fif')
+    if not op.exists(fsaverage_fpath):
+        # Create and save fsaverage source space
+        src = mne.setup_source_space('fsaverage', spacing='oct6', subjects_dir=FS_SUBJDIR, add_dist=False)
+        src_fname = os.path.join(subjects_dir, 'fsaverage', 'bem', f'fsaverage-oct-6-src.fif')
+        mne.write_source_spaces(src_fname, src)
+        
     # Create source space to project to
     src_to = get_source_space(subject, mri_available=False)
     if not mri_available:
