@@ -9,18 +9,19 @@ from mne import Label
 from collections import defaultdict
 import pickle
 import argparse
+import saflow
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "-s",
     "--subject",
-    default='37',
+    default='all',
     type=str,
     help="Subject to process",
 )
 parser.add_argument(
     "-r",
     "--run",
-    default='02',
+    default='all',
     type=str,
     help="Run to process",
 )
@@ -75,52 +76,68 @@ if __name__ == "__main__":
     atlas = args.atlas
     processing = args.processing
     output_state = f'{input_state}_{atlas}'
-    fnames = create_fnames(subj, run, input_state, output_state, processing)
 
-    stc = mne.read_source_estimate(str(fnames['input'].fpath)+'-stc.h5')
+    if subj == 'all':
+        subjects = saflow.SUBJ_LIST
+    else:
+        subjects = [subj]
+    if run == 'all':
+        runs = ['0' + x for x in saflow.BLOCS_LIST]
+    else:
+        runs = [run]
 
-    labels = mne.read_labels_from_annot('fsaverage', parc=atlas, subjects_dir=FS_SUBJDIR)
+    for subject in subjects:
+        for run in runs:
+            print(f'Processing subject {subject}, run {run}')
+            try:
+                fnames = create_fnames(subject, run, input_state, output_state, processing)
 
-    # Initialize dictionary to store data for each region
-    region_data = defaultdict(list)
+                stc = mne.read_source_estimate(str(fnames['input'].fpath)+'-stc.h5')
 
-    # Get the vertices for the left and right hemispheres from the SourceEstimate
-    vertices_lh = stc.vertices[0]
-    vertices_rh = stc.vertices[1]
+                labels = mne.read_labels_from_annot('fsaverage', parc=atlas, subjects_dir=FS_SUBJDIR)
 
-    # Combine the vertex mappings into a dictionary
-    vertex_to_region = {}
+                # Initialize dictionary to store data for each region
+                region_data = defaultdict(list)
 
-    # Map vertices to regions using the labels
-    for label in labels:
-        label_vertices = label.vertices
-        hemi = 0 if label.hemi == 'lh' else 1
-        if hemi == 0:
-            common_vertices = np.intersect1d(vertices_lh, label_vertices)
-        else:
-            common_vertices = np.intersect1d(vertices_rh, label_vertices)
-        
-        for vert in common_vertices:
-            vertex_to_region[vert] = label.name
- 
-    # Collect data for each region based on the vertex to region mapping
-    for vert_idx, region in vertex_to_region.items():
-        if vert_idx in vertices_lh:
-            idx = np.where(vertices_lh == vert_idx)[0][0]
-            region_data[region].append(stc.data[idx])
-        elif vert_idx in vertices_rh:
-            idx = np.where(vertices_rh == vert_idx)[0][0]
-            region_data[region].append(stc.data[len(vertices_lh) + idx])
+                # Get the vertices for the left and right hemispheres from the SourceEstimate
+                vertices_lh = stc.vertices[0]
+                vertices_rh = stc.vertices[1]
 
-    # Average the data within each region
-    region_averages = {region: np.mean(np.array(data), axis=0) for region, data in region_data.items()}
+                # Combine the vertex mappings into a dictionary
+                vertex_to_region = {}
 
-    # Convert dict to np array + list of names
-    region_data = np.array(list(region_averages.values()))
-    region_names = list(region_averages.keys())
+                # Map vertices to regions using the labels
+                for label in labels:
+                    label_vertices = label.vertices
+                    hemi = 0 if label.hemi == 'lh' else 1
+                    if hemi == 0:
+                        common_vertices = np.intersect1d(vertices_lh, label_vertices)
+                    else:
+                        common_vertices = np.intersect1d(vertices_rh, label_vertices)
+                    
+                    for vert in common_vertices:
+                        vertex_to_region[vert] = label.name
+            
+                # Collect data for each region based on the vertex to region mapping
+                for vert_idx, region in vertex_to_region.items():
+                    if vert_idx in vertices_lh:
+                        idx = np.where(vertices_lh == vert_idx)[0][0]
+                        region_data[region].append(stc.data[idx])
+                    elif vert_idx in vertices_rh:
+                        idx = np.where(vertices_rh == vert_idx)[0][0]
+                        region_data[region].append(stc.data[len(vertices_lh) + idx])
 
-    # Save atlased (region_averages) data with pickle
-    with open(str(fnames['output'].fpath)+'-avg.pkl', 'wb') as f:
-        pickle.dump({'data':region_data,
-                     'region_names':region_names}, f)
+                # Average the data within each region
+                region_averages = {region: np.mean(np.array(data), axis=0) for region, data in region_data.items()}
 
+                # Convert dict to np array + list of names
+                region_data = np.array(list(region_averages.values()))
+                region_names = list(region_averages.keys())
+
+                # Save atlased (region_averages) data with pickle
+                with open(str(fnames['output'].fpath)+'-avg.pkl', 'wb') as f:
+                    pickle.dump({'data':region_data,
+                                'region_names':region_names,
+                                'sfreq':stc.sfreq}, f)
+            except Exception as e:
+                print(e)
