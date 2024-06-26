@@ -25,9 +25,9 @@ parser.add_argument(
 parser.add_argument(
     "-l",
     "--level",
-    default="sensor",
+    default="atlas_aparc.a2009s",
     type=str,
-    help="Level of processing (sensor or source)",
+    help="Level of processing (sensor or source or atlas_atlas-name)",
 )
 parser.add_argument(
     "-m",
@@ -85,6 +85,7 @@ if __name__ == "__main__":
     for subject in subjects:
         for run in runs:
             print(f'Processing subject {subject}, run {run}')
+            from saflow.utils import create_fnames
             filepaths = create_fnames(subject, run)
             filepaths['welch'].update(root=op.join('/'.join(str(filepaths['welch'].root).split('/')[:-1]), str(filepaths['welch'].root).split('/')[-1] + f'_{n_fft}_{level}_{n_trials}trials'))
             filepaths['welch'].mkdir(exist_ok=True)
@@ -106,7 +107,21 @@ if __name__ == "__main__":
                     sfreq = raw.info['sfreq']
                     meg_picks = mne.pick_types(raw.info, meg=True, ref_meg=False, eeg=False, eog=False)
                     data = data[meg_picks,:]
-
+                
+                elif 'atlas' in level:
+                    atlas_name = level.split('_')[1]
+                    from saflow.source_reconstruction.apply_atlas import create_fnames
+                    atlas_filepaths = create_fnames(subject, run, 
+                                              f'morphed_sources_{atlas_name}', 
+                                              f'welch_{atlas_name}')
+                    with open(str(atlas_filepaths['input'].fpath).replace('desc-morphed', 'desc-atlased-avg') + '.pkl', 'rb') as f:
+                        file_content = pickle.load(f)
+                        data = file_content['data']
+                        sfreq = file_content['sfreq']
+                        region_names = file_content['region_names']
+                    output_fname = output_fname.replace('.pkl', f'_{atlas_name}.pkl')
+                    print(data.shape)
+                    
                 segmented_array, events_idx, events_dicts = segment_sourcelevel(data, filepaths, sfreq=sfreq, n_events_window=n_trials)
                 welch_array, freq_bins = mne.time_frequency.psd_array_welch(segmented_array, sfreq=sfreq, n_jobs=n_jobs, n_fft=n_fft, n_overlap=n_overlap, average='mean')
                 
