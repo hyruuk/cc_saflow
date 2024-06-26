@@ -84,48 +84,52 @@ if __name__ == "__main__":
     
     for subject in subjects:
         for run in runs:
-            print(f'Processing subject {subject}, run {run}')
-            from saflow.utils import create_fnames
-            filepaths = create_fnames(subject, run)
-            filepaths['welch'].update(root=op.join('/'.join(str(filepaths['welch'].root).split('/')[:-1]), str(filepaths['welch'].root).split('/')[-1] + f'_{n_fft}_{level}_{n_trials}trials'))
-            filepaths['welch'].mkdir(exist_ok=True)
-            output_fname = str(filepaths['welch'].fpath) + '.pkl'
-            if not op.exists(output_fname):
-                subject_list = []
-                run_list = []
-                trial_psd = []
-                info_list = []
+            try:
+                print(f'Processing subject {subject}, run {run}')
+                from saflow.utils import create_fnames
+                filepaths = create_fnames(subject, run)
+                filepaths['welch'].update(root=op.join('/'.join(str(filepaths['welch'].root).split('/')[:-1]), str(filepaths['welch'].root).split('/')[-1] + f'_{n_fft}_{level}_{n_trials}trials'))
+                filepaths['welch'].mkdir(exist_ok=True)
+                output_fname = str(filepaths['welch'].fpath) + '.pkl'
+                if not op.exists(output_fname):
+                    subject_list = []
+                    run_list = []
+                    trial_psd = []
+                    info_list = []
 
-                if level == 'source':
-                    stc = mne.read_source_estimate(filepaths['morph'])
-                    data = np.float64(stc.data)
-                    sfreq = stc.sfreq
+                    if level == 'source':
+                        stc = mne.read_source_estimate(filepaths['morph'])
+                        data = np.float64(stc.data)
+                        sfreq = stc.sfreq
+                        
+                    elif level == 'sensor':
+                        raw = mne_bids.read_raw_bids(filepaths['preproc'])
+                        data = raw.get_data()
+                        sfreq = raw.info['sfreq']
+                        meg_picks = mne.pick_types(raw.info, meg=True, ref_meg=False, eeg=False, eog=False)
+                        data = data[meg_picks,:]
                     
-                elif level == 'sensor':
-                    raw = mne_bids.read_raw_bids(filepaths['preproc'])
-                    data = raw.get_data()
-                    sfreq = raw.info['sfreq']
-                    meg_picks = mne.pick_types(raw.info, meg=True, ref_meg=False, eeg=False, eog=False)
-                    data = data[meg_picks,:]
-                
-                elif 'atlas' in level:
-                    atlas_name = level.split('_')[1]
-                    from saflow.source_reconstruction.apply_atlas import create_fnames
-                    atlas_filepaths = create_fnames(subject, run, 
-                                              f'morphed_sources_{atlas_name}', 
-                                              f'welch_{atlas_name}')
-                    with open(str(atlas_filepaths['input'].fpath).replace('desc-morphed', 'desc-atlased-avg') + '.pkl', 'rb') as f:
-                        file_content = pickle.load(f)
-                        data = file_content['data']
-                        sfreq = file_content['sfreq']
-                        region_names = file_content['region_names']
-                    output_fname = output_fname.replace('.pkl', f'_{atlas_name}.pkl')
-                    print(data.shape)
+                    elif 'atlas' in level:
+                        atlas_name = level.split('_')[1]
+                        from saflow.source_reconstruction.apply_atlas import create_fnames
+                        atlas_filepaths = create_fnames(subject, run, 
+                                                f'morphed_sources_{atlas_name}', 
+                                                f'welch_{atlas_name}')
+                        with open(str(atlas_filepaths['input'].fpath).replace('desc-morphed', 'desc-atlased-avg') + '.pkl', 'rb') as f:
+                            file_content = pickle.load(f)
+                            data = file_content['data']
+                            sfreq = file_content['sfreq']
+                            region_names = file_content['region_names']
+                        output_fname = output_fname.replace('.pkl', f'_{atlas_name}.pkl')
+                        print(data.shape)
+                        
+                    segmented_array, events_idx, events_dicts = segment_sourcelevel(data, filepaths, sfreq=sfreq, n_events_window=n_trials)
+                    welch_array, freq_bins = mne.time_frequency.psd_array_welch(segmented_array, sfreq=sfreq, n_jobs=n_jobs, n_fft=n_fft, n_overlap=n_overlap, average='mean')
                     
-                segmented_array, events_idx, events_dicts = segment_sourcelevel(data, filepaths, sfreq=sfreq, n_events_window=n_trials)
-                welch_array, freq_bins = mne.time_frequency.psd_array_welch(segmented_array, sfreq=sfreq, n_jobs=n_jobs, n_fft=n_fft, n_overlap=n_overlap, average='mean')
-                
-                with open(output_fname, 'wb') as f:
-                    pickle.dump({'data':welch_array,
-                                'info':events_dicts,
-                                'freq_bins':freq_bins}, f)
+                    with open(output_fname, 'wb') as f:
+                        pickle.dump({'data':welch_array,
+                                    'info':events_dicts,
+                                    'freq_bins':freq_bins}, f)
+            except Exception as e:
+                print(e)
+                continue
