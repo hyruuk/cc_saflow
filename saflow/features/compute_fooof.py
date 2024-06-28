@@ -9,6 +9,7 @@ import mne
 from mne_bids import BIDSPath, read_raw_bids
 from fooof import FOOOF, Bands, FOOOFGroup
 import mne_bids
+import time
 import warnings
 from saflow.data import select_epoch, get_VTC_bounds, get_inout
 warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -68,7 +69,7 @@ parser.add_argument(
 parser.add_argument(
     "-wp",
     "--welch_params",
-    default='1022_sensor_8trials',
+    default='2044_atlas_aparc_sub_8trials',
     type=str,
     help="Welch from which to process",
 )
@@ -127,6 +128,9 @@ if __name__ == "__main__":
             filepaths = create_fnames(subject, run)
             input_fname = filepaths['welch'].update(root=op.join('/'.join(str(filepaths['welch'].root).split('/')[:-1]), str(filepaths['welch'].root).split('/')[-1] + f'_{welch_params}'))
             input_fname = str(filepaths['welch'].fpath) + '.pkl'
+            if 'aparc' in welch_params:
+                #atlas_name = welch_params.split('aparc')[1].strip('_8trials')
+                input_fname = input_fname.replace('.pkl', '_aparc_sub.pkl')
             print(input_fname)
             IN_baseline = []
             OUT_baseline = []
@@ -165,10 +169,13 @@ if __name__ == "__main__":
             # Trial-level FOOOFs
             trial_fooofs = []
             for idx_trial, trial in enumerate(welch_array):
+                start_time = time.time()
                 print(f'Processing trial {idx_trial} for subject-{subject} run-{run}')
                 fg_trial = fg.copy()
                 fg_trial.fit(freq_bins, trial, [2,120], n_jobs=n_jobs)
                 trial_fooofs.append(fg_trial)
+                stop_time = time.time()
+                print(f'Elapsed time for subject {subject} run {run}: {stop_time-start_time}')
 
             # Save
             filepaths['welch'].update(root=saflow.BIDS_PATH + f'/derivatives/{fooof_params}_selfcorr/').mkdir(exist_ok=True)
@@ -214,6 +221,7 @@ if __name__ == "__main__":
                                 'info': data['info'][trial_idx],
                                 'freq_bins': freq_bins}
                     magic_dict.append(data_dict)
+
             fname_output = output_fname.replace('.pkl', '_magic.pkl')
             with open(fname_output, 'wb') as f:
                 pickle.dump(magic_dict, f)

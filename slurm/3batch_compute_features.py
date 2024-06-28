@@ -8,7 +8,7 @@ parser.add_argument(
     "--feature",
     default='psd',
     type=str,
-    help="Feature to compute. Can be 'psd', 'lzc', 'slope' or 'conn'.",
+    help="Feature to compute. Can be 'psd', 'lzc', 'slope' or 'conn' or 'fooof'.",
 )
 args = parser.parse_args()
 feature = args.feature
