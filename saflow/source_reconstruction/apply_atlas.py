@@ -35,7 +35,7 @@ parser.add_argument(
 parser.add_argument(
     "-a",
     "--atlas",
-    default='aparc.a2009s',
+    default='aparc_sub',
     type=str,
     help="Atlas to use for average",
 )

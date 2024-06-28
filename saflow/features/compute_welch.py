@@ -25,7 +25,7 @@ parser.add_argument(
 parser.add_argument(
     "-l",
     "--level",
-    default="atlas_aparc.a2009s",
+    default="atlas_aparc_sub",
     type=str,
     help="Level of processing (sensor or source or atlas_atlas-name)",
 )
@@ -110,7 +110,11 @@ if __name__ == "__main__":
                         data = data[meg_picks,:]
                     
                     elif 'atlas' in level:
-                        atlas_name = level.split('_')[1]
+                        if 'aparc' in level:
+                            atlas_name = 'aparc' + level.split('aparc')[1]
+                        else:
+                            atlas_name = level.split('_')[1]
+
                         from saflow.source_reconstruction.apply_atlas import create_fnames
                         atlas_filepaths = create_fnames(subject, run, 
                                                 f'morphed_sources_{atlas_name}', 
