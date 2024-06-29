@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --account=def-pbellec
-#SBATCH --time=12:00:00
+#SBATCH --time=24:00:00
 #SBATCH --job-name=safFeatures
-#SBATCH --mem=32G
+#SBATCH --mem=8G
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 
