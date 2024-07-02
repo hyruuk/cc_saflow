@@ -175,6 +175,7 @@ if __name__ == "__main__":
 
         # Save
         output_fname = str(filepaths['welch'].update(root=saflow.BIDS_PATH + f'/derivatives/{fooof_params}/', run=None).fpath) + '.pkl'
+        filepaths['welch'].mkdir(exist_ok=True)
         print(output_fname)
 
         with open(output_fname, 'wb') as f:
