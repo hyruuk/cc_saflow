@@ -68,7 +68,7 @@ parser.add_argument(
 parser.add_argument(
     "-wp",
     "--welch_params",
-    default='1022_sensor_8trials',
+    default='2044_atlas_aparc_sub_8trials_selfcorr',
     type=str,
     help="Welch from which to process",
 )
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     lowbound = int(args.bounds[:2])
     highbound = int(args.bounds[2:])
     
-    fooof_params = f'fooof_fixed_{type_how}_1022_sensor_8trials'
+    fooof_params = f'fooof_fixed_{welch_params}'
 
     max_n_peaks = 8
     peak_width_limits = [2, 12]
@@ -127,6 +127,8 @@ if __name__ == "__main__":
             filepaths = create_fnames(subject, run)
             input_fname = filepaths['welch'].update(root=op.join('/'.join(str(filepaths['welch'].root).split('/')[:-1]), str(filepaths['welch'].root).split('/')[-1] + f'_{welch_params}'))
             input_fname = str(filepaths['welch'].fpath) + '.pkl'
+            if 'aparc' in welch_params:
+                input_fname = input_fname.replace('.pkl', '_aparc_sub.pkl')
             print(input_fname)
             IN_baseline = []
             OUT_baseline = []
