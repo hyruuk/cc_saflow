@@ -40,6 +40,7 @@ def create_fnames(subject, bloc, bids_root = BIDS_PATH):
                             suffix='meg',
                             processing='clean',
                             root=bids_root + '/derivatives/preprocessed/')
+    preproc_bidspath.mkdir(exist_ok=True)
     
     ARlog_bidspath = BIDSPath(subject=subject, 
                             task='gradCPT', 
@@ -63,6 +64,7 @@ def create_fnames(subject, bloc, bids_root = BIDS_PATH):
                             datatype='meg', 
                             processing='epo',
                             root=bids_root + '/derivatives/epochs/')
+    epoch_bidspath.mkdir(exist_ok=True)
     
     return {'raw':raw_bidspath,
             'preproc':preproc_bidspath,

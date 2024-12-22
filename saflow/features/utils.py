@@ -7,13 +7,6 @@ import mne
 import pickle
 
 def create_fnames(subject, run, bids_root=saflow.BIDS_PATH):
-    morph_bidspath = BIDSPath(subject=subject,
-                            task='gradCPT',
-                            run=run,
-                            datatype='meg',
-                            processing='clean',
-                            description='morphed',
-                            root=bids_root + '/derivatives/morphed_sources/')
     raw_bidspath = BIDSPath(subject=subject,
                     task='gradCPT',
                     run=run,
@@ -28,7 +21,8 @@ def create_fnames(subject, run, bids_root=saflow.BIDS_PATH):
                         suffix='meg',
                         processing='clean',
                         root=bids_root + '/derivatives/preprocessed/')
-    
+    preproc_bidspath.mkdir(exist_ok=True)
+
     psd_bidspath = BIDSPath(subject=subject,
                             task='gradCPT',
                             run=run,
@@ -53,6 +47,15 @@ def create_fnames(subject, run, bids_root=saflow.BIDS_PATH):
                             root=bids_root + '/derivatives/FOOOF_slope/')
     slope_bidspath.mkdir(exist_ok=True)
     
+    morph_bidspath = BIDSPath(subject=subject,
+                            task='gradCPT',
+                            run=run,
+                            datatype='meg',
+                            processing='clean',
+                            description='morphed',
+                            root=bids_root + '/derivatives/morphed_sources/')
+    morph_bidspath.mkdir(exist_ok=True)
+
     return {'raw':raw_bidspath,
             'morph':morph_bidspath,
             'preproc':preproc_bidspath,
