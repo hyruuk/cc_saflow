@@ -80,7 +80,7 @@ def load_noise_cov(er_date, bids_root=BIDS_PATH):
                     datatype="meg",
                     processing='noisecov',
                     root=bids_root + '/derivatives/noise_cov/')
-    noise_cov_fullpath = str(noise_cov_bidspath.fpath)
+    noise_cov_fullpath = str(noise_cov_bidspath.fpath) + '.fif'
     if not os.path.isfile(noise_cov_fullpath):
         er_raw = read_raw_bids(BIDSPath(subject='emptyroom', 
                     session=er_date,
