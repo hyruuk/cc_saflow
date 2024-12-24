@@ -18,7 +18,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "-s",
     "--subject",
-    default='20',
+    default='04',
     type=str,
     help="Subject to process",
 )
@@ -182,7 +182,7 @@ def preproc_pipeline(filepaths, tmin, tmax):
     report.add_evokeds(evokeds, titles=["Evoked (Freq)", "Evoked (Rare)", "Evoked (Resp)"])
 
     ## First, run AR on the filtered data
-    ar = AutoReject(picks='mag', n_jobs=-1, random_state=0)
+    ar = AutoReject(picks='mag', n_jobs=1, random_state=0)
     ar.fit(epochs_filt)
     autoreject_log = ar.get_reject_log(epochs_filt)
     print(np.sum(autoreject_log.bad_epochs))
