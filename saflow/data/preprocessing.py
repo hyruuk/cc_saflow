@@ -91,7 +91,7 @@ def load_noise_cov(er_date, bids_root=BIDS_PATH):
         noise_cov = mne.compute_raw_covariance(
                     er_raw, method=["shrunk", "empirical"], rank=None, verbose=True
                 )
-        noise_cov.save(noise_cov_fullpath + '.fif')
+        noise_cov.save(noise_cov_fullpath + '.fif', overwrite=True)
     else:
         noise_cov = mne.read_cov(noise_cov_fullpath + '.fif')
     return noise_cov
