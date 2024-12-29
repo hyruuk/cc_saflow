@@ -93,7 +93,7 @@ def load_noise_cov(er_date, bids_root=BIDS_PATH):
                 )
         noise_cov.save(noise_cov_fullpath + '.fif', overwrite=True)
     else:
-        noise_cov = mne.read_cov(noise_cov_fullpath + '.fif')
+        noise_cov = mne.read_cov(noise_cov_fullpath)
     return noise_cov
 
 def preproc_pipeline(filepaths, tmin, tmax):
@@ -182,7 +182,7 @@ def preproc_pipeline(filepaths, tmin, tmax):
     report.add_evokeds(evokeds, titles=["Evoked (Freq)", "Evoked (Rare)", "Evoked (Resp)"])
 
     ## First, run AR on the filtered data
-    ar = AutoReject(picks='mag', n_jobs=1, random_state=0)
+    ar = AutoReject(picks='mag', n_jobs=12, random_state=0)
     ar.fit(epochs_filt)
     autoreject_log = ar.get_reject_log(epochs_filt)
     print(np.sum(autoreject_log.bad_epochs))
